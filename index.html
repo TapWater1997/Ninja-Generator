@@ -49,6 +49,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 }
 .wheel.spinning{filter:brightness(1.06)}
 .wheel-svg{width:100%;height:100%;display:block;border-radius:50%;pointer-events:none}
+.wheel-result-overlay{position:absolute;z-index:20;inset:0;display:grid;place-items:center;padding:30px;text-align:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease}.wheel-result-overlay.show{opacity:1;visibility:visible}.wheel-result-overlay .result-backdrop{position:absolute;inset:0;border-radius:50%;background:rgba(8,11,17,.76);backdrop-filter:blur(3px)}.wheel-result-overlay .result-card{position:relative;max-width:82%;padding:18px 24px;border-radius:14px;background:linear-gradient(180deg,#222c3d,#121925);border:2px solid var(--accent);box-shadow:0 12px 35px rgba(0,0,0,.55),0 0 24px rgba(255,159,67,.2);animation:resultPop .3s ease}.wheel-result-overlay .result-label{display:block;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}.wheel-result-overlay .result-value{display:block;color:#fff;font-size:clamp(20px,3vw,32px);font-weight:950;line-height:1.15;overflow-wrap:anywhere}@keyframes resultPop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
 .wheel-center{
   position:absolute;z-index:5;width:88px;height:88px;border-radius:50%;
   left:50%;top:50%;transform:translate(-50%,-50%);
@@ -155,7 +156,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div class="progress-wrap"><div id="progressText" class="small">0 / 0</div><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div></div>
     </div>
     <div id="wheelStage" class="wheel-stage">
-      <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled>SPIN</button></div><div class="wheel-options" hidden aria-hidden="true"><div id="wheelOptionsList" class="wheel-options-list"></div></div>
+      <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled>SPIN</button><div class="wheel-result-overlay" id="wheelResultOverlay" aria-live="polite"><div class="result-backdrop"></div><div class="result-card"><span class="result-label">Wheel Result</span><span class="result-value" id="wheelResultValue">—</span></div></div></div><div class="wheel-options" hidden aria-hidden="true"><div id="wheelOptionsList" class="wheel-options-list"></div></div>
       <div class="roll-copy"><h3 id="wheelQuestion">Your character is waiting.</h3><p id="wheelDescription">Each piece is rolled separately so you can watch the character take shape.</p><div id="rollingValue" class="rolling-value">—</div><div class="step-actions"><span id="stepHint" class="step-hint">Start a new character to unlock the first wheel.</span></div><label class="spin-preferences"><input type="checkbox" id="skipWheelAnimation"> Skip wheel animations and generate instantly</label></div>
     </div>
     <div id="interactiveLog" class="interactive-log"></div>
@@ -3079,9 +3080,13 @@ function goalForInteractive(c){
 function esc(s){return String(s??"").replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[m]));}
 function currentWheel(){return document.getElementById('fortuneWheel')||document.querySelector('#interactivePanel .wheel');}
 function setInteractiveText(title,desc,value){
+  hideWheelResult();
   document.getElementById('stepTitle').textContent=title; document.getElementById('wheelQuestion').textContent=title;
   document.getElementById('wheelDescription').textContent=desc||''; document.getElementById('rollingValue').textContent=value??'—';
 }
+function showWheelResult(value){const overlay=document.getElementById('wheelResultOverlay'),result=document.getElementById('wheelResultValue');if(!overlay||!result)return;result.textContent=String(value??'—');overlay.classList.add('show');}
+function hideWheelResult(){const overlay=document.getElementById('wheelResultOverlay');if(overlay)overlay.classList.remove('show');}
+function wait(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 function updateInteractiveProgress(){
   const total=interactive.steps.length, done=Math.min(interactive.index,total);
   document.getElementById('progressText').textContent=`${done} / ${total}`;
@@ -3632,6 +3637,10 @@ async function spinCurrentStep(){
     catch(err){ console.warn('Step failed:', s.key, err); result='Error — skipped'; }
     const display=String(displayFor(interactive.c,s.key,result)??'None');
     await spinVisual(display,!!s.stat);
+    // Briefly show the winning result before preparing the next wheel.
+    showWheelResult(display);
+    await wait(1500);
+    hideWheelResult();
     s.display=display; s.done=true; logLine(`${s.label}: ${s.display}`);
     if(s.key==='rank' && interactive.c.type==='Missing-nin') s.display=interactive.c.rank;
     try{ addConditionalSteps(); }catch(err){ console.warn('addConditionalSteps', err); }
