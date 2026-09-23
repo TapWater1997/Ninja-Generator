@@ -196,10 +196,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 
     <section class="card full portrait-panel" id="portraitSection">
       <h2>Ninja Portrait (optional)</h2>
-      <p class="portrait-hint">After your character is complete, build a Grok image prompt from <b>Identity</b>, <b>Lineage &amp; Abilities</b>, and <b>Combat</b>. This page cannot call Grok Imagine by itself — copy the prompt and paste it into a Grok chat to generate the image, then drop the result here if you want it on the page.</p>
+      <p class="portrait-hint">After your character is complete, a Grok image prompt is built from <b>Identity</b>, <b>Lineage &amp; Abilities</b>, and <b>Combat</b>. Use <b>Open in Grok</b> to open grok.com with the prompt loaded (it often auto-submits), or copy the prompt manually. When the image is ready, upload it below to show it on this page.</p>
       <div class="portrait-actions">
         <button type="button" id="buildPortraitPromptBtn" class="secondary" onclick="buildNinjaPortraitPrompt()" disabled>Build portrait prompt</button>
         <button type="button" id="copyPortraitPromptBtn" class="secondary" onclick="copyNinjaPortraitPrompt()" disabled>Copy prompt for Grok</button>
+        <button type="button" id="openGrokPortraitBtn" onclick="openPortraitInGrok()" disabled>Open in Grok</button>
       </div>
       <textarea id="portraitPrompt" class="portrait-prompt-box" placeholder="Portrait prompt will appear here after you generate a character…" readonly></textarea>
       <div id="portraitStatus" class="portrait-status"></div>
@@ -3709,8 +3710,10 @@ function generate(){
 function enablePortraitControls(on){
   const a=document.getElementById('buildPortraitPromptBtn');
   const b=document.getElementById('copyPortraitPromptBtn');
+  const g=document.getElementById('openGrokPortraitBtn');
   if(a) a.disabled=!on;
   if(b) b.disabled=!on;
+  if(g) g.disabled=!on;
 }
 function buildNinjaPortraitPromptFromCharacter(c){
   if(!c) return '';
@@ -3767,9 +3770,11 @@ function buildNinjaPortraitPrompt(){
   }
   const prompt=buildNinjaPortraitPromptFromCharacter(c);
   if(box) box.value=prompt;
-  if(status) status.textContent='Prompt ready. Click “Copy prompt for Grok”, paste it into a Grok chat, and ask for an image. Then upload the result below.';
+  if(status) status.textContent='Prompt ready. Click Open in Grok (recommended) or Copy prompt for Grok. Upload the finished image below when you are done.';
   const copyBtn=document.getElementById('copyPortraitPromptBtn');
+  const grokBtn=document.getElementById('openGrokPortraitBtn');
   if(copyBtn) copyBtn.disabled=false;
+  if(grokBtn) grokBtn.disabled=false;
 }
 async function copyNinjaPortraitPrompt(){
   const box=document.getElementById('portraitPrompt');
@@ -3787,6 +3792,34 @@ async function copyNinjaPortraitPrompt(){
     if(box){ box.readOnly=false; box.select(); document.execCommand('copy'); box.readOnly=true; }
     if(status) status.textContent='Select the prompt text and copy it manually if clipboard access is blocked.';
   }
+}
+function getPortraitPromptText(){
+  const box=document.getElementById('portraitPrompt');
+  let text=(box && box.value) ? box.value.trim() : '';
+  if(!text) text=buildNinjaPortraitPromptFromCharacter(lastCharacter)||'';
+  return text.trim();
+}
+function openPortraitInGrok(){
+  const status=document.getElementById('portraitStatus');
+  let text=getPortraitPromptText();
+  if(!text){
+    if(status) status.textContent='Generate a character first so a portrait prompt can be built.';
+    return;
+  }
+  const box=document.getElementById('portraitPrompt');
+  if(box && !box.value) box.value=text;
+  // Ensure the chat request clearly asks for an image
+  const lower=text.toLowerCase();
+  if(!lower.startsWith('generate an image') && !lower.startsWith('create a high-quality') && !lower.includes('generate an image')){
+    text='Generate an image of this character based on the following description.\n\n'+text;
+  }
+  // Prefer a slightly tighter URL when prompts are huge (browser URL limits)
+  if(text.length>1800){
+    text=text.slice(0,1800).replace(/\s+\S*$/,'')+'…';
+  }
+  const url='https://grok.com/?q='+encodeURIComponent(text);
+  if(status) status.textContent='Opening Grok with your portrait prompt. If it does not auto-send, press Enter in Grok. Then upload the image back here.';
+  window.open(url,'_blank','noopener,noreferrer');
 }
 function loadPortraitFromFile(ev){
   const file=ev.target && ev.target.files && ev.target.files[0];
