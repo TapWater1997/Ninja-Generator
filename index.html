@@ -3181,8 +3181,10 @@ function esc(s){return String(s??"").replace(/[&<>\"]/g,m=>({"&":"&amp;","<":"&l
 function currentWheel(){return document.getElementById('fortuneWheel')||document.querySelector('#interactivePanel .wheel');}
 function setInteractiveText(title,desc,value){
   hideWheelResult();
-  document.getElementById('stepTitle').textContent=title; document.getElementById('wheelQuestion').textContent=title;
-  document.getElementById('wheelDescription').textContent=desc||''; document.getElementById('rollingValue').textContent=value??'—';
+  const stepTitle=document.getElementById('stepTitle'); if(stepTitle) stepTitle.textContent=title;
+  const wheelQuestion=document.getElementById('wheelQuestion'); if(wheelQuestion) wheelQuestion.textContent=title;
+  const wheelDescription=document.getElementById('wheelDescription'); if(wheelDescription) wheelDescription.textContent=desc||'';
+  const rollingValue=document.getElementById('rollingValue'); if(rollingValue) rollingValue.textContent=value??'—';
 }
 function showWheelResult(value){const overlay=document.getElementById('wheelResultOverlay'),result=document.getElementById('wheelResultValue');if(!overlay||!result)return;result.textContent=String(value??'—');overlay.classList.add('show');}
 function hideWheelResult(){const overlay=document.getElementById('wheelResultOverlay');if(overlay)overlay.classList.remove('show');}
@@ -3395,42 +3397,47 @@ function renderWheelOptions(activeIndex=-1, cachedSegments=null){
   return segments.map(s=>s.name);
 }
 
-function spinVisual(finalValue,isStat=false){
+function spinVisual(finalValue,isStat=false,preSegments=null){
   return new Promise(resolve=>{
     try{
       const wheel=currentWheel();
       const val=document.getElementById('rollingValue');
-      let segments=[];
-      try{ segments=getWheelSegments(); }catch(e){ segments=[]; }
+      let segments = Array.isArray(preSegments) && preSegments.length ? preSegments.slice() : [];
+      if(!segments.length){
+        try{ segments=getWheelSegments(); }catch(e){ segments=[]; }
+      }
+      // Ensure the actual result is always present as a segment so the visual lands on it
+      const targetName=String(finalValue??'');
+      let winIdx=segments.findIndex(s=>s.name===targetName);
+      if(winIdx<0){
+        // Inject the real result so the wheel is guaranteed to be able to land on it.
+        // Rebuild angles after injection (equal share among existing + new).
+        segments.push({name:targetName, weight:1});
+        const total=segments.reduce((a,b)=>a+(Number(b.weight)||1),0) || 1;
+        let angle=0;
+        segments=segments.map(s=>{
+          const w=Number(s.weight)||1;
+          const frac=w/total;
+          const start=angle;
+          angle += frac*360;
+          return {...s, weight:w, frac, pct:frac*100, startAngle:start, endAngle:angle};
+        });
+        winIdx=segments.findIndex(s=>s.name===targetName);
+      }
+      if(winIdx<0) winIdx=0;
+
       renderWheelOptions(-1, segments);
       if(wheel) wheel.classList.add('spinning');
       if(val) val.classList.add('rolling');
 
-      // Find winning segment for pointer alignment
-      const targetName=String(finalValue??'');
-      let winIdx=segments.findIndex(s=>s.name===targetName);
-      if(winIdx<0){
-        // soft match
-        winIdx=segments.findIndex(s=>targetName.includes(s.name)||s.name.includes(targetName));
-      }
-      if(winIdx<0) winIdx=0;
-
-      // Pointer is at top (0deg in our polar system = -90 CSS, but slices start at top)
-      // CSS rotate clockwise. Segment mid angle from top clockwise.
+      // Pointer is at top (0deg in our polar system). CSS rotate is clockwise.
+      // Bring the winning mid-angle under the top pointer.
       const win=segments[winIdx]||{startAngle:0,endAngle:360};
       const mid=(win.startAngle+win.endAngle)/2;
-      // To bring mid under the top pointer: rotate so mid moves to 0 (top)
-      // CSS positive rotate is clockwise; we need mid to end at top → rotate by (360 - mid)
-      const jitter = (Math.random()-0.5) * Math.max(2, (win.endAngle-win.startAngle)*0.4);
+      const jitter = (Math.random()-0.5) * Math.max(2, (win.endAngle-win.startAngle)*0.35);
       const turns = 5 + Math.floor(Math.random()*3);
-      const targetRot = _wheelRotation + turns*360 + (360 - mid) + jitter;
-      _wheelRotation = targetRot % 360;
-      // keep cumulative for continuous spins
       if(wheel){
-        // Use absolute cumulative rotation stored on element
         const prev = Number(wheel.dataset.rot||0);
-        const absTarget = prev + turns*360 + ((360-mid+jitter) - (prev % 360) + 360) % 360;
-        // simplify: always add full turns + delta to land mid at top
         const currentMod = ((prev % 360) + 360) % 360;
         let delta = (360 - mid + jitter) - currentMod;
         delta = ((delta % 360) + 360) % 360;
@@ -3732,11 +3739,18 @@ async function spinCurrentStep(){
       generateInstantlyFromCurrent();
       return;
     }
+    // Pre-compute wheel segments from current (pre-roll) state so the visual
+    // options match what the step function can produce (critical for sequential
+    // nature rolls and other pools that mutate character state).
+    let preSegments=[];
+    try{ preSegments=getWheelSegments(); }catch(e){ console.warn('preSegments', e); }
     let result;
     try{ result=s.fn(interactive.c); }
     catch(err){ console.warn('Step failed:', s.key, err); result='Error — skipped'; }
     const display=String(displayFor(interactive.c,s.key,result)??'None');
-    await spinVisual(display,!!s.stat);
+    // Pass preSegments so spinVisual lands exactly on the rolled result
+    // (it will inject the result if the pool was sampled / mutated).
+    await spinVisual(display,!!s.stat, preSegments);
     // Briefly show the winning result before preparing the next wheel.
     showWheelResult(display);
     await wait(1500);
@@ -3791,12 +3805,14 @@ function finishInteractive(){
   render(interactive.c);
   document.getElementById('combat').innerHTML += row('Signature technique',interactive.c.signatureTechnique?.name||'None');
   document.getElementById('goals').innerHTML += row('Current goal',interactive.c.currentGoal||'None');
-  document.getElementById('stepTitle').textContent='Character complete';
-  document.getElementById('wheelQuestion').textContent='Generation complete';
-  document.getElementById('wheelDescription').textContent='All wheels are complete. D100 stats were rolled automatically and modifiers applied. The finished character is shown below.';
-  document.getElementById('rollingValue').textContent='✓';
-  document.getElementById('spinButton').disabled=true; document.getElementById('stepHint').textContent='Start a new character to roll again.';
-  document.getElementById('interactiveLog').insertAdjacentHTML('beforeend',`<div class="complete-card"><b>Character complete.</b> Final stats were auto-rolled (D100 each) with applicable modifiers applied. Optional: build a Grok portrait prompt below.</div>`);
+  const stepTitle=document.getElementById('stepTitle'); if(stepTitle) stepTitle.textContent='Character complete';
+  const wheelQuestion=document.getElementById('wheelQuestion'); if(wheelQuestion) wheelQuestion.textContent='Generation complete';
+  const wheelDescription=document.getElementById('wheelDescription'); if(wheelDescription) wheelDescription.textContent='All wheels are complete. D100 stats were rolled automatically and modifiers applied. The finished character is shown below.';
+  const rollingValue=document.getElementById('rollingValue'); if(rollingValue) rollingValue.textContent='✓';
+  const spinBtn=document.getElementById('spinButton'); if(spinBtn) spinBtn.disabled=true;
+  const stepHint=document.getElementById('stepHint'); if(stepHint) stepHint.textContent='Start a new character to roll again.';
+  const logEl=document.getElementById('interactiveLog');
+  if(logEl) logEl.insertAdjacentHTML('beforeend',`<div class="complete-card"><b>Character complete.</b> Final stats were auto-rolled (D100 each) with applicable modifiers applied. Optional: build a Grok portrait prompt below.</div>`);
   try{ enablePortraitControls(true); buildNinjaPortraitPrompt(); }catch(e){ console.warn(e); }
 }
 function generate(){
