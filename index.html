@@ -38,6 +38,20 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .interactive-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap}
 .interactive-head h2{margin:0 0 5px}.progress-wrap{min-width:240px;flex:1;max-width:420px}.progress-bar{height:9px;background:#0b0e14;border-radius:99px;overflow:hidden;border:1px solid var(--line)}.progress-fill{height:100%;width:0;background:var(--accent);transition:width .35s ease}
 .wheel-stage{display:grid;grid-template-columns:1fr;gap:18px;align-items:center;justify-items:center;margin:72px 0 110px;padding:0 0 10px;background:#000}
+.wheel-block{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+.wheel-category-title{
+  display:block;
+  text-align:center;
+  font-size:clamp(18px,2.4vw,26px);
+  font-weight:900;
+  color:var(--text);
+  margin:0 0 14px;
+  padding:0 10px;
+  line-height:1.2;
+  letter-spacing:.02em;
+  max-width:min(94vw,480px);
+}
+.wheel-category-title:empty{display:none}
 .wheel-wrap{
   width:480px;height:480px;
   min-width:480px;min-height:480px;
@@ -150,18 +164,33 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   .interactive-shell{background:#000;border:0;border-radius:0;padding:16px 10px 0;box-shadow:none}
   .interactive-head{padding:0 6px}
   .progress-wrap{min-width:160px}
-  /* Extra vertical room so scrolling can isolate the wheel alone in the viewport */
+  /* Extra vertical room so scrolling can isolate the wheel (+ category title) in the viewport */
   .wheel-stage{
     grid-template-columns:1fr;
     text-align:center;
-    gap:clamp(160px,32vh,280px);
-    margin:38vh 0 42vh;
+    gap:clamp(120px,28vh,240px);
+    margin:32vh 0 40vh;
     padding:0;
     min-height:calc(100svh - 8vh);
     box-sizing:border-box;
     background:#000;
     align-content:center;
   }
+  .wheel-block{
+    width:100%;
+  }
+  .wheel-category-title{
+    display:block;
+    font-size:clamp(18px,5.8vw,24px);
+    font-weight:900;
+    margin:0 0 16px;
+    padding:0 12px;
+    color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.55);
+    max-width:min(94vw,430px);
+  }
+  /* Hide the duplicate title inside roll-copy on mobile — category lives above the wheel */
+  .roll-copy h3#wheelQuestion{display:none}
   .wheel-wrap{
     margin:auto;
     width:min(94vw,430px);height:min(94vw,430px);
@@ -184,10 +213,14 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 @media(max-width:420px){
   .interactive-shell{padding-left:6px;padding-right:6px}
   .wheel-stage{
-    margin-top:36vh;
-    margin-bottom:40vh;
-    gap:clamp(150px,30vh,260px);
+    margin-top:30vh;
+    margin-bottom:38vh;
+    gap:clamp(110px,26vh,220px);
     min-height:calc(100svh - 6vh);
+  }
+  .wheel-category-title{
+    font-size:clamp(17px,6vw,22px);
+    margin-bottom:14px;
   }
   .wheel-wrap{
     width:94vw;height:94vw;
@@ -257,7 +290,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div class="progress-wrap"><div id="progressText" class="small">0 / 0</div><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div></div>
     </div>
     <div id="wheelStage" class="wheel-stage">
-      <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled>SPIN</button><div class="wheel-result-overlay" id="wheelResultOverlay" aria-live="polite"><div class="result-backdrop"></div><div class="result-card"><span class="result-label">Wheel Result</span><span class="result-value" id="wheelResultValue">—</span></div></div></div><div class="roll-copy"><h3 id="wheelQuestion">Your character is waiting.</h3><p id="wheelDescription">Each piece is rolled separately so you can watch the character take shape.</p><div class="step-actions"><span id="stepHint" class="step-hint">Start a new character to unlock the first wheel.</span></div><label class="spin-preferences"><input type="checkbox" id="skipWheelAnimation"> Skip wheel animations and generate instantly</label></div>
+      <div class="wheel-block">
+        <h3 id="wheelCategoryTitle" class="wheel-category-title">Your character is waiting.</h3>
+        <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled>SPIN</button><div class="wheel-result-overlay" id="wheelResultOverlay" aria-live="polite"><div class="result-backdrop"></div><div class="result-card"><span class="result-label">Wheel Result</span><span class="result-value" id="wheelResultValue">—</span></div></div></div>
+      </div>
+      <div class="roll-copy"><h3 id="wheelQuestion">Your character is waiting.</h3><p id="wheelDescription">Each piece is rolled separately so you can watch the character take shape.</p><div class="step-actions"><span id="stepHint" class="step-hint">Start a new character to unlock the first wheel.</span></div><label class="spin-preferences"><input type="checkbox" id="skipWheelAnimation"> Skip wheel animations and generate instantly</label></div>
     </div>
     <div id="interactiveLog" class="interactive-log"></div>
   </div>
@@ -3183,6 +3220,7 @@ function setInteractiveText(title,desc,value){
   hideWheelResult();
   const stepTitle=document.getElementById('stepTitle'); if(stepTitle) stepTitle.textContent=title;
   const wheelQuestion=document.getElementById('wheelQuestion'); if(wheelQuestion) wheelQuestion.textContent=title;
+  const wheelCategoryTitle=document.getElementById('wheelCategoryTitle'); if(wheelCategoryTitle) wheelCategoryTitle.textContent=title;
   const wheelDescription=document.getElementById('wheelDescription'); if(wheelDescription) wheelDescription.textContent=desc||'';
   const rollingValue=document.getElementById('rollingValue'); if(rollingValue) rollingValue.textContent=value??'—';
 }
@@ -3351,8 +3389,8 @@ function truncateLabel(s, max){
 function buildFortuneWheel(segments){
   const svg=document.getElementById('wheelSvg');
   if(!svg) return segments;
+  // Fixed viewBox geometry — wheel visual size never changes between spins
   const cx=100, cy=100, r=98;
-  const n=segments.length||1;
   let html='';
   segments.forEach((seg,i)=>{
     const color=WHEEL_COLORS[i % WHEEL_COLORS.length];
@@ -3360,18 +3398,21 @@ function buildFortuneWheel(segments){
     const end=seg.endAngle;
     const mid=(start+end)/2;
     html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"/>`;
-    // Label only if wedge is wide enough
+    // Radial labels: text runs along the wedge (center → rim), not across it
     const span=end-start;
-    if(span>=8){
-      const lr = span>=25 ? 58 : span>=14 ? 64 : 70;
+    if(span>=7){
+      // Place label along the mid-ray; slightly farther out for narrow wedges
+      const lr = span>=30 ? 52 : span>=16 ? 58 : 66;
       const [lx,ly]=polar(cx,cy,lr,mid);
-      const maxChars = span>=40 ? 16 : span>=25 ? 12 : span>=14 ? 8 : 5;
+      const maxChars = span>=45 ? 18 : span>=28 ? 14 : span>=16 ? 10 : span>=10 ? 7 : 5;
       const label=truncateLabel(seg.name, maxChars);
-      const rot=mid;
-      // Keep text readable: flip if in bottom half
-      const flip = (mid>90 && mid<270);
-      const textRot = flip ? rot+180 : rot;
-      html += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" fill="#0b0e14" font-size="${span>=30?8.5:span>=18?7.2:6.2}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRot.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">${label.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+      // mid is degrees from top, clockwise. Default SVG text is horizontal L→R.
+      // mid-90 aligns the baseline with the radius so text follows the wedge.
+      // Flip on the left/bottom half so labels stay readable (not upside-down).
+      let textRot = mid - 90;
+      if(mid > 90 && mid < 270) textRot += 180;
+      const fontSize = span>=36 ? 7.8 : span>=22 ? 6.8 : span>=12 ? 6.0 : 5.4;
+      html += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" fill="#0b0e14" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRot.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">${label.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
     }
   });
   // Outer ring
@@ -3807,6 +3848,7 @@ function finishInteractive(){
   document.getElementById('goals').innerHTML += row('Current goal',interactive.c.currentGoal||'None');
   const stepTitle=document.getElementById('stepTitle'); if(stepTitle) stepTitle.textContent='Character complete';
   const wheelQuestion=document.getElementById('wheelQuestion'); if(wheelQuestion) wheelQuestion.textContent='Generation complete';
+  const wheelCategoryTitle=document.getElementById('wheelCategoryTitle'); if(wheelCategoryTitle) wheelCategoryTitle.textContent='Generation complete';
   const wheelDescription=document.getElementById('wheelDescription'); if(wheelDescription) wheelDescription.textContent='All wheels are complete. D100 stats were rolled automatically and modifiers applied. The finished character is shown below.';
   const rollingValue=document.getElementById('rollingValue'); if(rollingValue) rollingValue.textContent='✓';
   const spinBtn=document.getElementById('spinButton'); if(spinBtn) spinBtn.disabled=true;
