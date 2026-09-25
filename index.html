@@ -306,6 +306,27 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
         <button type="button" class="secondary" onclick="debugRespinCurrent()">Re-spin current</button>
       </div>
       <p class="small" style="margin:8px 0 0">Use this to test individual wheels without running the full sequence. Prior steps are rolled instantly so eligibility is realistic.</p>
+      <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--line)">
+        <div class="small" style="margin-bottom:8px;color:var(--muted)">Admin — predetermine wheel results (forces the outcome when that step runs)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+          <div style="flex:1;min-width:160px">
+            <label class="small" for="forceWheelSelect" style="display:block;margin-bottom:4px">Wheel</label>
+            <select id="forceWheelSelect" onchange="populateForceValueOptions()"></select>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label class="small" for="forceValueSelect" style="display:block;margin-bottom:4px">Predetermined result</label>
+            <select id="forceValueSelect"></select>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <label class="small" for="forceValueCustom" style="display:block;margin-bottom:4px">Or type custom value</label>
+            <input type="text" id="forceValueCustom" placeholder="Custom override…">
+          </div>
+          <button type="button" onclick="debugSetForcedResult()">Set force</button>
+          <button type="button" class="secondary" onclick="debugClearForcedResult()">Clear this</button>
+          <button type="button" class="secondary" onclick="debugClearAllForced()">Clear all</button>
+        </div>
+        <div id="forcedResultsList" class="small" style="margin-top:10px;color:var(--muted)">No forced results.</div>
+      </div>
     </div>
     <div id="interactiveLog" class="interactive-log"></div>
   </div>
@@ -432,7 +453,7 @@ const DATA = {
   },
 
   characterTypes: {
-    normal:[W("Shinobi",65),W("Civilian",15),W("Missing-nin",15),W("Mercenary",5)],
+    normal:[W("Shinobi",70),W("Civilian",5),W("Missing-nin",20),W("Mercenary",5)],
     iron:[W("Samurai",85),W("Civilian",10),W("Mercenary",5)]
   },
 
@@ -464,51 +485,51 @@ const DATA = {
 // Offline clan table (user-provided). Always include "None" at roll time.
   clans:[
     W("None", 40, {lands:null, village:null, bloodline:null, dojutsu:null, hiden:null, mods:{}}),
-    W("Aburame Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:5,taijutsu:2,genjutsu:2,speed:1,strength:2,durability:2,intelligence:5,battleIQ:5,stamina:4,sensory:8,willpower:5,stealth:7,weaponSkill:1}}),
-    W("Akimichi Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:6,chakraControl:-1,ninjutsu:1,taijutsu:6,genjutsu:-3,speed:5,strength:10,durability:9,intelligence:-1,battleIQ:5,stamina:9,sensory:-1,willpower:7,stealth:-4,weaponSkill:1}}),
-    W("Amagiri Clan", 1, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:3,ninjutsu:4,taijutsu:1,genjutsu:1,speed:3,durability:1,intelligence:3,battleIQ:3,stamina:2,sensory:2,willpower:3,stealth:3,weaponSkill:2}}),
-    W("Chinoike Clan", 1, {lands:["Land of Lightning", "Minor Land / Other Country"], village:"Independent Settlement", bloodline:"Ketsury\u016bgan", dojutsu:"Ketsury\u016bgan", hiden:null, hasBloodline:true, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:6,taijutsu:1,genjutsu:8,speed:2,strength:1,durability:3,intelligence:4,battleIQ:6,stamina:4,sensory:5,willpower:7,stealth:3}}),
-    W("Funato Clan", 1, {lands:["Land of Water"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:1,ninjutsu:3,taijutsu:5,genjutsu:-2,speed:4,strength:5,durability:6,intelligence:1,battleIQ:5,stamina:8,sensory:2,willpower:7,stealth:1,weaponSkill:-5}}),
-    W("F\u016bma Clan (Land of Sound)", 1, {lands:["Land of Fire"], village:"Land of Sound", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:1,ninjutsu:4,taijutsu:5,speed:7,strength:2,durability:2,intelligence:2,battleIQ:6,stamina:4,sensory:1,willpower:4,stealth:6,weaponSkill:10}}),
-    W("Hatake Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:7,taijutsu:7,genjutsu:2,speed:7,strength:4,durability:4,intelligence:8,battleIQ:10,stamina:6,sensory:5,willpower:7,stealth:7,weaponSkill:8}}),
-    W("Hirasaka Clan", 1, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:2,genjutsu:3,speed:6,strength:1,durability:2,intelligence:6,battleIQ:7,stamina:4,sensory:4,willpower:5,stealth:5,weaponSkill:3}}),
-    W("Hoshigaki Clan", 1, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Shark-person", dojutsu:null, hiden:"Shark-person", hasBloodline:true, mods:{chakraQuantity:7,chakraControl:-1,ninjutsu:3,taijutsu:8,genjutsu:-4,speed:4,strength:8,durability:10,intelligence:6,battleIQ:8,stamina:10,sensory:2,willpower:9,stealth:-2,weaponSkill:3}}),
-    W("Hy\u016bga Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Byakugan", dojutsu:"Byakugan", hiden:null, hasBloodline:true, mods:{chakraQuantity:3,chakraControl:9,ninjutsu:7,taijutsu:9,genjutsu:1,speed:6,strength:5,durability:3,intelligence:7,battleIQ:9,stamina:5,sensory:10,willpower:7,stealth:5,weaponSkill:2}}),
-    W("H\u014dki Family", 1, {lands:["Land of Wind"], village:"Sunagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:1,intelligence:7,battleIQ:8,stamina:3,sensory:4,willpower:4,stealth:6,weaponSkill:4}}),
-    W("H\u014dzuki Clan", 1, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Hydrification Technique", dojutsu:null, hiden:"Hydrification Technique", hasBloodline:true, mods:{chakraQuantity:6,chakraControl:4,ninjutsu:7,taijutsu:5,genjutsu:-2,speed:7,strength:5,durability:8,intelligence:3,battleIQ:6,stamina:7,sensory:2,willpower:6,stealth:2,weaponSkill:3}}),
-    W("Iburi Clan", 1, {lands:["Land of Fire"], village:"Independent Settlement", bloodline:"Smoke-Body", dojutsu:null, hiden:"Smoke-Body", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:7,taijutsu:-1,genjutsu:3,speed:5,strength:-2,durability:3,intelligence:4,battleIQ:4,stamina:4,sensory:3,willpower:5,stealth:9}}),
-    W("Inuzuka Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Has a dog", dojutsu:null, hiden:"Has a dog", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:2,ninjutsu:3,taijutsu:7,genjutsu:-2,speed:8,strength:5,durability:5,intelligence:2,battleIQ:7,stamina:7,sensory:10,willpower:7,stealth:5,weaponSkill:1}}),
-    W("Izuno Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:1,genjutsu:2,speed:3,durability:1,intelligence:4,battleIQ:4,stamina:3,sensory:3,willpower:3,stealth:3,weaponSkill:2}}),
-    W("Kagetsu Family", 1, {lands:["Land of Fire"], village:"Motoyoshi Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:4,ninjutsu:3,taijutsu:2,genjutsu:5,speed:2,strength:-1,durability:1,intelligence:6,battleIQ:5,stamina:3,sensory:3,willpower:5,stealth:5,weaponSkill:1}}),
-    W("Kamizuru Clan", 1, {lands:["Land of Earth"], village:"Iwagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:4,ninjutsu:6,taijutsu:3,genjutsu:1,speed:3,strength:2,durability:3,intelligence:4,battleIQ:5,stamina:5,sensory:7,willpower:5,stealth:4,weaponSkill:2}}),
-    W("Karatachi Family", 1, {lands:["Land of Water"], village:"Kirigakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:2,ninjutsu:5,taijutsu:5,genjutsu:-1,speed:4,strength:4,durability:5,intelligence:3,battleIQ:6,stamina:7,sensory:2,willpower:7,stealth:1,weaponSkill:3}}),
-    W("Kazekage Clan", 1, {lands:["Land of Wind"], village:"Sunagakure", bloodline:"Sand Manipulation", dojutsu:null, hiden:"Sand Manipulation", hasBloodline:true, mods:{chakraQuantity:5,chakraControl:6,ninjutsu:9,taijutsu:2,genjutsu:4,speed:3,strength:2,durability:3,intelligence:7,battleIQ:8,stamina:5,sensory:6,willpower:7,stealth:4,weaponSkill:3}}),
-    W("Ked\u014din Clan", 1, {lands:["Minor Land / Other Country"], village:"Land of Fire", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:5,ninjutsu:5,taijutsu:1,genjutsu:6,speed:2,strength:-1,durability:1,intelligence:6,battleIQ:6,stamina:3,sensory:3,willpower:5,stealth:5,weaponSkill:1}}),
-    W("Kodon Clan", 1, {lands:["Minor Land / Other Country"], village:"Howling Wolf Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:2,intelligence:4,battleIQ:4,stamina:3,sensory:2,willpower:4,stealth:3,weaponSkill:2}}),
-    W("Kohaku Clan", 1, {lands:["Land of Fire"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:4,taijutsu:3,genjutsu:1,speed:3,strength:2,durability:2,intelligence:4,battleIQ:5,stamina:4,sensory:3,willpower:5,stealth:3,weaponSkill:2}}),
-    W("Kumanoi Clan", 1, {lands:["Minor Land / Other Country"], village:"Howling Wolf Village", bloodline:"Medical-Proficiency", dojutsu:null, hiden:"Medical-Proficiency", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:4,taijutsu:5,genjutsu:-1,speed:4,strength:5,durability:5,intelligence:2,battleIQ:5,stamina:6,sensory:2,willpower:6,stealth:2,weaponSkill:2}}),
-    W("Kurama Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Genjutsu is Real", dojutsu:null, hiden:"Genjutsu is Real", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:7,ninjutsu:6,taijutsu:-2,genjutsu:10,speed:2,strength:-4,durability:1,intelligence:9,battleIQ:7,stamina:2,sensory:4,willpower:8,stealth:4,weaponSkill:-1}}),
-    W("Lee Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:-3,chakraControl:3,ninjutsu:-1,taijutsu:10,genjutsu:-8,speed:9,strength:8,durability:8,intelligence:2,battleIQ:9,stamina:9,sensory:-2,willpower:8,stealth:4,weaponSkill:2}}),
-    W("Nara Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Shadow-Manipulation", dojutsu:null, hiden:"Shadow-Manipulation", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:6,ninjutsu:6,taijutsu:-3,genjutsu:5,speed:-2,strength:-3,durability:1,intelligence:10,battleIQ:10,stamina:3,sensory:4,willpower:6,stealth:5,weaponSkill:1}}),
-    W("Onikuma Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Possession", dojutsu:null, hiden:"Possession", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:2,ninjutsu:2,taijutsu:7,genjutsu:-3,speed:2,strength:9,durability:8,intelligence:1,battleIQ:6,stamina:8,sensory:1,willpower:8,stealth:-1,weaponSkill:1}}),
-    W("Ry\u016b Clan", 1, {lands:["Minor Land / Other Country"], village:"Mount Koryu", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:4,genjutsu:2,speed:5,strength:3,durability:3,intelligence:4,battleIQ:5,stamina:5,sensory:3,willpower:5,stealth:4,weaponSkill:3}}),
-    W("Sarutobi Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:6,chakraControl:7,ninjutsu:8,taijutsu:6,genjutsu:5,speed:5,strength:4,durability:5,intelligence:8,battleIQ:9,stamina:6,sensory:4,willpower:8,stealth:5,weaponSkill:6}}),
-    W("Send\u014d Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:4,taijutsu:4,genjutsu:1,speed:4,strength:4,durability:4,intelligence:3,battleIQ:5,stamina:5,sensory:2,willpower:5,stealth:3,weaponSkill:3}}),
-    W("Senju Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:10,chakraControl:7,ninjutsu:8,taijutsu:7,genjutsu:3,speed:5,strength:6,durability:9,intelligence:8,battleIQ:9,stamina:10,sensory:5,willpower:10,stealth:3,weaponSkill:4}}),
-    W("Shiin Clan", 1, {lands:["Minor Land / Other Country"], village:"Land of Rice Fields, Land of Sound", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:4,ninjutsu:4,taijutsu:1,genjutsu:6,speed:3,strength:-1,durability:1,intelligence:7,battleIQ:6,stamina:3,sensory:3,willpower:5,stealth:6,weaponSkill:1}}),
-    W("Shimura Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:7,taijutsu:5,genjutsu:4,speed:5,strength:3,durability:4,intelligence:7,battleIQ:8,stamina:5,sensory:4,willpower:9,stealth:6,weaponSkill:5}}),
-    W("Shirogane Clan", 1, {lands:["Land of Wind"], village:"Sunagakure", bloodline:"Puppet-Master", dojutsu:null, hiden:"Puppet-Master", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:2,intelligence:6,battleIQ:5,stamina:4,sensory:4,willpower:5,stealth:5,weaponSkill:7}}),
-    W("Taketori Clan", 1, {lands:["Minor Land / Other Country"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:4,taijutsu:4,genjutsu:2,speed:3,strength:4,durability:4,intelligence:4,battleIQ:5,stamina:5,sensory:3,willpower:6,stealth:3,weaponSkill:6}}),
-    W("Tenr\u014d Clan", 1, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:3,taijutsu:8,genjutsu:-2,speed:7,strength:7,durability:7,intelligence:1,battleIQ:7,stamina:8,sensory:7,willpower:8,stealth:3,weaponSkill:6}}),
-    W("Tsuchigumo Clan", 1, {lands:["Minor Land / Other Country"], village:"Tsuchigumo Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:5,chakraControl:5,ninjutsu:8,taijutsu:3,genjutsu:3,speed:3,strength:3,durability:4,intelligence:5,battleIQ:6,stamina:6,sensory:4,willpower:7,stealth:4,weaponSkill:2}}),
-    W("Uchiha Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Sharingan", dojutsu:"Sharingan", hiden:null, hasBloodline:true, mods:{chakraQuantity:6,chakraControl:8,ninjutsu:9,taijutsu:6,genjutsu:9,speed:6,strength:3,durability:4,intelligence:8,battleIQ:9,stamina:5,sensory:6,willpower:8,stealth:5,weaponSkill:5}}),
-    W("Uzumaki Clan", 1, {lands:["Land of Water"], village:"Uzushiogakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:10,chakraControl:5,ninjutsu:6,taijutsu:3,genjutsu:2,speed:2,strength:4,durability:9,intelligence:7,battleIQ:7,stamina:10,sensory:4,willpower:10,stealth:2,weaponSkill:2}}),
-    W("Wagarashi Family", 1, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:2,ninjutsu:2,taijutsu:1,genjutsu:1,speed:2,durability:1,intelligence:5,battleIQ:4,stamina:2,sensory:1,willpower:3,stealth:4,weaponSkill:2}}),
-    W("Wasabi Family", 1, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:3,taijutsu:4,speed:9,strength:2,durability:2,intelligence:2,battleIQ:5,stamina:5,sensory:2,willpower:5,stealth:4,weaponSkill:2}}),
-    W("Yamanaka Clan", 1, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:8,ninjutsu:7,taijutsu:-2,genjutsu:8,speed:2,strength:-2,durability:1,intelligence:9,battleIQ:8,stamina:3,sensory:6,willpower:8,stealth:5,weaponSkill:1}}),
-    W("Yoimura Clan", 1, {lands:["Minor Land / Other Country"], village:"Daidai Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:3,taijutsu:2,genjutsu:2,speed:4,strength:1,durability:2,intelligence:4,battleIQ:4,stamina:3,sensory:3,willpower:4,stealth:4,weaponSkill:3}}),
-    W("Yotsuki Clan", 1, {lands:["Land of Lightning"], village:"Kumogakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:5,chakraControl:2,ninjutsu:4,taijutsu:9,genjutsu:-2,speed:10,strength:9,durability:8,intelligence:2,battleIQ:9,stamina:9,sensory:2,willpower:9,stealth:2,weaponSkill:3}}),
-    W("Yuki Clan", 1, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Ice Release", dojutsu:null, hiden:"Ice Release", hasBloodline:true, mods:{chakraQuantity:5,chakraControl:7,ninjutsu:9,taijutsu:2,genjutsu:4,speed:5,strength:1,durability:3,intelligence:6,battleIQ:7,stamina:5,sensory:6,willpower:7,stealth:5,weaponSkill:2}}),
+    W("Aburame Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:5,taijutsu:2,genjutsu:2,speed:1,strength:2,durability:2,intelligence:5,battleIQ:5,stamina:4,sensory:8,willpower:5,stealth:7,weaponSkill:1}}),
+    W("Akimichi Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:6,chakraControl:-1,ninjutsu:1,taijutsu:6,genjutsu:-3,speed:5,strength:10,durability:9,intelligence:-1,battleIQ:5,stamina:9,sensory:-1,willpower:7,stealth:-4,weaponSkill:1}}),
+    W("Amagiri Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:3,ninjutsu:4,taijutsu:1,genjutsu:1,speed:3,durability:1,intelligence:3,battleIQ:3,stamina:2,sensory:2,willpower:3,stealth:3,weaponSkill:2}}),
+    W("Chinoike Clan", 2, {lands:["Land of Lightning", "Minor Land / Other Country"], village:"Independent Settlement", bloodline:"Ketsury\u016bgan", dojutsu:"Ketsury\u016bgan", hiden:null, hasBloodline:true, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:6,taijutsu:1,genjutsu:8,speed:2,strength:1,durability:3,intelligence:4,battleIQ:6,stamina:4,sensory:5,willpower:7,stealth:3}}),
+    W("Funato Clan", 2, {lands:["Land of Water"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:1,ninjutsu:3,taijutsu:5,genjutsu:-2,speed:4,strength:5,durability:6,intelligence:1,battleIQ:5,stamina:8,sensory:2,willpower:7,stealth:1,weaponSkill:-5}}),
+    W("F\u016bma Clan (Land of Sound)", 2, {lands:["Land of Fire"], village:"Land of Sound", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:1,ninjutsu:4,taijutsu:5,speed:7,strength:2,durability:2,intelligence:2,battleIQ:6,stamina:4,sensory:1,willpower:4,stealth:6,weaponSkill:10}}),
+    W("Hatake Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:7,taijutsu:7,genjutsu:2,speed:7,strength:4,durability:4,intelligence:8,battleIQ:10,stamina:6,sensory:5,willpower:7,stealth:7,weaponSkill:8}}),
+    W("Hirasaka Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:2,genjutsu:3,speed:6,strength:1,durability:2,intelligence:6,battleIQ:7,stamina:4,sensory:4,willpower:5,stealth:5,weaponSkill:3}}),
+    W("Hoshigaki Clan", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Shark-person", dojutsu:null, hiden:"Shark-person", hasBloodline:true, mods:{chakraQuantity:7,chakraControl:-1,ninjutsu:3,taijutsu:8,genjutsu:-4,speed:4,strength:8,durability:10,intelligence:6,battleIQ:8,stamina:10,sensory:2,willpower:9,stealth:-2,weaponSkill:3}}),
+    W("Hy\u016bga Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Byakugan", dojutsu:"Byakugan", hiden:null, hasBloodline:true, mods:{chakraQuantity:3,chakraControl:9,ninjutsu:7,taijutsu:9,genjutsu:1,speed:6,strength:5,durability:3,intelligence:7,battleIQ:9,stamina:5,sensory:10,willpower:7,stealth:5,weaponSkill:2}}),
+    W("H\u014dki Family", 2, {lands:["Land of Wind"], village:"Sunagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:1,intelligence:7,battleIQ:8,stamina:3,sensory:4,willpower:4,stealth:6,weaponSkill:4}}),
+    W("H\u014dzuki Clan", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Hydrification Technique", dojutsu:null, hiden:"Hydrification Technique", hasBloodline:true, mods:{chakraQuantity:6,chakraControl:4,ninjutsu:7,taijutsu:5,genjutsu:-2,speed:7,strength:5,durability:8,intelligence:3,battleIQ:6,stamina:7,sensory:2,willpower:6,stealth:2,weaponSkill:3}}),
+    W("Iburi Clan", 2, {lands:["Land of Fire"], village:"Independent Settlement", bloodline:"Smoke-Body", dojutsu:null, hiden:"Smoke-Body", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:7,taijutsu:-1,genjutsu:3,speed:5,strength:-2,durability:3,intelligence:4,battleIQ:4,stamina:4,sensory:3,willpower:5,stealth:9}}),
+    W("Inuzuka Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Has a dog", dojutsu:null, hiden:"Has a dog", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:2,ninjutsu:3,taijutsu:7,genjutsu:-2,speed:8,strength:5,durability:5,intelligence:2,battleIQ:7,stamina:7,sensory:10,willpower:7,stealth:5,weaponSkill:1}}),
+    W("Izuno Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:1,genjutsu:2,speed:3,durability:1,intelligence:4,battleIQ:4,stamina:3,sensory:3,willpower:3,stealth:3,weaponSkill:2}}),
+    W("Kagetsu Family", 2, {lands:["Land of Fire"], village:"Motoyoshi Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:4,ninjutsu:3,taijutsu:2,genjutsu:5,speed:2,strength:-1,durability:1,intelligence:6,battleIQ:5,stamina:3,sensory:3,willpower:5,stealth:5,weaponSkill:1}}),
+    W("Kamizuru Clan", 2, {lands:["Land of Earth"], village:"Iwagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:4,ninjutsu:6,taijutsu:3,genjutsu:1,speed:3,strength:2,durability:3,intelligence:4,battleIQ:5,stamina:5,sensory:7,willpower:5,stealth:4,weaponSkill:2}}),
+    W("Karatachi Family", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:2,ninjutsu:5,taijutsu:5,genjutsu:-1,speed:4,strength:4,durability:5,intelligence:3,battleIQ:6,stamina:7,sensory:2,willpower:7,stealth:1,weaponSkill:3}}),
+    W("Kazekage Clan", 2, {lands:["Land of Wind"], village:"Sunagakure", bloodline:"Sand Manipulation", dojutsu:null, hiden:"Sand Manipulation", hasBloodline:true, mods:{chakraQuantity:5,chakraControl:6,ninjutsu:9,taijutsu:2,genjutsu:4,speed:3,strength:2,durability:3,intelligence:7,battleIQ:8,stamina:5,sensory:6,willpower:7,stealth:4,weaponSkill:3}}),
+    W("Ked\u014din Clan", 2, {lands:["Minor Land / Other Country"], village:"Land of Fire", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:5,ninjutsu:5,taijutsu:1,genjutsu:6,speed:2,strength:-1,durability:1,intelligence:6,battleIQ:6,stamina:3,sensory:3,willpower:5,stealth:5,weaponSkill:1}}),
+    W("Kodon Clan", 2, {lands:["Minor Land / Other Country"], village:"Howling Wolf Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:2,intelligence:4,battleIQ:4,stamina:3,sensory:2,willpower:4,stealth:3,weaponSkill:2}}),
+    W("Kohaku Clan", 2, {lands:["Land of Fire"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:4,taijutsu:3,genjutsu:1,speed:3,strength:2,durability:2,intelligence:4,battleIQ:5,stamina:4,sensory:3,willpower:5,stealth:3,weaponSkill:2}}),
+    W("Kumanoi Clan", 2, {lands:["Minor Land / Other Country"], village:"Howling Wolf Village", bloodline:"Medical-Proficiency", dojutsu:null, hiden:"Medical-Proficiency", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:4,taijutsu:5,genjutsu:-1,speed:4,strength:5,durability:5,intelligence:2,battleIQ:5,stamina:6,sensory:2,willpower:6,stealth:2,weaponSkill:2}}),
+    W("Kurama Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Genjutsu is Real", dojutsu:null, hiden:"Genjutsu is Real", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:7,ninjutsu:6,taijutsu:-2,genjutsu:10,speed:2,strength:-4,durability:1,intelligence:9,battleIQ:7,stamina:2,sensory:4,willpower:8,stealth:4,weaponSkill:-1}}),
+    W("Lee Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:-3,chakraControl:3,ninjutsu:-1,taijutsu:10,genjutsu:-8,speed:9,strength:8,durability:8,intelligence:2,battleIQ:9,stamina:9,sensory:-2,willpower:8,stealth:4,weaponSkill:2}}),
+    W("Nara Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Shadow-Manipulation", dojutsu:null, hiden:"Shadow-Manipulation", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:6,ninjutsu:6,taijutsu:-3,genjutsu:5,speed:-2,strength:-3,durability:1,intelligence:10,battleIQ:10,stamina:3,sensory:4,willpower:6,stealth:5,weaponSkill:1}}),
+    W("Onikuma Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Possession", dojutsu:null, hiden:"Possession", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:2,ninjutsu:2,taijutsu:7,genjutsu:-3,speed:2,strength:9,durability:8,intelligence:1,battleIQ:6,stamina:8,sensory:1,willpower:8,stealth:-1,weaponSkill:1}}),
+    W("Ry\u016b Clan", 2, {lands:["Minor Land / Other Country"], village:"Mount Koryu", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:4,genjutsu:2,speed:5,strength:3,durability:3,intelligence:4,battleIQ:5,stamina:5,sensory:3,willpower:5,stealth:4,weaponSkill:3}}),
+    W("Sarutobi Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:6,chakraControl:7,ninjutsu:8,taijutsu:6,genjutsu:5,speed:5,strength:4,durability:5,intelligence:8,battleIQ:9,stamina:6,sensory:4,willpower:8,stealth:5,weaponSkill:6}}),
+    W("Send\u014d Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:4,taijutsu:4,genjutsu:1,speed:4,strength:4,durability:4,intelligence:3,battleIQ:5,stamina:5,sensory:2,willpower:5,stealth:3,weaponSkill:3}}),
+    W("Senju Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:10,chakraControl:7,ninjutsu:8,taijutsu:7,genjutsu:3,speed:5,strength:6,durability:9,intelligence:8,battleIQ:9,stamina:10,sensory:5,willpower:10,stealth:3,weaponSkill:4}}),
+    W("Shiin Clan", 2, {lands:["Minor Land / Other Country"], village:"Land of Rice Fields, Land of Sound", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:4,ninjutsu:4,taijutsu:1,genjutsu:6,speed:3,strength:-1,durability:1,intelligence:7,battleIQ:6,stamina:3,sensory:3,willpower:5,stealth:6,weaponSkill:1}}),
+    W("Shimura Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:7,taijutsu:5,genjutsu:4,speed:5,strength:3,durability:4,intelligence:7,battleIQ:8,stamina:5,sensory:4,willpower:9,stealth:6,weaponSkill:5}}),
+    W("Shirogane Clan", 2, {lands:["Land of Wind"], village:"Sunagakure", bloodline:"Puppet-Master", dojutsu:null, hiden:"Puppet-Master", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:2,intelligence:6,battleIQ:5,stamina:4,sensory:4,willpower:5,stealth:5,weaponSkill:7}}),
+    W("Taketori Clan", 2, {lands:["Minor Land / Other Country"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:4,taijutsu:4,genjutsu:2,speed:3,strength:4,durability:4,intelligence:4,battleIQ:5,stamina:5,sensory:3,willpower:6,stealth:3,weaponSkill:6}}),
+    W("Tenr\u014d Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:3,taijutsu:8,genjutsu:-2,speed:7,strength:7,durability:7,intelligence:1,battleIQ:7,stamina:8,sensory:7,willpower:8,stealth:3,weaponSkill:6}}),
+    W("Tsuchigumo Clan", 2, {lands:["Minor Land / Other Country"], village:"Tsuchigumo Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:5,chakraControl:5,ninjutsu:8,taijutsu:3,genjutsu:3,speed:3,strength:3,durability:4,intelligence:5,battleIQ:6,stamina:6,sensory:4,willpower:7,stealth:4,weaponSkill:2}}),
+    W("Uchiha Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Sharingan", dojutsu:"Sharingan", hiden:null, hasBloodline:true, mods:{chakraQuantity:6,chakraControl:8,ninjutsu:9,taijutsu:6,genjutsu:9,speed:6,strength:3,durability:4,intelligence:8,battleIQ:9,stamina:5,sensory:6,willpower:8,stealth:5,weaponSkill:5}}),
+    W("Uzumaki Clan", 2, {lands:["Land of Water"], village:"Uzushiogakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:10,chakraControl:5,ninjutsu:6,taijutsu:3,genjutsu:2,speed:2,strength:4,durability:9,intelligence:7,battleIQ:7,stamina:10,sensory:4,willpower:10,stealth:2,weaponSkill:2}}),
+    W("Wagarashi Family", 2, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:2,ninjutsu:2,taijutsu:1,genjutsu:1,speed:2,durability:1,intelligence:5,battleIQ:4,stamina:2,sensory:1,willpower:3,stealth:4,weaponSkill:2}}),
+    W("Wasabi Family", 2, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:3,taijutsu:4,speed:9,strength:2,durability:2,intelligence:2,battleIQ:5,stamina:5,sensory:2,willpower:5,stealth:4,weaponSkill:2}}),
+    W("Yamanaka Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:8,ninjutsu:7,taijutsu:-2,genjutsu:8,speed:2,strength:-2,durability:1,intelligence:9,battleIQ:8,stamina:3,sensory:6,willpower:8,stealth:5,weaponSkill:1}}),
+    W("Yoimura Clan", 2, {lands:["Minor Land / Other Country"], village:"Daidai Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:3,taijutsu:2,genjutsu:2,speed:4,strength:1,durability:2,intelligence:4,battleIQ:4,stamina:3,sensory:3,willpower:4,stealth:4,weaponSkill:3}}),
+    W("Yotsuki Clan", 2, {lands:["Land of Lightning"], village:"Kumogakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:5,chakraControl:2,ninjutsu:4,taijutsu:9,genjutsu:-2,speed:10,strength:9,durability:8,intelligence:2,battleIQ:9,stamina:9,sensory:2,willpower:9,stealth:2,weaponSkill:3}}),
+    W("Yuki Clan", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Ice Release", dojutsu:null, hiden:"Ice Release", hasBloodline:true, mods:{chakraQuantity:5,chakraControl:7,ninjutsu:9,taijutsu:2,genjutsu:4,speed:5,strength:1,durability:3,intelligence:6,battleIQ:7,stamina:5,sensory:6,willpower:7,stealth:5,weaponSkill:2}}),
   ],
 
   natureCount:[
@@ -770,16 +791,16 @@ const DATA = {
   ],
 
   exceptional:[
-    W("None",95),W("Exceptional Chakra Reserves",0.5,{mods:{chakraQuantity:15}}),
-    W("Exceptional Chakra Control",0.5,{mods:{chakraControl:15}}),
-    W("Exceptional Strength",0.5,{mods:{strength:15}}),
-    W("Exceptional Speed",0.5,{mods:{speed:15}}),
-    W("Exceptional Intelligence",0.5,{mods:{intelligence:15}}),
-    W("Exceptional Sensory Ability",0.5,{mods:{sensory:15}}),
-    W("Healing Factor",0.5,{mods:{durability:10,stamina:8}}),
-    W("Enhanced Senses",0.5,{mods:{sensory:10}}),
-    W("High Resistance",0.5,{mods:{durability:10}}),
-    W("Unique Physiology",0.5,{mods:{stamina:8}})
+    W("None",90),W("Exceptional Chakra Reserves",1,{mods:{chakraQuantity:15}}),
+    W("Exceptional Chakra Control",1,{mods:{chakraControl:15}}),
+    W("Exceptional Strength",1,{mods:{strength:15}}),
+    W("Exceptional Speed",1,{mods:{speed:15}}),
+    W("Exceptional Intelligence",1,{mods:{intelligence:15}}),
+    W("Exceptional Sensory Ability",1,{mods:{sensory:15}}),
+    W("Healing Factor",1,{mods:{durability:10,stamina:8}}),
+    W("Enhanced Senses",1,{mods:{sensory:10}}),
+    W("High Resistance",1,{mods:{durability:10}}),
+    W("Unique Physiology",1,{mods:{stamina:8}})
   ],
 
   forbidden:[
@@ -912,9 +933,9 @@ function legalBloodlines(c){
   if((c.natureIds||[]).length<2 && !DATA.bloodlines.some(b=>b.clans?.includes(c.clan))) return null;
   const pool=eligible.filter(b=>(Number(b.weight)||0)>0);
   if(!pool.length) return null;
-  /* Same odds as the bloodline wheel: ~85% None, ~15% split among eligible. */
+  /* Same odds as the bloodline wheel: ~55% None, ~45% split among eligible. */
   const sum=pool.reduce((s,b)=>s+(Number(b.weight)||1),0)||1;
-  const weighted=[{name:"None",weight:85}, ...pool.map(b=>W(b.name, ((Number(b.weight)||1)/sum)*15))];
+  const weighted=[{name:"None",weight:55}, ...pool.map(b=>W(b.name, ((Number(b.weight)||1)/sum)*45))];
   const chosen=rollWeighted(weighted);
   if(!chosen || chosen.name==="None") return null;
   return pool.find(b=>b.name===chosen.name)||eligible.find(b=>b.name===chosen.name)||null;
@@ -1022,13 +1043,17 @@ function hasAccess(c,cat){
   return true;
 }
 function rollCombat(c,exclude=[]){
+  /* Puppet-class tools force Primary = Puppetry (secondary still rolls normally). */
+  if(!exclude.length && characterHasPuppetTool(c)){
+    return {name:"Puppetry", weight:1};
+  }
   const eligible=DATA.primaryCombat.filter(x=>!exclude.includes(x.name)).filter(x=>{
     if(x.name==="Dōjutsu"&&!hasAccess(c,"Dōjutsu"))return false;
-    if(x.name==="Puppetry"&&c.weapon==="Puppet")return true;
-    if(x.name==="Puppetry"&&c.weapon!=="Puppet")return Math.random()<0.25;
+    if(x.name==="Puppetry"&&characterHasPuppetTool(c))return true;
+    if(x.name==="Puppetry"&&!characterHasPuppetTool(c))return Math.random()<0.25;
     return true;
   });
-  return rollWeighted(eligible);
+  return rollWeighted(eligible.length?eligible:DATA.primaryCombat);
 }
 function goalFor(c){
   let pool=DATA.motivation.slice();
@@ -2964,6 +2989,27 @@ function renderCanonTables(){
 }
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
 
+function isPuppetRelatedJutsu(t){
+  const name=String(t.name||t.technique||(t.meta&&t.meta.name)||"").toLowerCase();
+  const cls=String((t.meta&&t.meta.classification)||t.classification||"").toLowerCase();
+  const req=String((t.meta&&t.meta.requiredWeapon)||t.requiredWeapon||"").toLowerCase();
+  const reqSum=String((t.meta&&t.meta.requiredSummon)||t.requiredSummon||"").toLowerCase();
+  return /puppet/.test(cls) || /puppet/.test(name) || /puppet/.test(req) || /puppet/.test(reqSum);
+}
+const FALLBACK_PUPPET_TECHNIQUES=[
+  {name:"Puppet Technique",classification:"Puppet Techniques",requiredWeapon:"Puppet"},
+  {name:"Black Secret Technique Machine One Shot",classification:"Puppet Techniques",requiredWeapon:"Puppet"},
+  {name:"Black Secret Technique: Salamander",classification:"Puppet Techniques",requiredWeapon:"Puppet"},
+  {name:"Chakra Threads",classification:"Puppet Techniques",requiredWeapon:"Puppet"},
+  {name:"Human Puppet Technique",classification:"Puppet Techniques",requiredWeapon:"Puppet"}
+];
+const FALLBACK_GENERAL_TECHNIQUES=[
+  {name:"Body Flicker Technique",classification:"Ninjutsu"},
+  {name:"Clone Technique",classification:"Clone Techniques"},
+  {name:"Transformation Technique",classification:"Ninjutsu"},
+  {name:"Substitution Technique",classification:"Ninjutsu"},
+  {name:"Fire Release: Great Fireball Technique",classification:"Ninjutsu",chakraNature:"Fire Release"}
+];
 function eligibleSignaturePool(c){
   // Exclusive local catalogue — never depends on Narutopedia load.
   // Cache on the character so wheel UI does not re-filter ~1000 entries every frame.
@@ -2979,35 +3025,55 @@ function eligibleSignaturePool(c){
         if(canonicalTechniqueEligible(t, c||{})) out.push(t);
       }catch(_e){ /* skip broken entry */ }
     }
-    if(c) c._sigPoolCache = out;
-    return out;
+    // Puppet users: restrict to puppet-related techniques when any exist
+    let final=out;
+    if(characterHasPuppetTool(c||{})){
+      const pup=out.filter(isPuppetRelatedJutsu);
+      final=pup.length?pup:FALLBACK_PUPPET_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true}));
+    }
+    // Never empty — every ninja gets a signature/specialty option
+    if(!final.length){
+      final=FALLBACK_GENERAL_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true}));
+    }
+    if(c) c._sigPoolCache = final;
+    return final;
   }catch(e){
     console.warn("eligibleSignaturePool failed", e);
-    return [];
+    return FALLBACK_GENERAL_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true}));
   }
 }
 
 function rollSignatureTechnique(c){
+  c._sigPoolCache=null; // refresh for current combat/weapon state
   const pool=eligibleSignaturePool(c);
-  if(!pool.length) return {name:"None", classification:""};
+  if(!pool.length){
+    const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];
+    return {name:fb.name, classification:fb.classification||"", meta:fb};
+  }
   let preferred = pool;
   try{
-    const pri = (c.primary||"").toLowerCase();
-    const sec = (c.secondary||"").toLowerCase();
-    const scored = pool.filter(t=>{
-      const cls = ((t.meta&&t.meta.classification)||t.classification||"").toLowerCase();
-      if((pri.includes("dōjutsu")||pri.includes("dojutsu")||sec.includes("dōjutsu")) && cls.includes("dōjutsu")) return true;
-      if((pri.includes("kekkei")||sec.includes("kekkei")) && (cls.includes("kekkei")|| (t.meta&&t.meta.requiredKekkeiGenkai))) return true;
-      if((pri.includes("taijutsu")||sec.includes("taijutsu")) && cls.includes("taijutsu")) return true;
-      if((pri.includes("genjutsu")||sec.includes("genjutsu")) && cls.includes("genjutsu")) return true;
-      if((pri.includes("bukijutsu")||sec.includes("weapon")||pri.includes("kenjutsu")) && (cls.includes("bukijutsu")||cls.includes("kenjutsu"))) return true;
-      if((pri.includes("ninjutsu")||sec.includes("ninjutsu")) && cls.includes("ninjutsu")) return true;
-      return false;
-    });
-    if(scored.length) preferred = scored;
+    if(characterHasPuppetTool(c)){
+      const pup=pool.filter(isPuppetRelatedJutsu);
+      if(pup.length) preferred=pup;
+    }else{
+      const pri = (c.primary||"").toLowerCase();
+      const sec = (c.secondary||"").toLowerCase();
+      const scored = pool.filter(t=>{
+        const cls = ((t.meta&&t.meta.classification)||t.classification||"").toLowerCase();
+        if((pri.includes("puppet")) && (cls.includes("puppet")||isPuppetRelatedJutsu(t))) return true;
+        if((pri.includes("dōjutsu")||pri.includes("dojutsu")||sec.includes("dōjutsu")) && cls.includes("dōjutsu")) return true;
+        if((pri.includes("kekkei")||sec.includes("kekkei")) && (cls.includes("kekkei")|| (t.meta&&t.meta.requiredKekkeiGenkai))) return true;
+        if((pri.includes("taijutsu")||sec.includes("taijutsu")) && cls.includes("taijutsu")) return true;
+        if((pri.includes("genjutsu")||sec.includes("genjutsu")) && cls.includes("genjutsu")) return true;
+        if((pri.includes("bukijutsu")||sec.includes("weapon")||pri.includes("kenjutsu")) && (cls.includes("bukijutsu")||cls.includes("kenjutsu"))) return true;
+        if((pri.includes("ninjutsu")||sec.includes("ninjutsu")) && cls.includes("ninjutsu")) return true;
+        return false;
+      });
+      if(scored.length) preferred = scored;
+    }
   }catch(_e){}
   const pick = preferred[Math.floor(Math.random()*preferred.length)];
-  const name = pick.name || (pick.meta&&pick.meta.name) || "None";
+  const name = pick.name || (pick.meta&&pick.meta.name) || FALLBACK_GENERAL_TECHNIQUES[0].name;
   return {name, meta:pick.meta||pick, classification:(pick.meta&&pick.meta.classification)||pick.classification||""};
 }
 function addSignatureToCharacter(c){
@@ -3015,9 +3081,10 @@ function addSignatureToCharacter(c){
     c.signatureTechnique=rollSignatureTechnique(c);
   }catch(e){
     console.warn(e);
-    c.signatureTechnique={name:"None"};
+    const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];
+    c.signatureTechnique={name:fb.name, classification:fb.classification||""};
   }
-  logLine("Signature technique: "+(c.signatureTechnique?.name||"None (no eligible entry in local catalogue)"));
+  logLine("Signature technique: "+(c.signatureTechnique?.name||"Unknown"));
 }
 
 /* A named, canon-oriented weapons/tools registry used immediately by the
@@ -3312,7 +3379,10 @@ function getWheelSegments(){
   if(!s) return [];
   const c=interactive.c||{};
   let options=[];
-  try{
+  // Admin predetermined result: single-wedge wheel so the spin lands on the forced value
+  if(typeof DEBUG_FORCED!=='undefined' && DEBUG_FORCED && DEBUG_FORCED[s.key]!=null){
+    options=[{name:String(DEBUG_FORCED[s.key]), weight:1}];
+  } else try{
     if(s.key==='land') options=DATA.lands||[];
     else if(s.key==='minorLand') options=DATA.minorLands||[];
     else if(s.key==='village'){ const vKey=c.land==='Other'?'Other':c.land; options=DATA.villages[vKey]||DATA.villages['Other']||[]; }
@@ -3333,17 +3403,18 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='specialty_jutsu' || s.key==='signature'){
+      c._sigPoolCache=null;
       const pool=eligibleSignaturePool(c);
-      if(!pool.length) options=[{name:"None (no eligible local techniques)",weight:1}];
-      else {
-        let names=pool.map(x=>x.name||(x.meta&&x.meta.name)||"?");
-        if(names.length>24){
-          const shuffled=names.slice();
-          for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
-          names=shuffled.slice(0,24);
-        }
-        options=names.map(n=>({name:n,weight:1}));
+      let names=pool.map(x=>x.name||(x.meta&&x.meta.name)||"?").filter(n=>n && n!=="None");
+      if(!names.length){
+        names=(characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES).map(x=>x.name);
       }
+      if(names.length>24){
+        const shuffled=names.slice();
+        for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+        names=shuffled.slice(0,24);
+      }
+      options=names.map(n=>({name:n,weight:1}));
     }
     else if(s.key==='dojutsu'){
       // Same weighted pool as the actual roll so the wheel odds match the result
@@ -3359,7 +3430,13 @@ function getWheelSegments(){
       if(c.senjutsu && c.senjutsu!=='None' || c._summoningForcedBySage) options=[{name:"Yes",weight:1}];
       else options=DATA.summoning||[];
     }
-    else if(s.key==='primary'||s.key==='secondary') options=DATA.primaryCombat||[];
+    else if(s.key==='primary'){
+      if(characterHasPuppetTool(c)) options=[{name:"Puppetry",weight:1}];
+      else options=DATA.primaryCombat||[];
+    }
+    else if(s.key==='secondary'){
+      options=(DATA.primaryCombat||[]).filter(x=>x.name!==(c.primary||""));
+    }
     else if(s.key==='forbiddenTechnique'){
       const list=DATA.forbiddenTechniques||[];
       options=list.length>24 ? list.slice(0,24) : list;
@@ -3385,7 +3462,7 @@ function getWheelSegments(){
     else if(s.key==='spaceTime') options=[{name:"No",weight:95},{name:"Yes",weight:5}];
     else if(s.key==='currentGoal') options=GOAL_POOL||[];
     else if(s.key==='bloodline'){
-      /* Match legalBloodlines: ~85% None, remaining shared among eligible bloodlines */
+      /* Match legalBloodlines: ~55% None, remaining shared among eligible bloodlines */
       const eligible=(DATA.bloodlines||[]).filter(b=>{
         if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
         if(b.clans?.length && !b.clans.includes(c.clan)) return false;
@@ -3393,8 +3470,8 @@ function getWheelSegments(){
         return (Number(b.weight)||0)>0;
       });
       const sum=eligible.reduce((s,b)=>s+(Number(b.weight)||1),0)||1;
-      options=[{name:"None",weight:85}];
-      eligible.forEach(b=>options.push({name:b.name, weight:((Number(b.weight)||1)/sum)*15}));
+      options=[{name:"None",weight:55}];
+      eligible.forEach(b=>options.push({name:b.name, weight:((Number(b.weight)||1)/sum)*45}));
     }
     else if(s.key==='beast') options=DATA.beasts||[];
     else if(s.key==='relationship') options=DATA.relationships||[];
@@ -3652,6 +3729,13 @@ const SIGNATURE_TECHNIQUES = {
 };
 function rollSpecialtyJutsu(c){
   const style=specialtyStyleFor(c);
+  // Puppet users must get a puppet-related specialty
+  if(characterHasPuppetTool(c)){
+    const pup=(LOCAL_JUTSU_CATALOG||[]).filter(j=>localJutsuEligible(j,c) && isPuppetRelatedJutsu(j));
+    const pool=pup.length?pup:FALLBACK_PUPPET_TECHNIQUES;
+    const x=pool[Math.floor(Math.random()*pool.length)];
+    return {name:x.name,style:"Puppetry",meta:x};
+  }
   // Prefer local catalogue matches by nature / KG / eligibility
   const local = (LOCAL_JUTSU_CATALOG||[]).filter(j=>{
     if(!localJutsuEligible(j, c)) return false;
@@ -3659,7 +3743,6 @@ function rollSpecialtyJutsu(c){
     const kg = normalizedStyleName(j.requiredKekkeiGenkai||"");
     if(nature && nature===style) return true;
     if(kg && kg===style) return true;
-    // Also allow classification soft match
     if(!j.chakraNature && !j.requiredKekkeiGenkai){
       const cls=(j.classification||"").toLowerCase();
       if(style.toLowerCase().includes("taijutsu") && cls.includes("taijutsu")) return true;
@@ -3675,7 +3758,10 @@ function rollSpecialtyJutsu(c){
     return nature===style || kg===style;
   });
   const pool=meta.length?meta:(SIGNATURE_TECHNIQUES[style]||[]).map(technique=>({technique}));
-  if(!pool.length) return {name:"No matching technique in local catalogue",style};
+  if(!pool.length){
+    const fb=FALLBACK_GENERAL_TECHNIQUES[Math.floor(Math.random()*FALLBACK_GENERAL_TECHNIQUES.length)];
+    return {name:fb.name,style,meta:fb};
+  }
   const x=pool[Math.floor(Math.random()*pool.length)];
   return {name:x.technique||x.name,style};
 }
@@ -3702,7 +3788,7 @@ function baseSteps(){
     c.dojutsuData=d?DATA.dojutsu.find(x=>x.name===d)||{name:d,mods:{}}:null;
     return c.dojutsu;
   });
-  step('specialty_jutsu','Specialty Jutsu','Roll a preferred specialized ninjutsu from the character’s chakra style or accessible Kekkei Genkai.',c=>{
+  step('specialty_jutsu','Specialty Jutsu','Every ninja receives a specialty technique. Puppet users are restricted to puppet-related techniques.',c=>{
     c.specialtyJutsu=rollSpecialtyJutsu(c);
     return c.specialtyJutsu.name;
   });
@@ -3717,17 +3803,17 @@ function baseSteps(){
     c.summoning=rollWeighted(DATA.summoning).name;
     return c.summoning;
   });
-  step('primary','Primary Combat Specialization','Eligibility is conditioned on prior dōjutsu, weapon, summoning and other results.',c=>{c.primary=rollCombat(c).name;return c.primary});
+  step('primary','Primary Combat Specialization','Puppet-class tools always force Primary = Puppetry. Otherwise eligibility is conditioned on prior results.',c=>{c.primary=rollCombat(c).name;return c.primary});
   step('secondary','Secondary Combat Specialization','The primary specialization is removed from the secondary pool.',c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary});
   step('moral','Moral Alignment','A neutral descriptive alignment wheel.',c=>{c.moral=rollWeighted(DATA.moral).name;return c.moral});
   step('motivation','Motivation','This describes what drives the character; it is separate from the concrete current goal.',c=>{c.motivation=goalFor(c).name;return c.motivation});
-  step('exceptional','Exceptional Trait','Rare exceptional traits are heavily outweighted by None.',c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional});
+  step('exceptional','Exceptional Trait','Each named trait is 1%; None is 90%.',c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional});
   step('forbidden','Forbidden Technique Access','If Yes, a named canon forbidden technique is rolled next.',c=>{c.forbidden=rollWeighted(DATA.forbidden).name;return c.forbidden});
   step('legendary','Legendary Heritage','Distant legendary lineage is kept separate from direct Ōtsutsuki heritage.',c=>{c.legendary=rollWeighted(DATA.legendaryHeritage).name;return c.legendary});
   step('sixPaths','Six Paths Connection','A rare connection roll with prerequisite-aware downstream checks.',c=>{c.sixPaths=rollWeighted(DATA.sixPaths).name;return c.sixPaths});
   step('otsutsuki','Ōtsutsuki Heritage','The final lineage layer can unlock additional downstream eligibility.',c=>{c.otsutsuki=rollWeighted(DATA.otsutsuki).name;return c.otsutsuki});
   /* Space-Time Ninjutsu is inserted only when eligible (see addConditionalSteps). No "Skipped" wedge on the wheel. */
-  step('signature','Signature Ability / Technique','Uses the offline local jutsu catalogue with clan / dōjutsu / nature / KG / weapon gates.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None'});
+  step('signature','Signature Ability / Technique','Every ninja receives a signature technique (eligibility-gated). Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];c.signatureTechnique={name:fb.name};}return (c.signatureTechnique&&c.signatureTechnique.name)||FALLBACK_GENERAL_TECHNIQUES[0].name});
   step('currentGoal','Current Goal','Concrete aspirations are filtered so already-achieved rank goals are not rolled.',c=>{c.currentGoal=goalForInteractive(c).name;return c.currentGoal});
   return S;
 }
@@ -3746,26 +3832,12 @@ function bloodlineRollEligible(c){
   return true;
 }
 function insertLineageAbilitySteps(){
-  /* Only insert Kekkei Genkai / Bloodline wheels when the character is eligible. */
+  /* Bloodline wheel only when eligible. Kekkei Genkai Access wheel removed — KG still comes via clan/bloodline rolls. */
   const c=interactive.c;
   const extra=[];
-  const eligibleKg=availableKekkeiGenkai(c);
-  if(eligibleKg.length){
-    extra.push({key:'kekkei_genkai',label:'Kekkei Genkai Access',desc:'Rare chance of a nature-compatible Kekkei Genkai when required natures are present (or clan-tied KG).',fn:x=>{
-      const r=rollKekkeiGenkaiAccess(x);
-      x.kekkeiGenkaiAccess=r.access; x.kekkeiGenkai=r.name; x.kekkeiGenkaiEligible=r.eligible;
-      if(r.access==="Yes" && r.name && r.name!=="None"){
-        const bl=DATA.bloodlines.find(b=>b.name===r.name);
-        x.bloodline=r.name;
-        x.bloodlineData=bl||{name:r.name,mods:{}};
-      }
-      return r.access==="Yes" ? `${r.access}: ${r.name}` : r.access;
-    }});
-  } else {
-    c.kekkeiGenkaiAccess='No';
-    c.kekkeiGenkai='None';
-    c.kekkeiGenkaiEligible=[];
-  }
+  c.kekkeiGenkaiAccess=c.kekkeiGenkaiAccess||'No';
+  c.kekkeiGenkai=c.kekkeiGenkai||'None';
+  c.kekkeiGenkaiEligible=c.kekkeiGenkaiEligible||[];
   if(c.clanData?.hasBloodline || c.clanData?.bloodline){
     /* Clan bloodline already applied in applyClanTraits — no wheel. */
     if(!c.bloodline || c.bloodline==='None'){
@@ -3774,7 +3846,7 @@ function insertLineageAbilitySteps(){
       if(c.clanData.hiden) c.hiden=c.clanData.hiden;
     }
   } else if(bloodlineRollEligible(c)){
-    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Eligibility-gated bloodline roll (nature / clan prerequisites). None is common even when eligible.',fn:x=>{
+    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Eligibility-gated bloodline roll (nature / clan prerequisites). ~55% None when eligible.',fn:x=>{
       x.bloodlineData=legalBloodlines(x); x.bloodline=x.bloodlineData?.name||'None'; return x.bloodline;
     }});
   } else if(!c.bloodline || c.bloodline==='None'){
@@ -3889,7 +3961,7 @@ function generateInstantlyFromCurrent(){
       const s=interactive.steps[interactive.index];
       if(!s)break;
       let result;
-      try{ result=s.fn(interactive.c); }
+      try{ result=runStepWithOptionalForce(s, interactive.c); }
       catch(err){ console.warn('Instant step failed:', s.key, err); result='Error — skipped'; }
       try{
         if(s.key==='age'){
@@ -3902,7 +3974,7 @@ function generateInstantlyFromCurrent(){
       }
       catch(_e){ s.display=String(result??'None'); }
       s.done=true;
-      try{ logLine(`${s.label}: ${s.display}`); }catch(_e){}
+      try{ if(!(DEBUG_FORCED&&DEBUG_FORCED[s.key]!=null)) logLine(`${s.label}: ${s.display}`); }catch(_e){}
       if(s.key==='rank' && interactive.c.type==='Missing-nin') s.display=interactive.c.rank;
       try{ addConditionalSteps(); }catch(err){ console.warn('addConditionalSteps', err); }
       interactive.index++;
@@ -3943,16 +4015,19 @@ async function spinCurrentStep(){
     let preSegments=[];
     try{ preSegments=getWheelSegments(); }catch(e){ console.warn('preSegments', e); }
     let result;
-    try{ result=s.fn(interactive.c); }
+    try{ result=runStepWithOptionalForce(s, interactive.c); }
     catch(err){ console.warn('Step failed:', s.key, err); result='Error — skipped'; }
     // Age: wheel segments are brackets (e.g. "18–24"); step returns the bracket name
     // so spinVisual can land on the correct wedge. Overlay/log show exact age too.
     let landOn=String(displayFor(interactive.c,s.key,result)??'None');
     let display=landOn;
-    if(s.key==='age'){
+    if(s.key==='age' && !(DEBUG_FORCED&&DEBUG_FORCED.age!=null)){
       landOn=String(result??interactive.c.ageBand??'');
       const exact=interactive.c.age;
       display=(exact!=null && landOn) ? `${exact} (${landOn})` : String(exact??landOn);
+    } else if(s.key==='age' && DEBUG_FORCED&&DEBUG_FORCED.age!=null){
+      landOn=String(result??interactive.c.ageBand??DEBUG_FORCED.age);
+      display=interactive.c.age!=null ? `${interactive.c.age} (${landOn})` : landOn;
     }
     // Pass preSegments so spinVisual lands exactly on the rolled result
     // (it will inject the result if the pool was sampled / mutated).
@@ -4086,6 +4161,202 @@ function populateDebugWheelSelect(){
   const sel=document.getElementById('debugWheelSelect');
   if(!sel) return;
   sel.innerHTML=DEBUG_WHEEL_CATALOG.map(x=>`<option value="${x.key}">${esc(x.label)} (${x.key})</option>`).join('');
+  const forceSel=document.getElementById('forceWheelSelect');
+  if(forceSel){
+    forceSel.innerHTML=DEBUG_WHEEL_CATALOG.map(x=>`<option value="${x.key}">${esc(x.label)} (${x.key})</option>`).join('');
+    populateForceValueOptions();
+  }
+  renderForcedResultsList();
+}
+
+/* ===== Predetermined / forced wheel results (admin debug) ===== */
+const DEBUG_FORCED = {}; // key -> string value
+function getForceOptionList(key){
+  const c=interactive.c||{};
+  const list=[];
+  const add=(arr)=>{(arr||[]).forEach(x=>{const n=typeof x==='string'?x:(x&&x.name); if(n!=null) list.push(String(n));});};
+  try{
+    if(key==='land') add(DATA.lands);
+    else if(key==='minorLand') add(DATA.minorLands);
+    else if(key==='village'){ const vKey=c.land==='Other'?'Other':(c.land||'Land of Fire'); add(DATA.villages[vKey]||DATA.villages['Other']); }
+    else if(key==='type') add(DATA.characterTypes[c.land==='Land of Iron'?'iron':'normal']);
+    else if(key==='occupation') add(DATA.civilianOccupations);
+    else if(key==='rank') add(c.type==='Missing-nin'?DATA.missingRanks:DATA.ranks);
+    else if(key==='age') add(DATA.ages);
+    else if(key==='clan') add(DATA.clans);
+    else if(key==='weapon') add((DATA.weapons||[]).filter(x=>x.name!=='None'));
+    else if(key==='natureCount') add(DATA.natureCount);
+    else if(/^nature\d+$/.test(key)) add(DATA.natures);
+    else if(key==='bloodline'){ list.push('None'); add(DATA.bloodlines); }
+    else if(key==='dojutsu'){ list.push('None'); add(DATA.dojutsu); }
+    else if(key==='dojutsuEyes') add([{name:'One eye'},{name:'Both eyes'}]);
+    else if(key==='dojutsuStage') add([{name:'1-tomoe Sharingan'},{name:'2-tomoe Sharingan'},{name:'3-tomoe Sharingan'},{name:'Mangekyō Sharingan'},{name:'Eternal Mangekyō Sharingan'},{name:'Rinne Sharingan'}]);
+    else if(key==='senjutsu') add([{name:'None'},{name:'Sage Training Potential'},{name:'Sage Mode'},{name:'Advanced Sage Mode'},{name:'Six Paths Sage Mode'}]);
+    else if(key==='sageType') add(DATA.sageTypes);
+    else if(key==='jinchuriki') add(DATA.jinchuriki);
+    else if(key==='beast') add(DATA.beasts);
+    else if(key==='relationship') add(DATA.relationships);
+    else if(key==='summoning') add(DATA.summoning);
+    else if(key==='summonType') add(DATA.summonTypes);
+    else if(key==='primary'||key==='secondary') add(DATA.primaryCombat);
+    else if(key==='moral') add(DATA.moral);
+    else if(key==='motivation') add(DATA.motivation);
+    else if(key==='exceptional') add(DATA.exceptional);
+    else if(key==='forbidden') add(DATA.forbidden);
+    else if(key==='forbiddenTechnique') add(DATA.forbiddenTechniques);
+    else if(key==='legendary') add(DATA.legendaryHeritage);
+    else if(key==='legendaryTarget') add(DATA.legendaryTargets);
+    else if(key==='sixPaths') add(DATA.sixPaths);
+    else if(key==='sixPathsLevel') add(DATA.sixPathsLevels);
+    else if(key==='otsutsuki') add(DATA.otsutsuki);
+    else if(key==='otsutsukiLevel') add(DATA.otsutsukiLevels);
+    else if(key==='spaceTime') add([{name:'No'},{name:'Yes'}]);
+    else if(key==='currentGoal') add(GOAL_POOL);
+    else if(key==='specialty_jutsu'||key==='signature'){
+      try{ c._sigPoolCache=null; add(eligibleSignaturePool(c)); }catch(e){ add(FALLBACK_GENERAL_TECHNIQUES); }
+    }
+    else list.push('(type a custom value)');
+  }catch(e){ console.warn(e); }
+  // unique preserve order
+  const seen=new Set(); const out=[];
+  for(const n of list){ if(!seen.has(n)){ seen.add(n); out.push(n); } }
+  return out;
+}
+function populateForceValueOptions(){
+  const key=document.getElementById('forceWheelSelect')?.value;
+  const sel=document.getElementById('forceValueSelect');
+  if(!sel||!key) return;
+  const opts=getForceOptionList(key);
+  sel.innerHTML=opts.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('') || '<option value="">(none)</option>';
+  if(DEBUG_FORCED[key]!=null){
+    const v=String(DEBUG_FORCED[key]);
+    if([...sel.options].some(o=>o.value===v)) sel.value=v;
+  }
+}
+function renderForcedResultsList(){
+  const el=document.getElementById('forcedResultsList');
+  if(!el) return;
+  const keys=Object.keys(DEBUG_FORCED);
+  if(!keys.length){ el.textContent='No forced results.'; return; }
+  el.innerHTML='<b style="color:var(--accent)">Active forces:</b> '+keys.map(k=>{
+    const label=(DEBUG_WHEEL_CATALOG.find(x=>x.key===k)||{}).label||k;
+    return `<span class="pill" style="margin:2px">${esc(label)} → <b>${esc(DEBUG_FORCED[k])}</b></span>`;
+  }).join(' ');
+}
+function debugSetForcedResult(){
+  const key=document.getElementById('forceWheelSelect')?.value;
+  if(!key) return;
+  const custom=(document.getElementById('forceValueCustom')?.value||'').trim();
+  const picked=document.getElementById('forceValueSelect')?.value||'';
+  const value=custom||picked;
+  if(!value){ alert('Pick or type a value to force.'); return; }
+  DEBUG_FORCED[key]=value;
+  const customBox=document.getElementById('forceValueCustom'); if(customBox) customBox.value='';
+  renderForcedResultsList();
+  logLine(`Admin force set: ${key} → ${value}`);
+}
+function debugClearForcedResult(){
+  const key=document.getElementById('forceWheelSelect')?.value;
+  if(key && DEBUG_FORCED[key]!=null){ delete DEBUG_FORCED[key]; renderForcedResultsList(); logLine(`Admin force cleared: ${key}`); }
+}
+function debugClearAllForced(){
+  Object.keys(DEBUG_FORCED).forEach(k=>delete DEBUG_FORCED[k]);
+  renderForcedResultsList();
+  logLine('Admin: all forced results cleared.');
+}
+function applyForcedResult(key, value, c){
+  /* Mutate character state to match a predetermined wheel outcome. Returns display string. */
+  const v=String(value);
+  switch(key){
+    case 'land': c.land=v; return v;
+    case 'minorLand': c.minorLand=v; c.land=c.land||'Other'; return v;
+    case 'village': c.village=v; return v;
+    case 'type': c.type=v; return v;
+    case 'occupation': c.occupation=v; c.type=c.type||'Civilian'; return v;
+    case 'rank': c.rank=v; return v;
+    case 'age': {
+      const band=(DATA.ages||[]).find(a=>a.name===v);
+      if(band){ c.ageBand=band.name; c.age=randInt(band.min,band.max); return band.name; }
+      const n=parseInt(v,10); if(!isNaN(n)){ c.age=n; return String(n); }
+      c.ageBand=v; return v;
+    }
+    case 'clan': {
+      const found=(DATA.clans||[]).find(x=>x.name===v)||{name:v,mods:{}};
+      c.clanData=found; c.clan=found.name; applyClanTraits(c); return c.clan;
+    }
+    case 'weapon': {
+      const found=(DATA.weapons||[]).find(x=>x.name===v)||{name:v,isPuppet:false};
+      c.weaponData=found; c.weapon=found.name;
+      c.hasPuppetAccess=!!(found.isPuppet||isPuppetToolName(found.name));
+      return c.weapon+(c.hasPuppetAccess?' (puppet access)':'');
+    }
+    case 'natureCount': {
+      const n=parseInt(v,10); c.natureCount=isNaN(n)?0:n; c.natures=[]; c.natureIds=[]; return c.natureCount;
+    }
+    case 'bloodline': {
+      if(v==='None'){ c.bloodline='None'; c.bloodlineData=null; return 'None'; }
+      const bl=(DATA.bloodlines||[]).find(b=>b.name===v);
+      c.bloodline=v; c.bloodlineData=bl||{name:v,mods:{}}; return v;
+    }
+    case 'dojutsu': {
+      if(v==='None'){ c.dojutsu='None'; c.dojutsuData=null; c.dojutsuSource=null; return 'None'; }
+      c.dojutsu=v; c.dojutsuSource=c.dojutsuSource||'non-clan';
+      c.dojutsuData=(DATA.dojutsu||[]).find(x=>x.name===v)||{name:v,mods:{}}; return v;
+    }
+    case 'dojutsuEyes': c.dojutsuEyes=v; return v;
+    case 'dojutsuStage': {
+      c.dojutsuStage=v;
+      if(v.includes('Rinne')) c.dojutsu='Rinne Sharingan';
+      else if(v.includes('Eternal')) c.dojutsu='Eternal Mangekyō Sharingan';
+      else if(v.includes('Mangekyō')) c.dojutsu='Mangekyō Sharingan';
+      else c.dojutsu=c.dojutsu||'Sharingan';
+      return v;
+    }
+    case 'senjutsu': c.senjutsu=v; if(v!=='None') applySageSummoningLink(c); return v;
+    case 'sageType': c.sageType=v; c.senjutsu=c.senjutsu&&c.senjutsu!=='None'?c.senjutsu:'Sage Mode'; applySageSummoningLink(c); return v;
+    case 'jinchuriki': c.jinchuriki=v; return v;
+    case 'beast': c.beast=v; c.jinchuriki='Yes'; return v;
+    case 'relationship': c.relationship=v; return v;
+    case 'summoning': c.summoning=v; return v;
+    case 'summonType': c.summonType=v; c.summoning='Yes'; return v;
+    case 'primary': c.primary=v; return v;
+    case 'secondary': c.secondary=v; return v;
+    case 'moral': c.moral=v; return v;
+    case 'motivation': c.motivation=v; return v;
+    case 'exceptional': {
+      c.exceptional=v;
+      c.exceptionalData=(DATA.exceptional||[]).find(x=>x.name===v)||{name:v,mods:{}};
+      return v;
+    }
+    case 'forbidden': c.forbidden=v; return v;
+    case 'forbiddenTechnique': c.forbiddenTechnique=v; c.forbidden='Yes'; return v;
+    case 'legendary': c.legendary=v; return v;
+    case 'legendaryTarget': c.legendaryTarget=v; c.legendary='Yes'; return v;
+    case 'sixPaths': c.sixPaths=v; return v;
+    case 'sixPathsLevel': c.sixPathsLevel=v; c.sixPaths='Yes'; return v;
+    case 'otsutsuki': c.otsutsuki=v; return v;
+    case 'otsutsukiLevel': c.otsutsukiLevel=v; c.otsutsuki='Yes'; return v;
+    case 'spaceTime': c.spaceTime=v; return v;
+    case 'currentGoal': c.currentGoal=v; return v;
+    case 'specialty_jutsu': c.specialtyJutsu={name:v,style:'Forced'}; return v;
+    case 'signature': c.signatureTechnique={name:v}; return v;
+    default:
+      if(/^nature\d+$/.test(key)){
+        const nat=(DATA.natures||[]).find(n=>n.name===v)||{name:v,id:String(v).toLowerCase().split(' ')[0]};
+        c.natures=c.natures||[]; c.natureIds=c.natureIds||[];
+        c.natures.push(nat); c.natureIds.push(nat.id); return nat.name;
+      }
+      return v;
+  }
+}
+function runStepWithOptionalForce(s, c){
+  /* If admin forced this wheel, apply that value; otherwise normal step fn. */
+  if(s && s.key && DEBUG_FORCED[s.key]!=null){
+    const display=applyForcedResult(s.key, DEBUG_FORCED[s.key], c);
+    logLine(`(forced) ${s.label}: ${display}`);
+    return display;
+  }
+  return s.fn(c);
 }
 function ensureDebugPrereqs(key,c){
   /* Minimal state so conditional wheels have something sensible to show. */
@@ -4192,10 +4463,10 @@ function debugJumpToWheel(){
     const s=interactive.steps[interactive.index];
     if(s.key===targetKey) break;
     try{
-      const result=s.fn(interactive.c);
+      const result=runStepWithOptionalForce(s, interactive.c);
       s.display=String(displayFor(interactive.c,s.key,result)??result??'—');
       s.done=true;
-      logLine(`${s.label}: ${s.display}`);
+      if(!(DEBUG_FORCED&&DEBUG_FORCED[s.key]!=null)) logLine(`${s.label}: ${s.display}`);
     }catch(err){ console.warn('debug prior step', s.key, err); s.display='(error)'; s.done=true; }
     try{ addConditionalSteps(); }catch(err){ console.warn(err); }
     interactive.index++;
