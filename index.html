@@ -296,6 +296,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       </div>
       <div class="roll-copy"><h3 id="wheelQuestion">Your character is waiting.</h3><p id="wheelDescription">Each piece is rolled separately so you can watch the character take shape.</p><div class="step-actions"><span id="stepHint" class="step-hint">Start a new character to unlock the first wheel.</span></div><label class="spin-preferences"><input type="checkbox" id="skipWheelAnimation"> Skip wheel animations and generate instantly</label></div>
     </div>
+    <div class="admin-debug" id="adminDebugPanel" style="margin-top:16px;padding:14px;background:#111722;border:1px solid var(--line);border-radius:12px">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+        <div style="flex:1;min-width:200px">
+          <label class="small" for="debugWheelSelect" style="display:block;margin-bottom:4px;color:var(--muted)">Admin — jump to a specific wheel (auto-fills prior steps)</label>
+          <select id="debugWheelSelect"></select>
+        </div>
+        <button type="button" class="secondary" onclick="debugJumpToWheel()">Open this wheel</button>
+        <button type="button" class="secondary" onclick="debugRespinCurrent()">Re-spin current</button>
+      </div>
+      <p class="small" style="margin:8px 0 0">Use this to test individual wheels without running the full sequence. Prior steps are rolled instantly so eligibility is realistic.</p>
+    </div>
     <div id="interactiveLog" class="interactive-log"></div>
   </div>
 </section>
@@ -547,8 +558,7 @@ const DATA = {
 
   sageTypes:[
     W("Toad Sage",20),W("Snake Sage",20),W("Slug Sage",15),
-    W("Jūgo-style natural-energy physiology",10),W("Six Paths Sage",1),
-    W("Other documented animal sage tradition",1)
+    W("Jūgo-style natural-energy physiology",10),W("Six Paths Sage",1)
   ],
 
   jinchuriki:[
@@ -894,39 +904,80 @@ function rollNatures(count){
 }
 function legalBloodlines(c){
   const eligible=DATA.bloodlines.filter(b=>{
-    if(b.requires?.length && !b.requires.every(r=>c.natureIds.includes(r))) return false;
+    if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
     if(b.clans?.length && !b.clans.includes(c.clan)) return false;
     if(b.heritage && !b.heritage.some(h=>(c.heritage||[]).includes(h))) return false;
     return true;
   });
-  if(c.natureIds.length<2 && !DATA.bloodlines.some(b=>b.clans?.includes(c.clan))) return null;
-  const pool=eligible.filter(b=>b.weight>0);
-  if(!pool.length || Math.random()>0.15) return null;
-  const chosen=rollWeighted(pool.map(b=>W(b.name,b.weight)));
-  return eligible.find(b=>b.name===chosen.name)||null;
+  if((c.natureIds||[]).length<2 && !DATA.bloodlines.some(b=>b.clans?.includes(c.clan))) return null;
+  const pool=eligible.filter(b=>(Number(b.weight)||0)>0);
+  if(!pool.length) return null;
+  /* Same odds as the bloodline wheel: ~85% None, ~15% split among eligible. */
+  const sum=pool.reduce((s,b)=>s+(Number(b.weight)||1),0)||1;
+  const weighted=[{name:"None",weight:85}, ...pool.map(b=>W(b.name, ((Number(b.weight)||1)/sum)*15))];
+  const chosen=rollWeighted(weighted);
+  if(!chosen || chosen.name==="None") return null;
+  return pool.find(b=>b.name===chosen.name)||eligible.find(b=>b.name===chosen.name)||null;
 }
 function clanHasListedDojutsu(clanName){
   if(!clanName || clanName==="None") return [];
   return DATA.dojutsu.filter(d=> (d.clans||[]).some(cl=>clanSatisfied(cl,{clan:clanName})));
 }
-function legalDojutsu(c){
-  /* Clan with a listed dōjutsu: automatic grant of that eye. */
+/* Weighted dōjutsu pool used by BOTH the wheel UI and the roll — so odds match the wedges. */
+function getDojutsuPool(c){
   const clanEyes = clanHasListedDojutsu(c.clan);
   if(clanEyes.length){
-    const pick = rollWeighted(clanEyes.map(d=>W(d.name, d.weight||10)));
-    c.dojutsuSource = "clan";
-    return pick.name;
+    return clanEyes.map(d=>({name:d.name, weight:d.weight||10, source:"clan"}));
   }
-  /* Non-clan: low chance of any dōjutsu (transplant / rare awakening). */
-  if(Math.random() > 0.06) {
+  /* Non-clan / non-eye-clan: 50% None, 50% rare transplant/awakening split by catalogue weights. */
+  const transplant = (DATA.dojutsu||[]).filter(d=>!(d.clans||[]).some(cl=>clanSatisfied(cl,c)));
+  const eyeWeightSum = transplant.reduce((s,d)=>s+(Number(d.weight)||1),0) || 1;
+  const NONE_WEIGHT = 50;
+  const YES_BUDGET = 50;
+  const pool = [{name:"None", weight:NONE_WEIGHT, source:null}];
+  for(const d of transplant){
+    const w = ((Number(d.weight)||1) / eyeWeightSum) * YES_BUDGET;
+    pool.push({name:d.name, weight:Math.max(0.01, w), source:"non-clan"});
+  }
+  return pool;
+}
+function legalDojutsu(c){
+  const pool = getDojutsuPool(c);
+  if(!pool.length){
     c.dojutsuSource = null;
     return null;
   }
-  const pool = DATA.dojutsu.filter(d=>!(d.clans||[]).some(cl=>clanSatisfied(cl,c)));
-  if(!pool.length) return null;
-  const pick = rollWeighted(pool.map(d=>W(d.name, d.weight||1)));
-  c.dojutsuSource = "non-clan";
-  return pick.name;
+  const pick = rollWeighted(pool.map(x=>W(x.name, x.weight)));
+  const entry = pool.find(x=>x.name===pick.name) || pool[0];
+  if(!entry || entry.name==="None"){
+    c.dojutsuSource = null;
+    return null;
+  }
+  c.dojutsuSource = entry.source || "non-clan";
+  return entry.name;
+}
+/* Senjutsu → Summoning link:
+   Any senjutsu access forces Summoning = Yes.
+   Toad/Snake/Slug sages lock the matching contract; Jūgo-style / Six Paths keep a random contract. */
+function applySageSummoningLink(c){
+  if(!c || !c.senjutsu || c.senjutsu==="None") return;
+  c.summoning="Yes";
+  c._summoningForcedBySage=true;
+  const st=String(c.sageType||"");
+  if(/toad/i.test(st)){
+    c.summonType="Toad";
+    c._summonTypeForcedBySage=true;
+  }else if(/snake/i.test(st)){
+    c.summonType="Snake";
+    c._summonTypeForcedBySage=true;
+  }else if(/slug/i.test(st)){
+    c.summonType="Slug";
+    c._summonTypeForcedBySage=true;
+  }else{
+    /* Jūgo-style, Six Paths Sage, or unknown — Yes, but contract is free */
+    c._summonTypeForcedBySage=false;
+    if(!c.summonType) c.summonType=rollWeighted(DATA.summonTypes).name;
+  }
 }
 function rollDojutsuEyes(c){
   /* One eye common; both eyes rare — only meaningful for non-clan / transplant paths. */
@@ -1056,8 +1107,11 @@ function generate(){
   c.clanData=rollClanFor(c); c.clan=c.clanData.name; logLine("Clan: "+c.clan);
   applyClanTraits(c);
 
-  // Weapon/tool before natures & jutsu; puppet-class tools unlock puppet techniques
-  c.weaponData=rollWeighted(DATA.weapons); c.weapon=c.weaponData.name;
+  // Weapon/tool before natures & jutsu; puppet-class tools unlock puppet techniques (None removed)
+  {
+    const pool=(DATA.weapons||[]).filter(x=>x.name!=="None");
+    c.weaponData=rollWeighted(pool.length?pool:DATA.weapons); c.weapon=c.weaponData.name;
+  }
   c.hasPuppetAccess=!!(c.weaponData.isPuppet||isPuppetToolName(c.weapon));
   logLine("Weapon / tool: "+c.weapon+(c.hasPuppetAccess?" (puppet access)":""));
 
@@ -1095,14 +1149,20 @@ function generate(){
   if(Math.random()<0.10)c.senjutsu=rollWeighted([W("Sage Training Potential",50),W("Sage Mode",35),W("Advanced Sage Mode",10),W("Six Paths Sage Mode",5)]).name;
   c.sageType=c.senjutsu!=="None"?rollWeighted(DATA.sageTypes).name:null;
   logLine("Senjutsu: "+c.senjutsu+(c.sageType?" — "+c.sageType:""));
+  if(c.senjutsu!=="None") applySageSummoningLink(c);
 
   c.jinchuriki=rollWeighted(DATA.jinchuriki).name;
   if(c.jinchuriki==="Yes"){c.beast=rollWeighted(DATA.beasts).name;c.relationship=rollWeighted(DATA.relationships).name}
   logLine("Jinchūriki: "+c.jinchuriki+(c.beast?" — "+c.beast+" ("+c.relationship+")":""));
 
-  c.summoning=rollWeighted(DATA.summoning).name;
-  if(c.summoning==="Yes")c.summonType=rollWeighted(DATA.summonTypes).name;
-  logLine("Summoning: "+c.summoning+(c.summonType?" — "+c.summonType:""));
+  if(c._summoningForcedBySage){
+    /* Already set by senjutsu → sage contract link */
+    if(!c.summonType) c.summonType=rollWeighted(DATA.summonTypes).name;
+  }else{
+    c.summoning=rollWeighted(DATA.summoning).name;
+    if(c.summoning==="Yes")c.summonType=rollWeighted(DATA.summonTypes).name;
+  }
+  logLine("Summoning: "+c.summoning+(c.summonType?" — "+c.summonType:"")+(c._summoningForcedBySage?" (sage-linked)":""));
 
   c.primary=rollCombat(c).name;
   c.secondary=rollCombat(c,[c.primary]).name;
@@ -3286,15 +3346,19 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='dojutsu'){
-      // Clan auto is in step logic; display shows possible eyes + None for non-clan path aesthetics
-      options=[{name:"None",weight:20}, ...(DATA.dojutsu||[]).map(x=>({name:x.name, weight:x.weight||1}))];
+      // Same weighted pool as the actual roll so the wheel odds match the result
+      options=getDojutsuPool(c).map(x=>({name:x.name, weight:x.weight}));
     }
     else if(s.key==='senjutsu') options=[
       {name:"None",weight:90},{name:"Sage Training Potential",weight:4},
       {name:"Sage Mode",weight:3.5},{name:"Advanced Sage Mode",weight:1.5},{name:"Six Paths Sage Mode",weight:1}
     ];
     else if(s.key==='jinchuriki') options=DATA.jinchuriki||[];
-    else if(s.key==='summoning') options=DATA.summoning||[];
+    else if(s.key==='summoning'){
+      // Sage-linked: only Yes so the wheel visibly lands on the forced result
+      if(c.senjutsu && c.senjutsu!=='None' || c._summoningForcedBySage) options=[{name:"Yes",weight:1}];
+      else options=DATA.summoning||[];
+    }
     else if(s.key==='primary'||s.key==='secondary') options=DATA.primaryCombat||[];
     else if(s.key==='forbiddenTechnique'){
       const list=DATA.forbiddenTechniques||[];
@@ -3310,15 +3374,8 @@ function getWheelSegments(){
     ];
     else if(s.key==='moral') options=DATA.moral||[];
     else if(s.key==='weapon'){
-      const list=DATA.weapons||[];
-      // Cap display wedges for readability; weights preserved among shown
-      if(list.length>20){
-        const none=list.filter(x=>x.name==="None");
-        const rest=list.filter(x=>x.name!=="None");
-        const shuffled=rest.slice();
-        for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
-        options=[...none, ...shuffled.slice(0,19)];
-      } else options=list;
+      // Full catalogue, no "None" — every named weapon/tool is represented
+      options=(DATA.weapons||[]).filter(x=>x.name!=="None");
     }
     else if(s.key==='exceptional') options=DATA.exceptional||[];
     else if(s.key==='forbidden') options=DATA.forbidden||[];
@@ -3327,10 +3384,25 @@ function getWheelSegments(){
     else if(s.key==='otsutsuki') options=DATA.otsutsuki||[];
     else if(s.key==='spaceTime') options=[{name:"No",weight:95},{name:"Yes",weight:5}];
     else if(s.key==='currentGoal') options=GOAL_POOL||[];
-    else if(s.key==='bloodline') options=[{name:"None",weight:1},{name:"Clan bloodline",weight:1}];
+    else if(s.key==='bloodline'){
+      /* Match legalBloodlines: ~85% None, remaining shared among eligible bloodlines */
+      const eligible=(DATA.bloodlines||[]).filter(b=>{
+        if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
+        if(b.clans?.length && !b.clans.includes(c.clan)) return false;
+        if(b.heritage && !b.heritage.some(h=>(c.heritage||[]).includes(h))) return false;
+        return (Number(b.weight)||0)>0;
+      });
+      const sum=eligible.reduce((s,b)=>s+(Number(b.weight)||1),0)||1;
+      options=[{name:"None",weight:85}];
+      eligible.forEach(b=>options.push({name:b.name, weight:((Number(b.weight)||1)/sum)*15}));
+    }
     else if(s.key==='beast') options=DATA.beasts||[];
     else if(s.key==='relationship') options=DATA.relationships||[];
-    else if(s.key==='summonType') options=DATA.summonTypes||[];
+    else if(s.key==='summonType'){
+      // Sage-locked Toad/Snake/Slug: single-option wheel so it lands on the required contract
+      if(c._summonTypeForcedBySage && c.summonType) options=[{name:c.summonType,weight:1}];
+      else options=DATA.summonTypes||[];
+    }
     else if(s.key==='sageType') options=DATA.sageTypes||[];
     else if(s.key==='legendaryTarget') options=DATA.legendaryTargets||[];
     else if(s.key==='occupation') options=DATA.civilianOccupations||[];
@@ -3613,37 +3685,18 @@ function baseSteps(){
   step('village','Village / Settlement','Settlement pool is conditioned on the land (or Other branch).',c=>{const vKey=c.land==='Other'?'Other':c.land;c.village=rollWeighted(DATA.villages[vKey]||DATA.villages['Other']).name;return c.village});
   step('type','Character Type / Occupation','Character type is conditioned on the land; civilians and missing-nin branch later.',c=>{const iron=c.land==='Land of Iron';c.type=rollWeighted(DATA.characterTypes[iron?'iron':'normal']).name;return c.type});
   step('rank','Rank / Former Rank','Shinobi and samurai receive a rank; missing-nin use the former-rank/threat branch.',c=>{if(c.type==='Missing-nin')c.rank=rollWeighted(DATA.missingRanks).name;else if(c.type==='Shinobi'||c.type==='Samurai')c.rank=rollWeighted(DATA.ranks).name;else c.rank='Independent / unranked';return c.rank});
-  step('age','Age','First roll an age bracket, then an exact age inside it.',c=>{const b=rollWeighted(DATA.ages);c.age=randInt(b.min,b.max);return c.age});
+  step('age','Age','First roll an age bracket, then an exact age inside it. The wheel shows brackets; the exact age is chosen within the winning bracket.',c=>{const b=rollWeighted(DATA.ages);c.age=randInt(b.min,b.max);c.ageBand=b.name;return b.name});
   step('clan','Clan','Land-tagged clans only. Always includes None (0 modifiers). Dual-tagged clans can appear for a great nation or Other.',c=>{c.clanData=rollClanFor(c);c.clan=c.clanData.name;applyClanTraits(c);return c.clan});
-  step('weapon','Weapon / Tool','Rolled before chakra natures and jutsu. Puppet-class tools unlock all puppet-required techniques.',c=>{
-    const pick=rollWeighted(DATA.weapons);
+  step('weapon','Weapon / Tool','Full weapons/tools catalogue (None removed). Puppet-class tools unlock all puppet-required techniques.',c=>{
+    const pool=(DATA.weapons||[]).filter(x=>x.name!=="None");
+    const pick=rollWeighted(pool.length?pool:DATA.weapons);
     c.weaponData=pick; c.weapon=pick.name;
     c.hasPuppetAccess=!!(pick.isPuppet||isPuppetToolName(pick.name));
     return c.weapon+(c.hasPuppetAccess?' (puppet access)':'');
   });
   step('natureCount','Number of Chakra Natures','This determines how many individual nature wheels appear next.',c=>{const x=rollWeighted(DATA.natureCount);c.natureCount=x.count;c.natures=[];c.natureIds=[];return c.natureCount});
-  step('kekkei_genkai','Kekkei Genkai Access','Rare chance of a nature-compatible Kekkei Genkai when required natures are present (or clan-tied KG).',c=>{
-    const r=rollKekkeiGenkaiAccess(c);
-    c.kekkeiGenkaiAccess=r.access; c.kekkeiGenkai=r.name; c.kekkeiGenkaiEligible=r.eligible;
-    if(r.access==="Yes" && r.name && r.name!=="None"){
-      const bl=DATA.bloodlines.find(b=>b.name===r.name);
-      c.bloodline=r.name;
-      c.bloodlineData=bl||{name:r.name,mods:{}};
-    }
-    return r.access==="Yes" ? `${r.access}: ${r.name}` : r.access;
-  });
-
-  step('bloodline','Bloodline / Kekkei Genkai','If the clan has a bloodline trait it is granted automatically (with its hiden). Otherwise roll eligibility.',c=>{
-    if(c.clanData?.hasBloodline || c.clanData?.bloodline){ c.bloodline=c.clanData.bloodline||c.clanData.hiden||'Clan bloodline'; c.bloodlineData={name:c.bloodline,mods:c.clanData.mods||{}}; if(c.clanData.hiden)c.hiden=c.clanData.hiden; return c.bloodline+(c.hiden?' — hiden: '+c.hiden:''); }
-    c.bloodlineData=legalBloodlines(c); c.bloodline=c.bloodlineData?.name||'None'; return c.bloodline;
-  });
-  step('dojutsu','Dōjutsu','Clan eyes are automatic. Other clans have a low chance of a non-clan dōjutsu (transplant / rare awakening).',c=>{
-    if(c.clanData?.dojutsu){
-      c.dojutsu=c.clanData.dojutsu; c.dojutsuSource='clan';
-      c.dojutsuData=DATA.dojutsu.find(x=>x.name===c.dojutsu)||{name:c.dojutsu,mods:{}};
-      return c.dojutsu;
-    }
-    c.dojutsuData=null;
+  /* kekkei_genkai + bloodline are inserted only when eligible (see insertLineageAbilitySteps). */
+  step('dojutsu','Dōjutsu','Clan eyes use the clan catalogue (no None wedge). Other characters: 50% None, 50% rare transplant/awakening — wheel weights match the roll.',c=>{
     const d=legalDojutsu(c);
     c.dojutsu=d||'None';
     c.dojutsuData=d?DATA.dojutsu.find(x=>x.name===d)||{name:d,mods:{}}:null;
@@ -3656,7 +3709,14 @@ function baseSteps(){
 
   step('senjutsu','Senjutsu','A rare branch. Sage type is rolled separately only if senjutsu is obtained.',c=>{c.senjutsu='None';if(Math.random()<.10)c.senjutsu=rollWeighted([W('Sage Training Potential',50),W('Sage Mode',35),W('Advanced Sage Mode',10),W('Six Paths Sage Mode',5)]).name;return c.senjutsu});
   step('jinchuriki','Jinchūriki','Roll whether the character is a host before rolling the specific tailed beast.',c=>{c.jinchuriki=rollWeighted(DATA.jinchuriki).name;return c.jinchuriki});
-  step('summoning','Summoning','The base roll is 50/50 between no contract and a contract.',c=>{c.summoning=rollWeighted(DATA.summoning).name;return c.summoning});
+  step('summoning','Summoning','Forced Yes when the character has senjutsu; otherwise rolled normally. Sage type can lock the contract (Toad/Snake/Slug).',c=>{
+    if(c.senjutsu && c.senjutsu!=='None'){
+      applySageSummoningLink(c);
+      return c.summoning+(c.summonType?' — '+c.summonType:'')+' (sage-linked)';
+    }
+    c.summoning=rollWeighted(DATA.summoning).name;
+    return c.summoning;
+  });
   step('primary','Primary Combat Specialization','Eligibility is conditioned on prior dōjutsu, weapon, summoning and other results.',c=>{c.primary=rollCombat(c).name;return c.primary});
   step('secondary','Secondary Combat Specialization','The primary specialization is removed from the secondary pool.',c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary});
   step('moral','Moral Alignment','A neutral descriptive alignment wheel.',c=>{c.moral=rollWeighted(DATA.moral).name;return c.moral});
@@ -3666,19 +3726,78 @@ function baseSteps(){
   step('legendary','Legendary Heritage','Distant legendary lineage is kept separate from direct Ōtsutsuki heritage.',c=>{c.legendary=rollWeighted(DATA.legendaryHeritage).name;return c.legendary});
   step('sixPaths','Six Paths Connection','A rare connection roll with prerequisite-aware downstream checks.',c=>{c.sixPaths=rollWeighted(DATA.sixPaths).name;return c.sixPaths});
   step('otsutsuki','Ōtsutsuki Heritage','The final lineage layer can unlock additional downstream eligibility.',c=>{c.otsutsuki=rollWeighted(DATA.otsutsuki).name;return c.otsutsuki});
-  step('spaceTime','Space-Time Ninjutsu','Eligible with Ōtsutsuki heritage, Rinnegan, Rinne Sharingan, or Eternal Mangekyō Sharingan.',c=>{c.spaceTime='Skipped';const eyes=c.dojutsu||'';const stage=c.dojutsuStage||'';const ems=eyes.includes('Eternal Mangekyō')||stage.includes('Eternal Mangekyō');if(eyes==='Rinnegan'||eyes==='Rinne Sharingan'||ems||c.otsutsuki==='Yes')c.spaceTime=rollWeighted([W('No',95),W('Yes',5)]).name;return c.spaceTime});
+  /* Space-Time Ninjutsu is inserted only when eligible (see addConditionalSteps). No "Skipped" wedge on the wheel. */
   step('signature','Signature Ability / Technique','Uses the offline local jutsu catalogue with clan / dōjutsu / nature / KG / weapon gates.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None'});
   step('currentGoal','Current Goal','Concrete aspirations are filtered so already-achieved rank goals are not rolled.',c=>{c.currentGoal=goalForInteractive(c).name;return c.currentGoal});
   return S;
+}
+function bloodlineRollEligible(c){
+  /* True when a non-clan bloodline wheel has something meaningful to roll. */
+  if(c.clanData?.hasBloodline || c.clanData?.bloodline) return false; // clan path — already granted, no separate wheel
+  if(c.bloodline && c.bloodline!=='None') return false; // already set (e.g. from KG access)
+  const eligible=(DATA.bloodlines||[]).filter(b=>{
+    if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
+    if(b.clans?.length && !b.clans.includes(c.clan)) return false;
+    if(b.heritage && !b.heritage.some(h=>(c.heritage||[]).includes(h))) return false;
+    return (Number(b.weight)||0)>0;
+  });
+  if(!eligible.length) return false;
+  if((c.natureIds||[]).length<2 && !(DATA.bloodlines||[]).some(b=>(b.clans||[]).includes(c.clan))) return false;
+  return true;
+}
+function insertLineageAbilitySteps(){
+  /* Only insert Kekkei Genkai / Bloodline wheels when the character is eligible. */
+  const c=interactive.c;
+  const extra=[];
+  const eligibleKg=availableKekkeiGenkai(c);
+  if(eligibleKg.length){
+    extra.push({key:'kekkei_genkai',label:'Kekkei Genkai Access',desc:'Rare chance of a nature-compatible Kekkei Genkai when required natures are present (or clan-tied KG).',fn:x=>{
+      const r=rollKekkeiGenkaiAccess(x);
+      x.kekkeiGenkaiAccess=r.access; x.kekkeiGenkai=r.name; x.kekkeiGenkaiEligible=r.eligible;
+      if(r.access==="Yes" && r.name && r.name!=="None"){
+        const bl=DATA.bloodlines.find(b=>b.name===r.name);
+        x.bloodline=r.name;
+        x.bloodlineData=bl||{name:r.name,mods:{}};
+      }
+      return r.access==="Yes" ? `${r.access}: ${r.name}` : r.access;
+    }});
+  } else {
+    c.kekkeiGenkaiAccess='No';
+    c.kekkeiGenkai='None';
+    c.kekkeiGenkaiEligible=[];
+  }
+  if(c.clanData?.hasBloodline || c.clanData?.bloodline){
+    /* Clan bloodline already applied in applyClanTraits — no wheel. */
+    if(!c.bloodline || c.bloodline==='None'){
+      c.bloodline=c.clanData.bloodline||c.clanData.hiden||'Clan bloodline';
+      c.bloodlineData={name:c.bloodline,mods:c.clanData.mods||{}};
+      if(c.clanData.hiden) c.hiden=c.clanData.hiden;
+    }
+  } else if(bloodlineRollEligible(c)){
+    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Eligibility-gated bloodline roll (nature / clan prerequisites). None is common even when eligible.',fn:x=>{
+      x.bloodlineData=legalBloodlines(x); x.bloodline=x.bloodlineData?.name||'None'; return x.bloodline;
+    }});
+  } else if(!c.bloodline || c.bloodline==='None'){
+    c.bloodline='None';
+  }
+  if(extra.length) insertAfterCurrent(extra);
 }
 function addConditionalSteps(){
   const c=interactive.c; const idx=interactive.index;
   const s=interactive.steps[idx];
   if(s.key==='land' && c.land==='Other') insertAfterCurrent([{key:'minorLand',label:'Minor Country',desc:'You landed on Other — spin for the specific minor land / region.',fn:x=>{x.minorLand=rollWeighted(DATA.minorLands).name;return x.minorLand}}]);
   if(s.key==='type' && c.type==='Civilian') insertAfterCurrent([{key:'occupation',label:'Civilian Occupation',desc:'A named civilian occupation is selected for the civilian branch.',fn:x=>{x.occupation=rollWeighted(DATA.civilianOccupations).name;return x.occupation}}]);
-  if(s.key==='natureCount' && c.natureCount>0){
-    const ns=[]; for(let i=0;i<c.natureCount;i++) ns.push({key:'nature'+i,label:`Chakra Nature ${i+1}`,desc:'Roll a distinct chakra nature. Duplicate natures are not allowed.',fn:x=>{const pool=clone(DATA.natures).filter(n=>!x.natures.some(y=>y.id===n.id));const n=rollWeighted(pool);x.natures.push(n);x.natureIds.push(n.id);return n.name}});
-    insertAfterCurrent(ns);
+  if(s.key==='natureCount'){
+    if(c.natureCount>0){
+      const ns=[]; for(let i=0;i<c.natureCount;i++) ns.push({key:'nature'+i,label:`Chakra Nature ${i+1}`,desc:'Roll a distinct chakra nature. Duplicate natures are not allowed.',fn:x=>{const pool=clone(DATA.natures).filter(n=>!x.natures.some(y=>y.id===n.id));const n=rollWeighted(pool);x.natures.push(n);x.natureIds.push(n.id);return n.name}});
+      insertAfterCurrent(ns);
+    } else {
+      insertLineageAbilitySteps();
+    }
+  }
+  if(/^nature\d+$/.test(s.key)){
+    const nIdx=parseInt(s.key.replace('nature',''),10);
+    if(nIdx===c.natureCount-1) insertLineageAbilitySteps();
   }
   if(s.key==='dojutsu' && c.dojutsu && c.dojutsu!=='None'){
     const extra=[];
@@ -3694,16 +3813,46 @@ function addConditionalSteps(){
     }
     if(extra.length) insertAfterCurrent(extra);
   }
-  if(s.key==='senjutsu' && c.senjutsu!=='None') insertAfterCurrent([{key:'sageType',label:'Sage Type',desc:'Named sage traditions only.',fn:x=>{x.sageType=rollWeighted(DATA.sageTypes).name;return x.sageType}}]);
+  if(s.key==='senjutsu' && c.senjutsu!=='None') insertAfterCurrent([{key:'sageType',label:'Sage Type',desc:'Named sage traditions only. Toad/Snake/Slug lock the matching summoning contract; Jūgo-style and Six Paths force Summoning Yes with a free contract roll.',fn:x=>{
+    x.sageType=rollWeighted(DATA.sageTypes).name;
+    applySageSummoningLink(x);
+    return x.sageType;
+  }}]);
   if(s.key==='jinchuriki' && c.jinchuriki==='Yes') {
     insertAfterCurrent([{key:'beast',label:'Tailed Beast',desc:'The specific beast is rolled only after Jinchūriki status is established.',fn:x=>{x.beast=rollWeighted(DATA.beasts).name;return x.beast}},{key:'relationship',label:'Tailed Beast Relationship',desc:'The host–beast relationship is rolled separately.',fn:x=>{x.relationship=rollWeighted(DATA.relationships).name;return x.relationship}}]);
   }
-  if(s.key==='summoning' && c.summoning==='Yes') insertAfterCurrent([{key:'summonType',label:'Summoning Contract',desc:'A named contract type is rolled after summoning access is established.',fn:x=>{x.summonType=rollWeighted(DATA.summonTypes).name;return x.summonType}}]);
+  if(s.key==='summoning' && c.summoning==='Yes'){
+    /* Always show the contract wheel. Toad/Snake/Slug are locked to one option; Jūgo / Six Paths roll freely. */
+    insertAfterCurrent([{key:'summonType',label:'Summoning Contract',desc:c._summonTypeForcedBySage?('Sage-locked contract: '+c.summonType): (c._summoningForcedBySage?'Sage-linked: free contract roll.':'A named contract type is rolled after summoning access is established.'),fn:x=>{
+      if(x._summonTypeForcedBySage && x.summonType) return x.summonType;
+      x.summonType=rollWeighted(DATA.summonTypes).name;
+      return x.summonType;
+    }}]);
+  }
   if(s.key==='forbidden' && c.forbidden==='Yes') insertAfterCurrent([{key:'forbiddenTechnique',label:'Forbidden Technique',desc:'A named canon forbidden technique is selected.',fn:x=>{x.forbiddenTechnique=rollWeighted(DATA.forbiddenTechniques).name;return x.forbiddenTechnique}}]);
   if(s.key==='sixPaths' && c.sixPaths==='Yes') insertAfterCurrent([{key:'sixPathsLevel',label:'Six Paths Heritage Depth',desc:'Distant 60% · Significant 30% · Direct 10%.',fn:x=>{x.sixPathsLevel=rollWeighted(DATA.sixPathsLevels).name;return x.sixPathsLevel}}]);
   if(s.key==='legendary' && c.legendary==='Yes') insertAfterCurrent([{key:'legendaryTarget',label:'Legendary Relative',desc:'The distant legendary lineage target is rolled separately.',fn:x=>{x.legendaryTarget=rollWeighted(DATA.legendaryTargets).name;return x.legendaryTarget}}]);
-  if(s.key==='otsutsuki' && c.otsutsuki==='Yes') insertAfterCurrent([{key:'otsutsukiLevel',label:'Ōtsutsuki Heritage Depth',desc:'Determine whether the lineage is distant, significant or direct.',fn:x=>{x.otsutsukiLevel=rollWeighted(DATA.otsutsukiLevels).name;return x.otsutsukiLevel}}]);
-  if(s.key==='otsutsuki'){c.heritage=[];if(c.otsutsuki==='Yes')c.heritage.push('Ōtsutsuki');if(c.sixPaths==='Yes')c.heritage.push('Six Paths');if(c.legendary==='Yes')c.heritage.push(c.legendaryTarget);}
+  if(s.key==='otsutsuki'){
+    c.heritage=[];
+    if(c.otsutsuki==='Yes')c.heritage.push('Ōtsutsuki');
+    if(c.sixPaths==='Yes')c.heritage.push('Six Paths');
+    if(c.legendary==='Yes')c.heritage.push(c.legendaryTarget);
+    const extra=[];
+    if(c.otsutsuki==='Yes'){
+      extra.push({key:'otsutsukiLevel',label:'Ōtsutsuki Heritage Depth',desc:'Determine whether the lineage is distant, significant or direct.',fn:x=>{x.otsutsukiLevel=rollWeighted(DATA.otsutsukiLevels).name;return x.otsutsukiLevel}});
+    }
+    // Space-Time only when eligible — wheel is pure No/Yes, never a "Skipped" wedge
+    const eyes=c.dojutsu||'';
+    const stage=c.dojutsuStage||'';
+    const ems=eyes.includes('Eternal Mangekyō')||stage.includes('Eternal Mangekyō');
+    const spaceTimeEligible=eyes==='Rinnegan'||eyes==='Rinne Sharingan'||ems||c.otsutsuki==='Yes';
+    if(spaceTimeEligible){
+      extra.push({key:'spaceTime',label:'Space-Time Ninjutsu',desc:'Eligible with Ōtsutsuki heritage, Rinnegan, Rinne Sharingan, or Eternal Mangekyō Sharingan.',fn:x=>{x.spaceTime=rollWeighted([W('No',95),W('Yes',5)]).name;return x.spaceTime}});
+    } else {
+      c.spaceTime='Skipped';
+    }
+    if(extra.length) insertAfterCurrent(extra);
+  }
 }
 function addStatSteps(){
   STAT_NAMES.forEach(([key,label])=>interactive.steps.push({key:'stat_'+key,label,desc:'D100 roll. Canon-derived modifiers are applied after every raw stat has been visibly rolled.',stat:true,fn:c=>{c._rawStats=c._rawStats||{};c._rawStats[key]=rollD100();c.stats=c.stats||{};c.stats[key]=c._rawStats[key];return c._rawStats[key]}}));
@@ -3742,7 +3891,15 @@ function generateInstantlyFromCurrent(){
       let result;
       try{ result=s.fn(interactive.c); }
       catch(err){ console.warn('Instant step failed:', s.key, err); result='Error — skipped'; }
-      try{ s.display=String(displayFor(interactive.c,s.key,result)??'None'); }
+      try{
+        if(s.key==='age'){
+          const band=String(result??interactive.c.ageBand??'');
+          const exact=interactive.c.age;
+          s.display=(exact!=null && band) ? `${exact} (${band})` : String(exact ?? band ?? 'None');
+        } else {
+          s.display=String(displayFor(interactive.c,s.key,result)??'None');
+        }
+      }
       catch(_e){ s.display=String(result??'None'); }
       s.done=true;
       try{ logLine(`${s.label}: ${s.display}`); }catch(_e){}
@@ -3788,10 +3945,18 @@ async function spinCurrentStep(){
     let result;
     try{ result=s.fn(interactive.c); }
     catch(err){ console.warn('Step failed:', s.key, err); result='Error — skipped'; }
-    const display=String(displayFor(interactive.c,s.key,result)??'None');
+    // Age: wheel segments are brackets (e.g. "18–24"); step returns the bracket name
+    // so spinVisual can land on the correct wedge. Overlay/log show exact age too.
+    let landOn=String(displayFor(interactive.c,s.key,result)??'None');
+    let display=landOn;
+    if(s.key==='age'){
+      landOn=String(result??interactive.c.ageBand??'');
+      const exact=interactive.c.age;
+      display=(exact!=null && landOn) ? `${exact} (${landOn})` : String(exact??landOn);
+    }
     // Pass preSegments so spinVisual lands exactly on the rolled result
     // (it will inject the result if the pool was sampled / mutated).
-    await spinVisual(display,!!s.stat, preSegments);
+    await spinVisual(landOn,!!s.stat, preSegments);
     // Briefly show the winning result before preparing the next wheel.
     showWheelResult(display);
     await wait(1500);
@@ -3802,7 +3967,7 @@ async function spinCurrentStep(){
     interactive.index++;
     updateInteractiveProgress(); renderInteractiveLog();
     if(interactive.index<interactive.steps.length){
-      // Auto-skip any remaining stat wheels (stats always roll silently)
+      // Auto-skip only silent stat wheels (sage-linked summoning still shows so the wheel can land on Yes / locked contract)
       while(interactive.index<interactive.steps.length && interactive.steps[interactive.index]?.stat){
         const st=interactive.steps[interactive.index];
         try{
@@ -3872,6 +4037,205 @@ function generate(){
   }
 }
 
+/* ===================== ADMIN DEBUG — JUMP TO SPECIFIC WHEEL ===================== */
+const DEBUG_WHEEL_CATALOG = [
+  {key:'land',label:'Land'},
+  {key:'minorLand',label:'Minor Country'},
+  {key:'village',label:'Village / Settlement'},
+  {key:'type',label:'Character Type / Occupation'},
+  {key:'occupation',label:'Civilian Occupation'},
+  {key:'rank',label:'Rank / Former Rank'},
+  {key:'age',label:'Age'},
+  {key:'clan',label:'Clan'},
+  {key:'weapon',label:'Weapon / Tool'},
+  {key:'natureCount',label:'Number of Chakra Natures'},
+  {key:'nature0',label:'Chakra Nature 1'},
+  {key:'nature1',label:'Chakra Nature 2'},
+  {key:'nature2',label:'Chakra Nature 3'},
+  {key:'kekkei_genkai',label:'Kekkei Genkai Access'},
+  {key:'bloodline',label:'Bloodline / Kekkei Genkai'},
+  {key:'dojutsu',label:'Dōjutsu'},
+  {key:'dojutsuEyes',label:'Dōjutsu Eyes'},
+  {key:'dojutsuStage',label:'Sharingan Stage'},
+  {key:'specialty_jutsu',label:'Specialty Jutsu'},
+  {key:'senjutsu',label:'Senjutsu'},
+  {key:'sageType',label:'Sage Type'},
+  {key:'jinchuriki',label:'Jinchūriki'},
+  {key:'beast',label:'Tailed Beast'},
+  {key:'relationship',label:'Tailed Beast Relationship'},
+  {key:'summoning',label:'Summoning'},
+  {key:'summonType',label:'Summoning Contract'},
+  {key:'primary',label:'Primary Combat Specialization'},
+  {key:'secondary',label:'Secondary Combat Specialization'},
+  {key:'moral',label:'Moral Alignment'},
+  {key:'motivation',label:'Motivation'},
+  {key:'exceptional',label:'Exceptional Trait'},
+  {key:'forbidden',label:'Forbidden Technique Access'},
+  {key:'forbiddenTechnique',label:'Forbidden Technique'},
+  {key:'legendary',label:'Legendary Heritage'},
+  {key:'legendaryTarget',label:'Legendary Relative'},
+  {key:'sixPaths',label:'Six Paths Connection'},
+  {key:'sixPathsLevel',label:'Six Paths Heritage Depth'},
+  {key:'otsutsuki',label:'Ōtsutsuki Heritage'},
+  {key:'otsutsukiLevel',label:'Ōtsutsuki Heritage Depth'},
+  {key:'spaceTime',label:'Space-Time Ninjutsu'},
+  {key:'signature',label:'Signature Ability / Technique'},
+  {key:'currentGoal',label:'Current Goal'}
+];
+function populateDebugWheelSelect(){
+  const sel=document.getElementById('debugWheelSelect');
+  if(!sel) return;
+  sel.innerHTML=DEBUG_WHEEL_CATALOG.map(x=>`<option value="${x.key}">${esc(x.label)} (${x.key})</option>`).join('');
+}
+function ensureDebugPrereqs(key,c){
+  /* Minimal state so conditional wheels have something sensible to show. */
+  if(!c.land) c.land='Land of Fire';
+  if(!c.village) c.village='Konohagakure';
+  if(!c.type) c.type='Shinobi';
+  if(!c.rank) c.rank='Genin';
+  if(c.age==null) c.age=16;
+  if(!c.clan){ c.clanData=DATA.clans.find(x=>x.name==='None')||DATA.clans[0]; c.clan=c.clanData.name; }
+  if(!c.weapon){ const pool=(DATA.weapons||[]).filter(x=>x.name!=='None'); c.weaponData=pool[0]||DATA.weapons[0]; c.weapon=c.weaponData?.name||'Kunai'; }
+  if(!c.natures) c.natures=[];
+  if(!c.natureIds) c.natureIds=[];
+  if(c.natureCount==null) c.natureCount=c.natures.length||0;
+  if(key==='minorLand') c.land='Other';
+  if(key==='occupation') c.type='Civilian';
+  if(key==='nature0'||key==='nature1'||key==='nature2'){
+    const need=parseInt(key.replace('nature',''),10)+1;
+    c.natureCount=Math.max(c.natureCount||0, need);
+  }
+  if(key==='kekkei_genkai'||key==='bloodline'){
+    if(!c.natureIds.length){
+      c.natures=[{name:'Fire Release',id:'fire'},{name:'Water Release',id:'water'},{name:'Earth Release',id:'earth'},{name:'Wind Release',id:'wind'}];
+      c.natureIds=['fire','water','earth','wind'];
+      c.natureCount=4;
+    }
+  }
+  if(key==='dojutsuEyes'||key==='dojutsuStage'){
+    if(!c.dojutsu || c.dojutsu==='None'){ c.dojutsu='Sharingan'; c.dojutsuSource=key==='dojutsuEyes'?'non-clan':'clan'; }
+  }
+  if(key==='sageType'){ if(!c.senjutsu||c.senjutsu==='None') c.senjutsu='Sage Mode'; }
+  if(key==='beast'||key==='relationship'){ c.jinchuriki='Yes'; }
+  if(key==='summonType'){ c.summoning='Yes'; }
+  if(key==='forbiddenTechnique'){ c.forbidden='Yes'; }
+  if(key==='legendaryTarget'){ c.legendary='Yes'; }
+  if(key==='sixPathsLevel'){ c.sixPaths='Yes'; }
+  if(key==='otsutsukiLevel'||key==='spaceTime'){ c.otsutsuki='Yes'; c.heritage=c.heritage||[]; if(!c.heritage.includes('Ōtsutsuki')) c.heritage.push('Ōtsutsuki'); }
+  if(key==='secondary' && !c.primary) c.primary='Ninjutsu';
+}
+function forceDebugStep(key){
+  const label=(DEBUG_WHEEL_CATALOG.find(x=>x.key===key)||{}).label||key;
+  const makers={
+    land:()=>({key:'land',label,desc:'Debug wheel.',fn:c=>{c.land=rollWeighted(DATA.lands).name;return c.land}}),
+    minorLand:()=>({key:'minorLand',label,desc:'Debug wheel.',fn:c=>{c.minorLand=rollWeighted(DATA.minorLands).name;return c.minorLand}}),
+    village:()=>({key:'village',label,desc:'Debug wheel.',fn:c=>{const vKey=c.land==='Other'?'Other':c.land;c.village=rollWeighted(DATA.villages[vKey]||DATA.villages['Other']).name;return c.village}}),
+    type:()=>({key:'type',label,desc:'Debug wheel.',fn:c=>{const iron=c.land==='Land of Iron';c.type=rollWeighted(DATA.characterTypes[iron?'iron':'normal']).name;return c.type}}),
+    occupation:()=>({key:'occupation',label,desc:'Debug wheel.',fn:c=>{c.occupation=rollWeighted(DATA.civilianOccupations).name;return c.occupation}}),
+    rank:()=>({key:'rank',label,desc:'Debug wheel.',fn:c=>{if(c.type==='Missing-nin')c.rank=rollWeighted(DATA.missingRanks).name;else if(c.type==='Shinobi'||c.type==='Samurai')c.rank=rollWeighted(DATA.ranks).name;else c.rank='Independent / unranked';return c.rank}}),
+    age:()=>({key:'age',label,desc:'Debug wheel.',fn:c=>{const b=rollWeighted(DATA.ages);c.age=randInt(b.min,b.max);c.ageBand=b.name;return b.name}}),
+    clan:()=>({key:'clan',label,desc:'Debug wheel.',fn:c=>{c.clanData=rollClanFor(c);c.clan=c.clanData.name;applyClanTraits(c);return c.clan}}),
+    weapon:()=>({key:'weapon',label,desc:'Debug wheel.',fn:c=>{const pool=(DATA.weapons||[]).filter(x=>x.name!=='None');const pick=rollWeighted(pool.length?pool:DATA.weapons);c.weaponData=pick;c.weapon=pick.name;c.hasPuppetAccess=!!(pick.isPuppet||isPuppetToolName(pick.name));return c.weapon+(c.hasPuppetAccess?' (puppet access)':'')}}),
+    natureCount:()=>({key:'natureCount',label,desc:'Debug wheel.',fn:c=>{const x=rollWeighted(DATA.natureCount);c.natureCount=x.count;c.natures=[];c.natureIds=[];return c.natureCount}}),
+    nature0:()=>({key:'nature0',label,desc:'Debug wheel.',fn:c=>{const pool=clone(DATA.natures).filter(n=>(c.natures||[]).every(y=>y.id!==n.id));const n=rollWeighted(pool);c.natures=c.natures||[];c.natureIds=c.natureIds||[];c.natures.push(n);c.natureIds.push(n.id);return n.name}}),
+    nature1:()=>({key:'nature1',label,desc:'Debug wheel.',fn:c=>{const pool=clone(DATA.natures).filter(n=>(c.natures||[]).every(y=>y.id!==n.id));const n=rollWeighted(pool);c.natures=c.natures||[];c.natureIds=c.natureIds||[];c.natures.push(n);c.natureIds.push(n.id);return n.name}}),
+    nature2:()=>({key:'nature2',label,desc:'Debug wheel.',fn:c=>{const pool=clone(DATA.natures).filter(n=>(c.natures||[]).every(y=>y.id!==n.id));const n=rollWeighted(pool);c.natures=c.natures||[];c.natureIds=c.natureIds||[];c.natures.push(n);c.natureIds.push(n.id);return n.name}}),
+    kekkei_genkai:()=>({key:'kekkei_genkai',label,desc:'Debug wheel.',fn:c=>{const r=rollKekkeiGenkaiAccess(c);c.kekkeiGenkaiAccess=r.access;c.kekkeiGenkai=r.name;c.kekkeiGenkaiEligible=r.eligible;if(r.access==='Yes'&&r.name&&r.name!=='None'){const bl=DATA.bloodlines.find(b=>b.name===r.name);c.bloodline=r.name;c.bloodlineData=bl||{name:r.name,mods:{}};}return r.access==='Yes'?`${r.access}: ${r.name}`:r.access}}),
+    bloodline:()=>({key:'bloodline',label,desc:'Debug wheel.',fn:c=>{c.bloodlineData=legalBloodlines(c);c.bloodline=c.bloodlineData?.name||'None';return c.bloodline}}),
+    dojutsu:()=>({key:'dojutsu',label,desc:'Debug wheel.',fn:c=>{const d=legalDojutsu(c);c.dojutsu=d||'None';c.dojutsuData=d?DATA.dojutsu.find(x=>x.name===d)||{name:d,mods:{}}:null;return c.dojutsu}}),
+    dojutsuEyes:()=>({key:'dojutsuEyes',label,desc:'Debug wheel.',fn:c=>rollDojutsuEyes(c)}),
+    dojutsuStage:()=>({key:'dojutsuStage',label,desc:'Debug wheel.',fn:c=>{c.dojutsuStage=sharinganStage();if(c.dojutsuStage.includes('Rinne'))c.dojutsu='Rinne Sharingan';else if(c.dojutsuStage.includes('Eternal'))c.dojutsu='Eternal Mangekyō Sharingan';else if(c.dojutsuStage.includes('Mangekyō'))c.dojutsu='Mangekyō Sharingan';return c.dojutsuStage}}),
+    specialty_jutsu:()=>({key:'specialty_jutsu',label,desc:'Debug wheel.',fn:c=>{c.specialtyJutsu=rollSpecialtyJutsu(c);return c.specialtyJutsu.name}}),
+    senjutsu:()=>({key:'senjutsu',label,desc:'Debug wheel.',fn:c=>{c.senjutsu='None';if(Math.random()<.10)c.senjutsu=rollWeighted([W('Sage Training Potential',50),W('Sage Mode',35),W('Advanced Sage Mode',10),W('Six Paths Sage Mode',5)]).name;return c.senjutsu}}),
+    sageType:()=>({key:'sageType',label,desc:'Debug wheel.',fn:c=>{c.sageType=rollWeighted(DATA.sageTypes).name;applySageSummoningLink(c);return c.sageType}}),
+    jinchuriki:()=>({key:'jinchuriki',label,desc:'Debug wheel.',fn:c=>{c.jinchuriki=rollWeighted(DATA.jinchuriki).name;return c.jinchuriki}}),
+    beast:()=>({key:'beast',label,desc:'Debug wheel.',fn:c=>{c.beast=rollWeighted(DATA.beasts).name;return c.beast}}),
+    relationship:()=>({key:'relationship',label,desc:'Debug wheel.',fn:c=>{c.relationship=rollWeighted(DATA.relationships).name;return c.relationship}}),
+    summoning:()=>({key:'summoning',label,desc:'Debug wheel.',fn:c=>{c.summoning=rollWeighted(DATA.summoning).name;return c.summoning}}),
+    summonType:()=>({key:'summonType',label,desc:'Debug wheel.',fn:c=>{c.summonType=rollWeighted(DATA.summonTypes).name;return c.summonType}}),
+    primary:()=>({key:'primary',label,desc:'Debug wheel.',fn:c=>{c.primary=rollCombat(c).name;return c.primary}}),
+    secondary:()=>({key:'secondary',label,desc:'Debug wheel.',fn:c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary}}),
+    moral:()=>({key:'moral',label,desc:'Debug wheel.',fn:c=>{c.moral=rollWeighted(DATA.moral).name;return c.moral}}),
+    motivation:()=>({key:'motivation',label,desc:'Debug wheel.',fn:c=>{c.motivation=goalFor(c).name;return c.motivation}}),
+    exceptional:()=>({key:'exceptional',label,desc:'Debug wheel.',fn:c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional}}),
+    forbidden:()=>({key:'forbidden',label,desc:'Debug wheel.',fn:c=>{c.forbidden=rollWeighted(DATA.forbidden).name;return c.forbidden}}),
+    forbiddenTechnique:()=>({key:'forbiddenTechnique',label,desc:'Debug wheel.',fn:c=>{c.forbiddenTechnique=rollWeighted(DATA.forbiddenTechniques).name;return c.forbiddenTechnique}}),
+    legendary:()=>({key:'legendary',label,desc:'Debug wheel.',fn:c=>{c.legendary=rollWeighted(DATA.legendaryHeritage).name;return c.legendary}}),
+    legendaryTarget:()=>({key:'legendaryTarget',label,desc:'Debug wheel.',fn:c=>{c.legendaryTarget=rollWeighted(DATA.legendaryTargets).name;return c.legendaryTarget}}),
+    sixPaths:()=>({key:'sixPaths',label,desc:'Debug wheel.',fn:c=>{c.sixPaths=rollWeighted(DATA.sixPaths).name;return c.sixPaths}}),
+    sixPathsLevel:()=>({key:'sixPathsLevel',label,desc:'Debug wheel.',fn:c=>{c.sixPathsLevel=rollWeighted(DATA.sixPathsLevels).name;return c.sixPathsLevel}}),
+    otsutsuki:()=>({key:'otsutsuki',label,desc:'Debug wheel.',fn:c=>{c.otsutsuki=rollWeighted(DATA.otsutsuki).name;return c.otsutsuki}}),
+    otsutsukiLevel:()=>({key:'otsutsukiLevel',label,desc:'Debug wheel.',fn:c=>{c.otsutsukiLevel=rollWeighted(DATA.otsutsukiLevels).name;return c.otsutsukiLevel}}),
+    spaceTime:()=>({key:'spaceTime',label,desc:'Debug wheel.',fn:c=>{c.spaceTime=rollWeighted([W('No',95),W('Yes',5)]).name;return c.spaceTime}}),
+    signature:()=>({key:'signature',label,desc:'Debug wheel.',fn:c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None'}}),
+    currentGoal:()=>({key:'currentGoal',label,desc:'Debug wheel.',fn:c=>{c.currentGoal=goalForInteractive(c).name;return c.currentGoal}})
+  };
+  const mk=makers[key];
+  return mk?{...mk(),shown:true}:null;
+}
+function debugJumpToWheel(){
+  const sel=document.getElementById('debugWheelSelect');
+  const targetKey=sel&&sel.value;
+  if(!targetKey){ alert('Pick a wheel first.'); return; }
+  if(interactive.spinning){ alert('Wait for the current spin to finish.'); return; }
+  // Start a normal session, then auto-run prior steps until the target
+  interactive={active:true,steps:baseSteps(),index:0,c:{},spinning:false};
+  clearLog(); lastCharacter=null;
+  try{ enablePortraitControls(false); }catch(e){}
+  document.getElementById('summary').textContent='Admin debug — jumping to wheel…';
+  document.getElementById('tags').innerHTML='';
+  document.getElementById('identity').innerHTML='';document.getElementById('lineage').innerHTML='';
+  document.getElementById('combat').innerHTML='';document.getElementById('goals').innerHTML='';document.getElementById('stats').innerHTML='';
+  document.getElementById('interactiveLog').innerHTML='';
+  let guard=0;
+  while(interactive.index < interactive.steps.length && guard++ < 500){
+    const s=interactive.steps[interactive.index];
+    if(s.key===targetKey) break;
+    try{
+      const result=s.fn(interactive.c);
+      s.display=String(displayFor(interactive.c,s.key,result)??result??'—');
+      s.done=true;
+      logLine(`${s.label}: ${s.display}`);
+    }catch(err){ console.warn('debug prior step', s.key, err); s.display='(error)'; s.done=true; }
+    try{ addConditionalSteps(); }catch(err){ console.warn(err); }
+    interactive.index++;
+  }
+  // If target never appeared (eligibility gated), force it in
+  if(interactive.index>=interactive.steps.length || interactive.steps[interactive.index]?.key!==targetKey){
+    ensureDebugPrereqs(targetKey, interactive.c);
+    const forced=forceDebugStep(targetKey);
+    if(forced){
+      interactive.steps.splice(interactive.index, 0, forced);
+    } else {
+      alert('Could not open wheel: '+targetKey);
+      return;
+    }
+  } else {
+    ensureDebugPrereqs(targetKey, interactive.c);
+  }
+  const next=interactive.steps[interactive.index];
+  setInteractiveText(next.label, next.desc||'Admin debug wheel.','—');
+  try{ renderWheelOptions(); }catch(e){ console.warn(e); }
+  updateInteractiveProgress();
+  renderInteractiveLog();
+  const btn=document.getElementById('spinButton'); if(btn) btn.disabled=false;
+  const hint=document.getElementById('stepHint'); if(hint) hint.textContent='Admin debug: spin this wheel (or Re-spin current to try again).';
+  document.getElementById('interactivePanel').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function debugRespinCurrent(){
+  if(!interactive.active){ debugJumpToWheel(); return; }
+  if(interactive.spinning) return;
+  const s=interactive.steps[interactive.index];
+  if(!s){ alert('No current wheel.'); return; }
+  // Clear prior display so a fresh spin runs
+  s.done=false; s.display=undefined;
+  hideWheelResult();
+  setInteractiveText(s.label, s.desc||'','—');
+  try{ renderWheelOptions(); }catch(e){}
+  const btn=document.getElementById('spinButton'); if(btn) btn.disabled=false;
+  const hint=document.getElementById('stepHint'); if(hint) hint.textContent='Re-spin ready — click SPIN.';
+}
+try{ populateDebugWheelSelect(); }catch(e){ console.warn(e); }
 
 /* ===================== OPTIONAL NINJA PORTRAIT (Grok prompt helper) ===================== */
 function enablePortraitControls(on){
