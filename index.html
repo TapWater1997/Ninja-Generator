@@ -1,6 +1,4 @@
-<!doctype html>
-<html lang="en">
-<head>
+<html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ninja Generator</title>
@@ -277,8 +275,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <button class="secondary" onclick="clearCharacterLog()">Clear Log</button>
     </div>
   </div>
-  <div id="characterLogList" class="character-log-list"></div>
-  <div id="characterLogDetail" class="character-log-detail"></div>
+  <div id="characterLogList" class="character-log-list"><div class="character-log-entry " onclick="openCharacterLogEntry(0)"><div class="entry-main"><div class="entry-name">Ninja #1: independent / civilian settlement Senju Clan Jōnin</div><div class="entry-meta">9/22/2026, 2:31:32 PM · 15-year-old Shinobi · Land of Lightning</div></div><div class="entry-number">›</div></div></div>
+  <div id="characterLogDetail" class="character-log-detail" style="display: none;"></div>
 </section>
 
 <div class="grid" id="generatorContent">
@@ -292,7 +290,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     <div id="wheelStage" class="wheel-stage">
       <div class="wheel-block">
         <h3 id="wheelCategoryTitle" class="wheel-category-title">Your character is waiting.</h3>
-        <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled>SPIN</button><div class="wheel-result-overlay" id="wheelResultOverlay" aria-live="polite"><div class="result-backdrop"></div><div class="result-card"><span class="result-label">Wheel Result</span><span class="result-value" id="wheelResultValue">—</span></div></div></div>
+        <div class="wheel-wrap"><div class="pointer"></div><div class="wheel" id="fortuneWheel"><svg class="wheel-svg" id="wheelSvg" viewBox="0 0 200 200"></svg></div><button type="button" class="wheel-center" id="spinButton" onclick="spinCurrentStep()" disabled="">SPIN</button><div class="wheel-result-overlay" id="wheelResultOverlay" aria-live="polite"><div class="result-backdrop"></div><div class="result-card"><span class="result-label">Wheel Result</span><span class="result-value" id="wheelResultValue">—</span></div></div></div>
       </div>
       <div class="roll-copy"><h3 id="wheelQuestion">Your character is waiting.</h3><p id="wheelDescription">Each piece is rolled separately so you can watch the character take shape.</p><div class="step-actions"><span id="stepHint" class="step-hint">Start a new character to unlock the first wheel.</span></div><label class="spin-preferences"><input type="checkbox" id="skipWheelAnimation"> Skip wheel animations and generate instantly</label></div>
     </div>
@@ -300,7 +298,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
         <div style="flex:1;min-width:200px">
           <label class="small" for="debugWheelSelect" style="display:block;margin-bottom:4px;color:var(--muted)">Admin — jump to a specific wheel (auto-fills prior steps)</label>
-          <select id="debugWheelSelect"></select>
+          <select id="debugWheelSelect"><option value="land">Land (land)</option><option value="minorLand">Minor Country (minorLand)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="kekkei_genkai">Kekkei Genkai Access (kekkei_genkai)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="specialty_jutsu">Specialty Jutsu (specialty_jutsu)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Primary Combat Specialization (primary)</option><option value="secondary">Secondary Combat Specialization (secondary)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="forbidden">Forbidden Technique Access (forbidden)</option><option value="forbiddenTechnique">Forbidden Technique (forbiddenTechnique)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="signature">Signature Ability / Technique (signature)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
         </div>
         <button type="button" class="secondary" onclick="debugJumpToWheel()">Open this wheel</button>
         <button type="button" class="secondary" onclick="debugRespinCurrent()">Re-spin current</button>
@@ -311,11 +309,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
           <div style="flex:1;min-width:160px">
             <label class="small" for="forceWheelSelect" style="display:block;margin-bottom:4px">Wheel</label>
-            <select id="forceWheelSelect" onchange="populateForceValueOptions()"></select>
+            <select id="forceWheelSelect" onchange="populateForceValueOptions()"><option value="land">Land (land)</option><option value="minorLand">Minor Country (minorLand)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="kekkei_genkai">Kekkei Genkai Access (kekkei_genkai)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="specialty_jutsu">Specialty Jutsu (specialty_jutsu)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Primary Combat Specialization (primary)</option><option value="secondary">Secondary Combat Specialization (secondary)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="forbidden">Forbidden Technique Access (forbidden)</option><option value="forbiddenTechnique">Forbidden Technique (forbiddenTechnique)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="signature">Signature Ability / Technique (signature)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
           </div>
           <div style="flex:1;min-width:160px">
             <label class="small" for="forceValueSelect" style="display:block;margin-bottom:4px">Predetermined result</label>
-            <select id="forceValueSelect"></select>
+            <select id="forceValueSelect"><option value="Land of Fire">Land of Fire</option><option value="Land of Wind">Land of Wind</option><option value="Land of Water">Land of Water</option><option value="Land of Earth">Land of Earth</option><option value="Land of Lightning">Land of Lightning</option><option value="Land of Iron">Land of Iron</option><option value="Other">Other</option></select>
           </div>
           <div style="flex:1;min-width:160px">
             <label class="small" for="forceValueCustom" style="display:block;margin-bottom:4px">Or type custom value</label>
@@ -344,7 +342,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     </section>
 
     <section class="card">
-      <h2>Lineage & Abilities</h2>
+      <h2>Lineage &amp; Abilities</h2>
       <div id="lineage"></div>
     </section>
 
@@ -368,15 +366,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <h2>Ninja Portrait (optional)</h2>
       <p class="portrait-hint">After your character is complete, a Grok image prompt is built from <b>Identity</b>, <b>Lineage &amp; Abilities</b>, and <b>Combat</b>. Use <b>Open in Grok</b> to open grok.com with the prompt loaded (it often auto-submits), or copy the prompt manually. When the image is ready, upload it below to show it on this page.</p>
       <div class="portrait-actions">
-        <button type="button" id="buildPortraitPromptBtn" class="secondary" onclick="buildNinjaPortraitPrompt()" disabled>Build portrait prompt</button>
-        <button type="button" id="copyPortraitPromptBtn" class="secondary" onclick="copyNinjaPortraitPrompt()" disabled>Copy prompt for Grok</button>
-        <button type="button" id="openGrokPortraitBtn" onclick="openPortraitInGrok()" disabled>Open in Grok</button>
+        <button type="button" id="buildPortraitPromptBtn" class="secondary" onclick="buildNinjaPortraitPrompt()" disabled="">Build portrait prompt</button>
+        <button type="button" id="copyPortraitPromptBtn" class="secondary" onclick="copyNinjaPortraitPrompt()" disabled="">Copy prompt for Grok</button>
+        <button type="button" id="openGrokPortraitBtn" onclick="openPortraitInGrok()" disabled="">Open in Grok</button>
       </div>
-      <textarea id="portraitPrompt" class="portrait-prompt-box" placeholder="Portrait prompt will appear here after you generate a character…" readonly></textarea>
+      <textarea id="portraitPrompt" class="portrait-prompt-box" placeholder="Portrait prompt will appear here after you generate a character…" readonly=""></textarea>
       <div id="portraitStatus" class="portrait-status"></div>
       <div class="portrait-frame" id="portraitFrame">
         <div class="placeholder" id="portraitPlaceholder">No portrait yet. Generate a character, build the prompt, ask Grok for an image, then paste or drop the image here.</div>
-        <img id="portraitImage" alt="Custom ninja portrait" hidden>
+        <img id="portraitImage" alt="Custom ninja portrait" hidden="">
       </div>
       <div class="portrait-actions">
         <label class="secondary" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:#1a2230">
@@ -3045,35 +3043,20 @@ function eligibleSignaturePool(c){
 
 function rollSignatureTechnique(c){
   c._sigPoolCache=null; // refresh for current combat/weapon state
-  const pool=eligibleSignaturePool(c);
+  let pool=eligibleSignaturePool(c);
+  // Puppet users already restricted inside eligibleSignaturePool; keep a hard safety net
+  if(characterHasPuppetTool(c||{})){
+    const pup=pool.filter(isPuppetRelatedJutsu);
+    if(pup.length) pool=pup;
+  }
   if(!pool.length){
-    const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];
+    const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;
+    const fb=fbList[Math.floor(Math.random()*fbList.length)];
     return {name:fb.name, classification:fb.classification||"", meta:fb};
   }
-  let preferred = pool;
-  try{
-    if(characterHasPuppetTool(c)){
-      const pup=pool.filter(isPuppetRelatedJutsu);
-      if(pup.length) preferred=pup;
-    }else{
-      const pri = (c.primary||"").toLowerCase();
-      const sec = (c.secondary||"").toLowerCase();
-      const scored = pool.filter(t=>{
-        const cls = ((t.meta&&t.meta.classification)||t.classification||"").toLowerCase();
-        if((pri.includes("puppet")) && (cls.includes("puppet")||isPuppetRelatedJutsu(t))) return true;
-        if((pri.includes("dōjutsu")||pri.includes("dojutsu")||sec.includes("dōjutsu")) && cls.includes("dōjutsu")) return true;
-        if((pri.includes("kekkei")||sec.includes("kekkei")) && (cls.includes("kekkei")|| (t.meta&&t.meta.requiredKekkeiGenkai))) return true;
-        if((pri.includes("taijutsu")||sec.includes("taijutsu")) && cls.includes("taijutsu")) return true;
-        if((pri.includes("genjutsu")||sec.includes("genjutsu")) && cls.includes("genjutsu")) return true;
-        if((pri.includes("bukijutsu")||sec.includes("weapon")||pri.includes("kenjutsu")) && (cls.includes("bukijutsu")||cls.includes("kenjutsu"))) return true;
-        if((pri.includes("ninjutsu")||sec.includes("ninjutsu")) && cls.includes("ninjutsu")) return true;
-        return false;
-      });
-      if(scored.length) preferred = scored;
-    }
-  }catch(_e){}
-  const pick = preferred[Math.floor(Math.random()*preferred.length)];
-  const name = pick.name || (pick.meta&&pick.meta.name) || FALLBACK_GENERAL_TECHNIQUES[0].name;
+  // Uniform random among all eligible techniques (matches the signature wheel pool)
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  const name = pick.name || (pick.meta&&pick.meta.name) || FALLBACK_GENERAL_TECHNIQUES[Math.floor(Math.random()*FALLBACK_GENERAL_TECHNIQUES.length)].name;
   return {name, meta:pick.meta||pick, classification:(pick.meta&&pick.meta.classification)||pick.classification||""};
 }
 function addSignatureToCharacter(c){
@@ -3081,7 +3064,8 @@ function addSignatureToCharacter(c){
     c.signatureTechnique=rollSignatureTechnique(c);
   }catch(e){
     console.warn(e);
-    const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];
+    const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;
+    const fb=fbList[Math.floor(Math.random()*fbList.length)];
     c.signatureTechnique={name:fb.name, classification:fb.classification||""};
   }
   logLine("Signature technique: "+(c.signatureTechnique?.name||"Unknown"));
@@ -3813,7 +3797,7 @@ function baseSteps(){
   step('sixPaths','Six Paths Connection','A rare connection roll with prerequisite-aware downstream checks.',c=>{c.sixPaths=rollWeighted(DATA.sixPaths).name;return c.sixPaths});
   step('otsutsuki','Ōtsutsuki Heritage','The final lineage layer can unlock additional downstream eligibility.',c=>{c.otsutsuki=rollWeighted(DATA.otsutsuki).name;return c.otsutsuki});
   /* Space-Time Ninjutsu is inserted only when eligible (see addConditionalSteps). No "Skipped" wedge on the wheel. */
-  step('signature','Signature Ability / Technique','Every ninja receives a signature technique (eligibility-gated). Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);const fb=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES[0]:FALLBACK_GENERAL_TECHNIQUES[0];c.signatureTechnique={name:fb.name};}return (c.signatureTechnique&&c.signatureTechnique.name)||FALLBACK_GENERAL_TECHNIQUES[0].name});
+  step('signature','Signature Ability / Technique','Every ninja receives a signature technique (eligibility-gated). Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;const fb=fbList[Math.floor(Math.random()*fbList.length)];c.signatureTechnique={name:fb.name};}return (c.signatureTechnique&&c.signatureTechnique.name)||FALLBACK_GENERAL_TECHNIQUES[Math.floor(Math.random()*FALLBACK_GENERAL_TECHNIQUES.length)].name});
   step('currentGoal','Current Goal','Concrete aspirations are filtered so already-achieved rank goals are not rolled.',c=>{c.currentGoal=goalForInteractive(c).name;return c.currentGoal});
   return S;
 }
@@ -4694,5 +4678,5 @@ finishInteractive=function(){_finishInteractiveWithLog();if(lastCharacter)addCha
 
 </script>
 
-</body>
-</html>
+
+</body></html>
