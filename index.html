@@ -3363,10 +3363,9 @@ function getWheelSegments(){
   if(!s) return [];
   const c=interactive.c||{};
   let options=[];
-  // Admin predetermined result: single-wedge wheel so the spin lands on the forced value
-  if(typeof DEBUG_FORCED!=='undefined' && DEBUG_FORCED && DEBUG_FORCED[s.key]!=null){
-    options=[{name:String(DEBUG_FORCED[s.key]), weight:1}];
-  } else try{
+  // Forced results still use the full visual wheel (spin lands on the predetermined value
+  // via runStepWithOptionalForce + spinVisual). Do not collapse to a single wedge.
+  try{
     if(s.key==='land') options=DATA.lands||[];
     else if(s.key==='minorLand') options=DATA.minorLands||[];
     else if(s.key==='village'){ const vKey=c.land==='Other'?'Other':c.land; options=DATA.villages[vKey]||DATA.villages['Other']||[]; }
