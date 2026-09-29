@@ -1420,6 +1420,15 @@ function generate(){
   if(!c.bloodline){
     c.bloodlineData=legalBloodlines(c); c.bloodline=c.bloodlineData?.name||"None";
   }
+  /* Keep the explicit KG field synchronized with the selected bloodline so
+     every downstream jutsu selector sees the same lineage state. */
+  if(c.bloodline && c.bloodline!=="None" && !isDojutsuName(c.bloodline)){
+    const bl=String(c.bloodline).toLowerCase();
+    if(bl.includes("release") || bl.includes("shikotsumyaku") || bl.includes("sand manipulation") || bl.includes("hydrification") || bl.includes("crystal")){
+      c.kekkeiGenkai=c.bloodline;
+      c.kekkeiGenkaiAccess="Yes";
+    }
+  }
   logLine("Bloodline: "+(c.bloodline||"None"));
   if(c.hiden) logLine("Hiden technique: "+c.hiden);
 
@@ -3465,14 +3474,20 @@ function eligibleUltimatePool(c){
 }
 
 function rollUltimateJutsu(c, excludeNames){
-  /* Ultimate Jutsu follows the same strict lineage hierarchy. */
-  let source=eligibleUltimatePool(c)||[];
-  let pool=getForcedLineageJutsuPool(c,source,excludeNames||[]);
+  /* Ultimate Jutsu uses the same HARD Dōjutsu > KG > Nature hierarchy. */
+  let pool=getStrictGeneratedJutsuPool(c,'ultimate',excludeNames||[]);
   if(!pool.length){
-    pool=source.filter(j=>{
-      const n=String(j&&j.name||"").toLowerCase();
-      return n && n!=="none" && !(excludeNames||[]).some(x=>String(x||"").toLowerCase()===n);
+    // If exclusions removed the only technique in the preferred tier, allow
+    // that tier to remain rather than falling through to a lower tier.
+    pool=getStrictGeneratedJutsuPool(c,'ultimate',[]);
+  }
+  if(!pool.length){
+    const fallback=eligibleUltimatePool(c)||[];
+    pool=fallback.filter(j=>{
+      const n=String(j&&j.name||'').toLowerCase();
+      return n && n!=='none' && !(excludeNames||[]).some(x=>String(x||'').toLowerCase()===n);
     });
+    if(!pool.length) pool=fallback;
   }
   if(!pool.length) return {name:"None",meta:{name:"None"}};
   const weighted=pool.map(j=>W(j.name||"None",jutsuPriorityWeight(c,j),{ref:j}));
@@ -3611,18 +3626,48 @@ function jutsuPriorityWeight(c,t){
   return 1;
 }
 function getLineagePriorityPool(c, source, excludeNames){
+  /*
+   * HARD priority for generated Jutsu 1 / Jutsu 2 / Ultimate Jutsu:
+   *   1. Dōjutsu-exclusive techniques
+   *   2. Kekkei-genkai-exclusive techniques
+   *   3. Chakra-nature-compatible techniques
+   *
+   * This is intentionally a tiered FILTER, not a weighting system. Once a
+   * higher tier has at least one eligible technique, lower tiers are removed
+   * completely. This prevents a Wood Release user from ever falling through
+   * to ordinary Earth/Water techniques while Wood Release techniques exist.
+   */
   const src=Array.isArray(source)?source:[];
   const excluded=new Set((excludeNames||[]).filter(Boolean).map(x=>String(x).toLowerCase()));
   const clean=src.filter(t=>{
     const n=String(t && (t.name||(t.meta&&t.meta.name)||t.technique)||"").trim();
     return n && n!=="None" && !isExcludedSpecialtyJutsu(n) && !excluded.has(n.toLowerCase());
   });
-  const tiers=[
-    clean.filter(t=>techniqueMatchesCharacterDojutsu(t,c)),
-    clean.filter(t=>!techniqueMatchesCharacterDojutsu(t,c) && techniqueMatchesCharacterKg(t,c)),
-    clean.filter(t=>!techniqueMatchesCharacterDojutsu(t,c) && !techniqueMatchesCharacterKg(t,c) && techniqueMatchesCharacterNature(t,c))
-  ];
-  return tiers.find(x=>x.length) || [];
+
+  const dojutsuPool=clean.filter(t=>techniqueMatchesCharacterDojutsu(t,c));
+  if(dojutsuPool.length) return dojutsuPool;
+
+  const kgPool=clean.filter(t=>techniqueMatchesCharacterKg(t,c));
+  if(kgPool.length) return kgPool;
+
+  const naturePool=clean.filter(t=>techniqueMatchesCharacterNature(t,c));
+  if(naturePool.length) return naturePool;
+
+  return [];
+}
+
+function getStrictGeneratedJutsuPool(c, kind, excludeNames){
+  /* Build the source from the same catalogue used by the actual generator,
+     then apply the hard Dōjutsu > KG > Nature hierarchy. */
+  let source=[];
+  if(kind==='ultimate'){
+    source=(typeof ULTIMATE_JUTSU_CATALOG!=="undefined" && Array.isArray(ULTIMATE_JUTSU_CATALOG))
+      ? ULTIMATE_JUTSU_CATALOG.slice() : [];
+    source=source.filter(j=>j && j.name && localJutsuEligible(j,c||{}));
+  }else{
+    source=eligibleSignaturePool(c||{}).slice();
+  }
+  return getLineagePriorityPool(c||{},source,excludeNames||[]);
 }
 function getForcedLineageJutsuPool(c, source, excludeNames){
   /* Strict hierarchy requested by the generator:
@@ -3918,27 +3963,23 @@ function exportJutsuMetadata(){
   a.download="narutopedia-canon-jutsu-metadata.json";a.click();URL.revokeObjectURL(a.href);
 }
 function rollSignatureTechnique(c){
-  /* Weighted pick from eligibleSignaturePool — KG / nature priority; no synthetic fallbacks. */
+  /* Jutsu 2 uses the same HARD Dōjutsu > KG > Nature hierarchy as Jutsu 1. */
   c._sigPoolCache=null;
-  let pool=eligibleSignaturePool(c)||[];
-  pool=pool.filter(x=>{
-    const n=x.name||(x.meta&&x.meta.name)||"";
-    return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
-  });
-  if(c && c.specialtyJutsu && c.specialtyJutsu.name){
-    const used=String(c.specialtyJutsu.name);
-    const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
-    if(filtered.length) pool=filtered;
+  const exclude=[];
+  if(c && c.specialtyJutsu && c.specialtyJutsu.name) exclude.push(c.specialtyJutsu.name);
+  let pool=getStrictGeneratedJutsuPool(c,'signature',exclude);
+  if(!pool.length){
+    // If the selected tier contains only the Jutsu 1 technique, allow it to
+    // repeat rather than silently dropping to a lower-priority tier.
+    pool=getStrictGeneratedJutsuPool(c,'signature',[]);
   }
-  if(characterHasPuppetTool(c||{})){
+  /* Puppet-tool restriction never overrides Dōjutsu/KG priority. */
+  if(characterHasPuppetTool(c||{}) && !pool.some(t=>techniqueMatchesCharacterDojutsu(t,c)) && !pool.some(t=>techniqueMatchesCharacterKg(t,c))){
     const pup=pool.filter(isPuppetRelatedJutsu);
     if(pup.length) pool=pup;
   }
   if(!pool.length) return {name:"None", classification:"", meta:{name:"None"}};
-  const weighted=pool.map(t=>{
-    const nm=t.name||(t.meta&&t.meta.name)||"Unknown";
-    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
-  });
+  const weighted=pool.map(t=>W(t.name||(t.meta&&t.meta.name)||"Unknown",jutsuPriorityWeight(c,t),{ref:t}));
   const pick=rollWeighted(weighted);
   const ref=pick.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===pick.name)||pool[0];
   return {name:pick.name, meta:ref.meta||ref, classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
@@ -4048,8 +4089,10 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='ultimate_jutsu'){
-      /* Weighted eligible pool — Susanoo / KG / nature priority; wedge % = roll odds */
-      const pool=eligibleUltimatePool(c)||[];
+      /* Display exactly the same hard-priority pool used by the actual roll. */
+      let pool=getStrictGeneratedJutsuPool(c,'ultimate',[c.specialtyJutsu&&c.specialtyJutsu.name,c.signatureTechnique&&c.signatureTechnique.name]);
+      if(!pool.length) pool=getStrictGeneratedJutsuPool(c,'ultimate',[]);
+      if(!pool.length) pool=eligibleUltimatePool(c)||[];
       if(!pool.length) options=[{name:"None",weight:1}];
       else {
         options=pool.map(j=>{
@@ -4059,19 +4102,10 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='specialty_jutsu' || s.key==='signature'){
-      /* Weighted eligibleSignaturePool — KG-exclusive or nature priority; no synthetic fallbacks.
-         Signature excludes the specialty already rolled (if any). Wedge % = weight / total. */
+      /* Display exactly the same hard-priority pool used by Jutsu 1 / Jutsu 2. */
       c._sigPoolCache=null;
-      let pool=eligibleSignaturePool(c)||[];
-      pool=pool.filter(x=>{
-        const n=x.name||(x.meta&&x.meta.name)||"";
-        return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
-      });
-      if(s.key==='signature' && c.specialtyJutsu && c.specialtyJutsu.name){
-        const used=String(c.specialtyJutsu.name);
-        const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
-        if(filtered.length) pool=filtered;
-      }
+      let pool=getStrictGeneratedJutsuPool(c,'signature',s.key==='signature'?[c.specialtyJutsu&&c.specialtyJutsu.name]:[]);
+      if(!pool.length && s.key==='signature') pool=getStrictGeneratedJutsuPool(c,'signature',[]);
       if(characterHasPuppetTool(c)){
         const pup=pool.filter(isPuppetRelatedJutsu);
         if(pup.length) pool=pup;
@@ -4402,10 +4436,9 @@ const SIGNATURE_TECHNIQUES = {
   "Wood Style":["Wood Release: Deep Forest Emergence","Wood Release: Deep Forest Creation"]
 };
 function rollSpecialtyJutsu(c){
-  /* Jutsu 1: strict priority Dōjutsu exclusive > KG exclusive > chakra-nature compatible. */
+  /* Jutsu 1: HARD priority Dōjutsu exclusive > KG exclusive > chakra-nature compatible. */
   if(c) c._sigPoolCache=null;
-  let pool=eligibleSignaturePool(c)||[];
-  pool=getForcedLineageJutsuPool(c,pool,[]);
+  let pool=getStrictGeneratedJutsuPool(c,'signature',[]);
   if(!pool.length) return {name:"None",style:"None",meta:{name:"None"}};
   if(characterHasPuppetTool(c||{})){
     const pup=pool.filter(isPuppetRelatedJutsu);
