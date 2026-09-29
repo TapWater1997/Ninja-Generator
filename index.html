@@ -566,17 +566,17 @@ const DATA = {
     W("3",16,{count:3}),W("4",9,{count:4}),W("5",5,{count:5})
   ],
 
-  /* Eight Gates access — rolled before nature count. None 30%; remaining 70% decreases toward Gate of Death. */
+  /* Eight Gates access — rolled before nature count. None 65%; remaining 35% decreases toward Gate of Death. */
   eightGates: [
-    W("None", 30, {taiMod:0, gateLevel:0}),
-    W("Gate of Opening", 14, {taiMod:1, gateLevel:1}),
-    W("Gate of Healing", 12, {taiMod:2, gateLevel:2}),
-    W("Gate of Life", 10.5, {taiMod:3, gateLevel:3}),
-    W("Gate of Pain", 9, {taiMod:4, gateLevel:4}),
-    W("Gate of Limit", 8, {taiMod:5, gateLevel:5}),
-    W("Gate of View", 6.5, {taiMod:6, gateLevel:6}),
-    W("Gate of Wonder", 5.5, {taiMod:8, gateLevel:7}),
-    W("Gate of Death", 4.5, {taiMod:10, gateLevel:8})
+    W("None", 65, {taiMod:0, gateLevel:0}),
+    W("Gate of Opening", 7, {taiMod:1, gateLevel:1}),
+    W("Gate of Healing", 6, {taiMod:2, gateLevel:2}),
+    W("Gate of Life", 5.25, {taiMod:3, gateLevel:3}),
+    W("Gate of Pain", 4.5, {taiMod:4, gateLevel:4}),
+    W("Gate of Limit", 4, {taiMod:5, gateLevel:5}),
+    W("Gate of View", 3.25, {taiMod:6, gateLevel:6}),
+    W("Gate of Wonder", 2.75, {taiMod:8, gateLevel:7}),
+    W("Gate of Death", 2.25, {taiMod:10, gateLevel:8})
   ],
 
   natures:[
@@ -983,14 +983,14 @@ function getDojutsuPool(c){
   /* Visual + roll pool.
      Clan with forced dōjutsu: still returns the FULL option list (None + all catalogue dōjutsu)
      so the wheel spins with normal wedges; legalDojutsu forces the clan result.
-     Non-clan: 50% None, 50% rare transplant/awakening. Clan-forced path still shows full catalogue with 50% None visual weight. */
+     Non-clan: 65% None, 35% rare transplant/awakening. Clan-forced path still shows full catalogue with 65% None visual weight. */
   const forced = getClanForcedDojutsu(c) || c.weaponForcedDojutsu || null;
   if(forced){
     const all = (DATA.dojutsu||[]);
     const sum = all.reduce((s,d)=>s+(Number(d.weight)||1),0) || 1;
-    const pool = [{name:"None", weight:50, source:null}];
+    const pool = [{name:"None", weight:65, source:null}];
     for(const d of all){
-      pool.push({name:d.name, weight:Math.max(0.01, ((Number(d.weight)||1)/sum)*50), source: (d.clans&&d.clans.length)?"clan":"non-clan"});
+      pool.push({name:d.name, weight:Math.max(0.01, ((Number(d.weight)||1)/sum)*35), source: (d.clans&&d.clans.length)?"clan":"non-clan"});
     }
     if(!pool.some(x=>x.name===forced)) pool.push({name:forced, weight:10, source:getClanForcedDojutsu(c)?"clan":"weapon"});
     return pool;
@@ -999,11 +999,11 @@ function getDojutsuPool(c){
   if(clanEyes.length){
     return clanEyes.map(d=>({name:d.name, weight:d.weight||10, source:"clan"}));
   }
-  /* Non-clan / non-eye-clan: 50% None, 50% rare transplant/awakening split by catalogue weights. */
+  /* Non-clan / non-eye-clan: 65% None, 35% rare transplant/awakening split by catalogue weights. */
   const transplant = (DATA.dojutsu||[]).filter(d=>!(d.clans||[]).some(cl=>clanSatisfied(cl,c)));
   const eyeWeightSum = transplant.reduce((s,d)=>s+(Number(d.weight)||1),0) || 1;
-  const NONE_WEIGHT = 50;
-  const YES_BUDGET = 50;
+  const NONE_WEIGHT = 65;
+  const YES_BUDGET = 35;
   const pool = [{name:"None", weight:NONE_WEIGHT, source:null}];
   for(const d of transplant){
     const w = ((Number(d.weight)||1) / eyeWeightSum) * YES_BUDGET;
@@ -1136,6 +1136,10 @@ function rollStats(c){
   if(c.rank==="Kage"){s.battleIQ+=5;s.intelligence+=5}
   if(c.rank==="Jōnin"){s.battleIQ+=3}
   if(c.eightGatesTaiMod){s.taijutsu=(s.taijutsu||0)+Number(c.eightGatesTaiMod);}
+  /* Seven Swords of the Mist: +10 Weapon Skill (kenjutsu) */
+  if(c.weaponData && c.weaponData.category === "Seven Swords"){
+    s.weaponSkill = (s.weaponSkill || 0) + 10;
+  }
   for(const k in s)s[k]=Math.min(100,s[k]);
   return s;
 }
@@ -4108,7 +4112,7 @@ function baseSteps(){
     if(c.weaponForcedDojutsu) suffix += ' → '+c.weaponForcedDojutsu;
     return c.weapon + suffix;
   });
-  step('eightGates','Eight Gates Access','How many of the Eight Inner Gates the character can open. None is 30%; probability decreases toward the Gate of Death. Higher gates grant a Taijutsu D100 modifier (Death = +10).',c=>{
+  step('eightGates','Eight Gates Access','How many of the Eight Inner Gates the character can open. None is 65%; probability decreases toward the Gate of Death. Higher gates grant a Taijutsu D100 modifier (Death = +10).',c=>{
     const g=rollWeighted(DATA.eightGates);
     c.eightGates=g.name;
     c.eightGatesLevel=g.gateLevel||0;
@@ -4117,7 +4121,7 @@ function baseSteps(){
   });
   step('natureCount','Number of Chakra Natures','This determines how many individual nature wheels appear next.',c=>{const x=rollWeighted(DATA.natureCount);c.natureCount=x.count;c.natures=[];c.natureIds=[];return c.natureCount});
   /* kekkei_genkai + bloodline are inserted only when eligible (see insertLineageAbilitySteps). */
-  step('dojutsu','Dōjutsu','Clan-linked eyes force that dōjutsu (wheel still shows full options). Other characters: 50% None, 50% rare transplant/awakening.',c=>{
+  step('dojutsu','Dōjutsu','Clan-linked eyes force that dōjutsu (wheel still shows full options). Other characters: 65% None, 35% rare transplant/awakening.',c=>{
     const d=legalDojutsu(c);
     c.dojutsu=d||'None';
     c.dojutsuData=d?DATA.dojutsu.find(x=>x.name===d)||{name:d,mods:{}}:null;
@@ -4290,6 +4294,10 @@ function finalizeStats(c){
   if(c.senjutsu==='Sage Mode'||c.senjutsu==='Advanced Sage Mode'||c.senjutsu==='Six Paths Sage Mode'){s.chakraControl+=5;s.ninjutsu+=8;s.sensory+=10}
   if(c.rank==='Kage'){s.battleIQ+=5;s.intelligence+=5} if(c.rank==='Jōnin'){s.battleIQ+=3}
   if(c.eightGatesTaiMod){s.taijutsu=(s.taijutsu||0)+Number(c.eightGatesTaiMod);}
+  /* Seven Swords of the Mist: +10 Weapon Skill (kenjutsu) */
+  if(c.weaponData && c.weaponData.category === "Seven Swords"){
+    s.weaponSkill = (s.weaponSkill || 0) + 10;
+  }
   for(const k in s)s[k]=Math.max(1, Math.min(100, s[k]));
   c.stats=s;
   delete c._rawStats;
