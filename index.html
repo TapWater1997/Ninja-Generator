@@ -3464,13 +3464,21 @@ function eligibleUltimatePool(c){
   }
 }
 
-function rollUltimateJutsu(c){
-  const pool = eligibleUltimatePool(c)||[];
-  if(!pool.length) return {name:"None", meta:{name:"None"}};
-  const weighted = pool.map(j => W(j.name||"None", jutsuPriorityWeight(c, j), {ref:j}));
-  const pick = rollWeighted(weighted);
-  const ref = pick.ref || pool.find(x => x.name===pick.name) || pool[0];
-  return {name: pick.name, meta: ref};
+function rollUltimateJutsu(c, excludeNames){
+  /* Ultimate Jutsu follows the same strict lineage hierarchy. */
+  let source=eligibleUltimatePool(c)||[];
+  let pool=getForcedLineageJutsuPool(c,source,excludeNames||[]);
+  if(!pool.length){
+    pool=source.filter(j=>{
+      const n=String(j&&j.name||"").toLowerCase();
+      return n && n!=="none" && !(excludeNames||[]).some(x=>String(x||"").toLowerCase()===n);
+    });
+  }
+  if(!pool.length) return {name:"None",meta:{name:"None"}};
+  const weighted=pool.map(j=>W(j.name||"None",jutsuPriorityWeight(c,j),{ref:j}));
+  const pick=rollWeighted(weighted);
+  const ref=pick.ref||pool.find(x=>x.name===pick.name)||pool[0];
+  return {name:pick.name,meta:ref};
 }
 
 FALLBACK_GENERAL_TECHNIQUES=[
@@ -3563,23 +3571,66 @@ function techniqueRequiresSusanoo(t){
 function characterHasSusanoo(c){
   return !!(c && c.susanooAccess==="Yes" && dojutsuSatisfied("Mangekyō Sharingan", c));
 }
-function jutsuPriorityWeight(c, t){
-  /* Susanoo Access = Yes: Susanoo techniques get top priority on Jutsu 1 / 2 / Ultimate. */
+function techniqueMatchesCharacterDojutsu(t, c){
+  const m=(t && (t.meta||t))||{};
+  const required=String(m.requiredDojutsu||"").trim();
+  if(!required) return false;
+  return dojutsuSatisfied(required, c||{});
+}
+function techniqueMatchesCharacterLineage(t, c){
+  return techniqueMatchesCharacterDojutsu(t,c) || techniqueMatchesCharacterKg(t,c);
+}
+function lineagePriorityForTechnique(t, c){
+  /* Strict priority for the three generated combat techniques:
+     1) Dōjutsu-exclusive
+     2) Kekkei-genkai-exclusive
+     3) Chakra-nature-compatible
+     The first available tier is used; lower tiers are only fallbacks. */
+  if(techniqueMatchesCharacterDojutsu(t,c)) return 3;
+  if(techniqueMatchesCharacterKg(t,c)) return 2;
+  if(techniqueMatchesCharacterNature(t,c)) return 1;
+  return 0;
+}
+function techniqueRequiresSusanoo(t){
+  const m=(t && (t.meta||t))||{};
+  if(m.requiredSusanoo) return true;
+  const name=String(t.name||m.name||"").toLowerCase();
+  return name.includes("susanoo");
+}
+function characterHasSusanoo(c){
+  return !!(c && c.susanooAccess==="Yes" && dojutsuSatisfied("Mangekyō Sharingan",c));
+}
+function jutsuPriorityWeight(c,t){
+  /* Keep meaningful wheel weighting within the currently selected priority tier. */
   if(characterHasSusanoo(c) && techniqueRequiresSusanoo(t)) return 60;
-  const hasKg = !!characterKekkeiGenkaiName(c);
-  const kgMatch = techniqueMatchesCharacterKg(t, c);
-  const natMatch = techniqueMatchesCharacterNature(t, c);
-  const exclusiveMatch = !!(t && t.exclusive);
-  if(hasKg){
-    if(kgMatch) return 50;
-    if(exclusiveMatch) return 25;
-    if(natMatch) return 8;
-    return 1;
-  }
-  if(natMatch) return 25;
-  if(exclusiveMatch) return 12;
+  const tier=lineagePriorityForTechnique(t,c);
+  if(tier===3) return 50;
+  if(tier===2) return 40;
+  if(tier===1) return 30;
+  if(t && t.exclusive) return 10;
   return 1;
 }
+function getLineagePriorityPool(c, source, excludeNames){
+  const src=Array.isArray(source)?source:[];
+  const excluded=new Set((excludeNames||[]).filter(Boolean).map(x=>String(x).toLowerCase()));
+  const clean=src.filter(t=>{
+    const n=String(t && (t.name||(t.meta&&t.meta.name)||t.technique)||"").trim();
+    return n && n!=="None" && !isExcludedSpecialtyJutsu(n) && !excluded.has(n.toLowerCase());
+  });
+  const tiers=[
+    clean.filter(t=>techniqueMatchesCharacterDojutsu(t,c)),
+    clean.filter(t=>!techniqueMatchesCharacterDojutsu(t,c) && techniqueMatchesCharacterKg(t,c)),
+    clean.filter(t=>!techniqueMatchesCharacterDojutsu(t,c) && !techniqueMatchesCharacterKg(t,c) && techniqueMatchesCharacterNature(t,c))
+  ];
+  return tiers.find(x=>x.length) || [];
+}
+function getForcedLineageJutsuPool(c, source, excludeNames){
+  /* Strict hierarchy requested by the generator:
+     Dōjutsu exclusive > Kekkei-genkai exclusive > chakra-nature compatible.
+     No general/open technique is returned while a higher-priority tier exists. */
+  return getLineagePriorityPool(c, source, excludeNames);
+}
+
 function eligibleSignaturePool(c){
   /* Full eligibility-gated catalogue for Jutsu 1 / Jutsu 2.
      Exclusive clan/dōjutsu/KG/weapon techniques are MERGED into the general
@@ -3636,40 +3687,26 @@ function eligibleSignaturePool(c){
   }
 }
 
-function rollSignatureTechnique(c){
-  /* Weighted pick from eligibleSignaturePool — weights match wheel wedges. */
+function rollSignatureTechnique(c, excludeNames){
   c._sigPoolCache=null;
   let pool=eligibleSignaturePool(c)||[];
-  pool=pool.filter(x=>{
-    const n=x.name||(x.meta&&x.meta.name)||"";
-    return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
-  });
-  if(c.specialtyJutsu && c.specialtyJutsu.name){
-    const used=String(c.specialtyJutsu.name);
-    const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
-    if(filtered.length) pool=filtered;
-  }
+  pool=getForcedLineageJutsuPool(c,pool,excludeNames||[]);
+  if(!pool.length) return {name:"None",classification:"",meta:{name:"None"}};
   if(characterHasPuppetTool(c||{})){
     const pup=pool.filter(isPuppetRelatedJutsu);
     if(pup.length) pool=pup;
   }
-  if(!pool.length){
-    return {name:"None", classification:"", meta:{name:"None"}};
-  }
-  const weighted=pool.map(t=>{
-    const nm=t.name||(t.meta&&t.meta.name)||"Unknown";
-    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
-  });
+  const weighted=pool.map(t=>W(t.name||(t.meta&&t.meta.name)||"Unknown",jutsuPriorityWeight(c,t),{ref:t}));
   const pick=rollWeighted(weighted);
   const ref=pick.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===pick.name)||pool[0];
-  return {name:pick.name, meta:ref.meta||ref, classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
+  return {name:pick.name,meta:ref.meta||ref,classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
 }
 function addSignatureToCharacter(c){
   try{
-    c.signatureTechnique=rollSignatureTechnique(c);
+    c.signatureTechnique=rollSignatureTechnique(c,[c.specialtyJutsu&&c.specialtyJutsu.name]);
   }catch(e){
     console.warn(e);
-    c.signatureTechnique={name:"None", classification:""};
+    c.signatureTechnique={name:"None",classification:""};
   }
   logLine("Jutsu 2: "+(c.signatureTechnique?.name||"None"));
 }
@@ -3951,20 +3988,36 @@ function renderInteractiveLog(current=false){
   const el=document.getElementById('interactiveLog'); el.innerHTML=interactive.steps.filter((s,i)=>i<interactive.index+(current?1:0)&&s.shown!==false).map((s,i)=>`<div class="interactive-row ${i===interactive.index?'current':''}"><b>${esc(s.label)}</b><span>${esc(s.display??'—')}</span></div>`).join('');
 }
 function normalizeWheelEntries(raw){
-  /* Preserve positive weights exactly so wedge percentages match rollWeighted odds. */
-  const out=[];
+  /* One normalization path for every wheel. Positive weights are preserved exactly.
+     Duplicate labels are merged by SUMMING their weights, which preserves their
+     combined probability while preventing visually misleading duplicate wedges. */
+  const map=new Map();
   for(const x of (raw||[])){
     if(x==null) continue;
-    if(typeof x==="string"){ out.push({name:x, weight:1}); continue; }
-    const name = x.name ?? x.label ?? (x.count!==undefined ? String(x.count) : null);
-    if(name==null || name==="") continue;
-    let weight = Number(x.weight);
-    // Explicit 0 or negative = omit (not shown on wheel). Missing/NaN defaults to 1.
-    if(!Number.isFinite(weight)) weight = 1;
-    if(weight <= 0) continue;
-    out.push({name:String(name), weight});
+    const name = typeof x === "string" ? x : (x.name ?? x.label ?? (x.count!==undefined ? String(x.count) : null));
+    if(name==null || String(name)==="") continue;
+    let weight = typeof x === "string" ? 1 : Number(x.weight);
+    if(!Number.isFinite(weight)) weight=1;
+    if(weight<=0) continue;
+    const key=String(name);
+    if(map.has(key)) map.get(key).weight += weight;
+    else map.set(key,{name:key,weight});
   }
-  return out;
+  return [...map.values()];
+}
+
+function finalizeWheelSegments(raw){
+  const segs=normalizeWheelEntries(raw);
+  if(!segs.length) return [{name:"—",weight:1,frac:1,pct:100,startAngle:0,endAngle:360}];
+  const total=segs.reduce((sum,s)=>sum+s.weight,0)||1;
+  let angle=0;
+  return segs.map((s,i)=>{
+    const frac=s.weight/total;
+    const start=angle;
+    const end=i===segs.length-1?360:start+frac*360;
+    angle=end;
+    return {...s,frac,pct:frac*100,startAngle:start,endAngle:end};
+  });
 }
 function getWheelSegments(){
   const s=interactive.steps[interactive.index];
@@ -4114,26 +4167,7 @@ function getWheelSegments(){
     else if(s.key==='occupation') options=DATA.civilianOccupations||[];
     else if(s.key==='motivation') options=DATA.motivation||GOAL_POOL||[];
   }catch(e){ console.warn('getWheelSegments', e); }
-  let segs=normalizeWheelEntries(options);
-  if(!segs.length) segs=[{name:"—", weight:1}];
-  // Merge duplicate names by summing weight
-  const map=new Map();
-  for(const s of segs){
-    if(map.has(s.name)) map.get(s.name).weight += s.weight;
-    else map.set(s.name, {name:s.name, weight:s.weight});
-  }
-  segs=[...map.values()];
-  const total=segs.reduce((a,b)=>a+b.weight,0) || 1;
-  let angle=0;
-  const result=segs.map((s,i)=>{
-    const frac=s.weight/total;
-    const start=angle;
-    // Last wedge closes exactly at 360 so the ring has no float gap/overlap
-    const end = (i === segs.length - 1) ? 360 : (angle + frac*360);
-    angle = end;
-    return {...s, frac, pct: frac*100, startAngle:start, endAngle:end};
-  });
-  return result;
+  return finalizeWheelSegments(options);
 }
 function getVisibleWheelOptions(){
   return getWheelSegments().map(s=>s.name);
@@ -4182,7 +4216,7 @@ function buildFortuneWheel(segments){
     const start=seg.startAngle;
     const end=seg.endAngle;
     const mid=(start+end)/2;
-    html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"/>`;
+    html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"><title>${esc(seg.name)} — ${seg.pct>=1?seg.pct.toFixed(2):seg.pct.toFixed(3)}%</title></path>`;
     // Radial labels: text runs along the wedge (center → rim), not across it.
     // Lower threshold so denser Jutsu 1/2 pools still get short labels when possible.
     const span=end-start;
@@ -4199,6 +4233,12 @@ function buildFortuneWheel(segments){
       if(mid > 90 && mid < 270) textRot += 180;
       const fontSize = span>=36 ? 7.8 : span>=22 ? 6.8 : span>=12 ? 6.0 : span>=7 ? 5.2 : 4.4;
       html += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" fill="#0b0e14" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRot.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">${label.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+      if(span>=8){
+        const pctLabel=seg.pct>=1?seg.pct.toFixed(1)+"%":seg.pct.toFixed(2)+"%";
+        const [px,py]=polar(cx,cy,Math.min(82,lr+16),mid);
+        const pctSize=span>=22?4.8:4.2;
+        html += `<text x="${px.toFixed(2)}" y="${py.toFixed(2)}" fill="#0b0e14" font-size="${pctSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRot.toFixed(2)} ${px.toFixed(2)} ${py.toFixed(2)})">${pctLabel}</text>`;
+      }
     }
   });
   // Outer ring
@@ -4368,40 +4408,25 @@ const SIGNATURE_TECHNIQUES = {
   "Wood Style":["Wood Release: Deep Forest Emergence","Wood Release: Deep Forest Creation"]
 };
 function rollSpecialtyJutsu(c){
-  /* Weighted pick from eligibleSignaturePool — weights match wheel wedges (KG / nature priority). */
-  if(c) c._sigPoolCache = null;
-  let pool = eligibleSignaturePool(c) || [];
-  pool = pool.filter(x=>{
-    const n = x.name || (x.meta && x.meta.name) || "";
-    return n && n !== "None" && !isExcludedSpecialtyJutsu(n);
-  });
+  /* Jutsu 1: strict priority Dōjutsu exclusive > KG exclusive > chakra-nature compatible. */
+  if(c) c._sigPoolCache=null;
+  let pool=eligibleSignaturePool(c)||[];
+  pool=getForcedLineageJutsuPool(c,pool,[]);
+  if(!pool.length) return {name:"None",style:"None",meta:{name:"None"}};
   if(characterHasPuppetTool(c||{})){
-    const pup = pool.filter(isPuppetRelatedJutsu);
-    if(pup.length) pool = pup;
+    const pup=pool.filter(isPuppetRelatedJutsu);
+    if(pup.length) pool=pup;
   }
-  if(!pool.length){
-    return {name: "None", style: "None", meta: {name:"None"}};
-  }
-  const weighted = pool.map(t=>{
-    const nm = t.name || (t.meta && t.meta.name) || "Unknown";
-    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
-  });
-  const picked = rollWeighted(weighted);
-  const pick = picked.ref || pool.find(x=>(x.name||(x.meta&&x.meta.name))===picked.name) || pool[0];
-  const name = pick.name || (pick.meta && pick.meta.name) || picked.name || "Unknown";
-  const prio = getPriorityExclusiveTechniquePool(c);
-  let style = "General";
-  if(characterKekkeiGenkaiName(c) && techniqueMatchesCharacterKg(pick, c)){
-    style = characterKekkeiGenkaiName(c);
-  } else if(prio && prio.pool && prio.pool.length){
-    const set = getExclusiveTechniqueSet(c);
-    style = (set && set.label) || (prio.source === "weapon" ? "Weapon-Linked" : "Exclusive");
-  } else if(characterHasPuppetTool(c)){
-    style = "Puppetry";
-  } else {
-    style = specialtyStyleFor(c) || "General";
-  }
-  return {name, style, meta: pick.meta || pick};
+  const weighted=pool.map(t=>W(t.name||(t.meta&&t.meta.name)||"Unknown",jutsuPriorityWeight(c,t),{ref:t}));
+  const picked=rollWeighted(weighted);
+  const pick=picked.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===picked.name)||pool[0];
+  const name=pick.name||(pick.meta&&pick.meta.name)||picked.name||"Unknown";
+  let style="General";
+  if(techniqueMatchesCharacterDojutsu(pick,c)) style=c.dojutsu||"Dōjutsu";
+  else if(characterKekkeiGenkaiName(c) && techniqueMatchesCharacterKg(pick,c)) style=characterKekkeiGenkaiName(c);
+  else if(techniqueMatchesCharacterNature(pick,c)) style=specialtyStyleFor(c)||"Chakra Nature";
+  else style=specialtyStyleFor(c)||"General";
+  return {name,style,meta:pick.meta||pick};
 }
 
 function baseSteps(){
@@ -4463,7 +4488,7 @@ function baseSteps(){
   });
   step('signature','Jutsu 2','Same prioritized eligible pool as Jutsu 1 (excludes the Jutsu 1 pick when possible). KG or nature priority weights apply. No synthetic fallback list. Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None';});
   step('ultimate_jutsu','Ultimate Jutsu','Secret Technique / Ultimate Jutsu. Only eligible options appear. Susanoo Access = Yes prioritises Susanoo techniques; KG and nature priority also apply.',c=>{
-    const u=rollUltimateJutsu(c);
+    const u=rollUltimateJutsu(c,[c.specialtyJutsu&&c.specialtyJutsu.name,c.signatureTechnique&&c.signatureTechnique.name]);
     c.ultimateJutsu=u;
     return u.name;
   });
@@ -5164,7 +5189,7 @@ function forceDebugStep(key){
     otsutsukiLevel:()=>({key:'otsutsukiLevel',label,desc:'Debug wheel.',fn:c=>{c.otsutsukiLevel=rollWeighted(DATA.otsutsukiLevels).name;return c.otsutsukiLevel}}),
     spaceTime:()=>({key:'spaceTime',label,desc:'Debug wheel.',fn:c=>{c.spaceTime=rollWeighted([W('No',95),W('Yes',5)]).name;return c.spaceTime}}),
     signature:()=>({key:'signature',label,desc:'Debug wheel.',fn:c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None'}}),
-    ultimate_jutsu:()=>({key:'ultimate_jutsu',label,desc:'Debug wheel.',fn:c=>{const u=rollUltimateJutsu(c);c.ultimateJutsu=u;return u.name}}),
+    ultimate_jutsu:()=>({key:'ultimate_jutsu',label,desc:'Debug wheel.',fn:c=>{const u=rollUltimateJutsu(c,[c.specialtyJutsu&&c.specialtyJutsu.name,c.signatureTechnique&&c.signatureTechnique.name]);c.ultimateJutsu=u;return u.name}}),
     currentGoal:()=>({key:'currentGoal',label,desc:'Debug wheel.',fn:c=>{c.currentGoal=goalForInteractive(c).name;return c.currentGoal}})
   };
   const mk=makers[key];
@@ -5575,12 +5600,12 @@ function devRoll(pool){return rollWeighted(pool.length?pool:[W('No Result',1)]).
 function devForcedForWheel(wheel){return devState.forced[wheel]}
 function buildDevWheel(pool){
   const svg=document.getElementById('devWheelSvg');if(!svg)return[];svg.innerHTML='';svg.setAttribute('viewBox','0 0 200 200');svg.setAttribute('preserveAspectRatio','xMidYMid meet');
-  const cx=100,cy=100,r=98,segs=normalizeWheelEntries(pool),total=segs.reduce((a,b)=>a+b.weight,0)||1;let angle=0;const parts=[];
+  const cx=100,cy=100,r=98,segs=finalizeWheelSegments(pool),parts=[];
   const colors=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e84393','#00b894','#6c5ce7'];
   const polar=(deg,rad)=>{const a=(deg-90)*Math.PI/180;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)]};const escSvg=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  for(let i=0;i<segs.length;i++){const x=segs[i],frac=x.weight/total,start=angle,end=i===segs.length-1?360:angle+frac*360;angle=end;const[x1,y1]=polar(start,r),[x2,y2]=polar(end,r),span=end-start,large=span>180?1:0,mid=(start+end)/2;parts.push({...x,startAngle:start,endAngle:end,frac,pct:frac*100});
-    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);path.setAttribute('fill',colors[i%colors.length]);path.setAttribute('stroke','#0d1119');path.setAttribute('stroke-width','1.2');svg.appendChild(path);
-    if(span>=3.5){const lr=span>=30?52:span>=16?58:span>=8?64:70,[tx,ty]=polar(mid,lr),maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3,raw=String(x.name||''),label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4,t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',tx.toFixed(2));t.setAttribute('y',ty.toFixed(2));t.setAttribute('fill','#0b0e14');t.setAttribute('font-size',fontSize);t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');t.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);t.innerHTML=escSvg(label);svg.appendChild(t)}
+  for(let i=0;i<segs.length;i++){const x=segs[i],start=x.startAngle,end=x.endAngle,frac=x.frac,span=end-start,large=span>180?1:0,mid=(start+end)/2;parts.push(x);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);path.setAttribute('fill',colors[i%colors.length]);path.setAttribute('stroke','#0d1119');path.setAttribute('stroke-width','1.2');const title=document.createElementNS('http://www.w3.org/2000/svg','title');title.textContent=`${x.name} — ${x.pct>=1?x.pct.toFixed(2):x.pct.toFixed(3)}%`;path.appendChild(title);svg.appendChild(path);
+    if(span>=3.5){const lr=span>=30?52:span>=16?58:span>=8?64:70,[tx,ty]=polar(mid,lr),maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3,raw=String(x.name||''),label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4,t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',tx.toFixed(2));t.setAttribute('y',ty.toFixed(2));t.setAttribute('fill','#0b0e14');t.setAttribute('font-size',fontSize);t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');t.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);t.innerHTML=escSvg(label);svg.appendChild(t);if(span>=8){const pctLabel=x.pct>=1?x.pct.toFixed(1)+'%':x.pct.toFixed(2)+'%', [px,py]=polar(mid,Math.min(82,lr+16)),pt=document.createElementNS('http://www.w3.org/2000/svg','text');pt.setAttribute('x',px.toFixed(2));pt.setAttribute('y',py.toFixed(2));pt.setAttribute('fill','#0b0e14');pt.setAttribute('font-size',span>=22?4.8:4.2);pt.setAttribute('font-weight','700');pt.setAttribute('text-anchor','middle');pt.setAttribute('dominant-baseline','middle');pt.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${px.toFixed(2)} ${py.toFixed(2)})`);pt.textContent=pctLabel;svg.appendChild(pt)}}
   }
   const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke','#c5cedd');c.setAttribute('stroke-width','1.5');c.setAttribute('opacity','.35');svg.appendChild(c);return parts;
 }
