@@ -283,6 +283,63 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .log-empty{padding:25px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
 @media(max-width:720px){.log-detail-grid{grid-template-columns:1fr}.log-detail-stats{grid-template-columns:repeat(2,1fr)}}
 
+
+/* ===================== NINJA DEVELOPMENT SYSTEM ===================== */
+.development-panel{margin-top:24px}
+.dev-shell{display:grid;gap:18px}
+.dev-input-grid{display:grid;grid-template-columns:1fr 1.25fr;gap:16px}
+.dev-card{background:#0d121b;border:1px solid var(--line);border-radius:14px;padding:16px}
+.dev-card h3{margin:0 0 8px;font-size:18px}
+.dev-card h4{margin:14px 0 7px;font-size:14px}
+.dev-card p{color:var(--muted);line-height:1.45}
+.dev-load-row,.dev-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.dev-load-row>div{flex:1;min-width:180px}
+.dev-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:10px}
+.dev-stat-input{background:#111721;border:1px solid var(--line);border-radius:10px;padding:9px}
+.dev-stat-input label{display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:5px}
+.dev-stat-input input{width:100%;box-sizing:border-box}
+.dev-ability-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dev-ability-grid textarea{min-height:82px;resize:vertical}
+.dev-wheel-shell{background:#000;border-radius:14px;padding:12px 12px 20px}
+.dev-wheel-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:0 6px}
+.dev-wheel-stage{display:grid;justify-items:center;gap:22px;margin:34px 0 42px}
+.dev-wheel-title{font-size:clamp(20px,4vw,28px);font-weight:900;margin:0;text-align:center;color:#fff}
+.dev-wheel-wrap{position:relative;width:min(72vw,390px);height:min(72vw,390px);aspect-ratio:1/1}
+.dev-wheel{position:absolute;inset:0;border-radius:50%;transform:rotate(0deg);transition:transform 3.2s cubic-bezier(.08,.7,.12,1);overflow:visible}
+.dev-wheel.spinning{filter:brightness(1.06)}
+.dev-wheel svg{width:100%;height:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.4))}
+.dev-pointer{width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:36px solid #f5f7fb;position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 3px 3px rgba(0,0,0,.55));pointer-events:none}
+.dev-pointer:after{content:"";position:absolute;left:-6px;top:-36px;width:12px;height:12px;border-radius:50%;background:#f5f7fb;box-shadow:0 0 0 2px #1a2030}
+.dev-spin-button{position:absolute;z-index:12;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3d4f6a,#152032);border:4px solid #f0f4fa;color:#fff;font-weight:900;font-size:14px;letter-spacing:.08em;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.55);font-family:inherit}
+.dev-spin-button:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.05)}
+.dev-spin-button:disabled{opacity:.45;cursor:not-allowed}
+.dev-overlay{position:absolute;z-index:15;inset:0;border-radius:50%;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease}
+.dev-overlay.show{opacity:1;visibility:visible}
+.dev-overlay:before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(8,11,17,.8)}
+.dev-result-card{position:relative;max-width:78%;padding:16px 20px;border-radius:14px;background:linear-gradient(180deg,#222c3d,#121925);border:2px solid var(--accent);box-shadow:0 12px 35px rgba(0,0,0,.55);text-align:center}
+.dev-result-card small{display:block;color:var(--muted);font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.dev-result-card strong{display:block;font-size:clamp(18px,3vw,28px);line-height:1.15}
+.dev-options{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;max-width:900px;margin:auto}
+.dev-option{background:#111721;border:1px solid var(--line);border-radius:999px;padding:6px 9px;font-size:11px;color:#dbe2ec}
+.dev-option.active{outline:2px solid var(--accent);color:#fff}
+.dev-option i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.dev-result-panel{display:grid;gap:10px}
+.dev-change-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px}
+.dev-change{background:#111721;border:1px solid var(--line);border-radius:10px;padding:10px}
+.dev-change span{display:block;color:var(--muted);font-size:11px}.dev-change strong{font-size:20px}
+.dev-history-list{display:grid;gap:8px}.dev-history-item{background:#111721;border:1px solid var(--line);border-radius:10px;padding:10px}.dev-history-item b{display:block}.dev-history-item span{color:var(--muted);font-size:12px}
+.dev-test-panel{margin-top:10px;padding:14px;background:#111722;border:1px solid var(--line);border-radius:12px}
+.dev-test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dev-test-grid>div{min-width:0}
+.dev-test-grid select{width:100%}
+.dev-repeat-fields{display:grid;gap:7px;margin-top:5px}.dev-repeat-row{display:flex;gap:7px;align-items:center}.dev-repeat-row select{flex:1;min-width:0}.dev-repeat-row button{flex:0 0 auto;padding:7px 10px}.dev-add-button{margin-top:7px}.dev-ability-refresh{display:flex;flex-wrap:wrap;gap:9px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.dev-status{color:var(--muted);font-size:13px;min-height:20px}
+@media(max-width:720px){
+ .dev-input-grid,.dev-ability-grid,.dev-test-grid{grid-template-columns:1fr}
+ .dev-wheel-stage{margin:26vh 0 30vh;gap:28px}
+ .dev-wheel-wrap{width:min(88vw,390px);height:min(88vw,390px)}
+ .development-panel{border-radius:0}
+}
 </style>
 </head>
 <body>
@@ -392,6 +449,87 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     <section class="card">
       <h2>Personality / Goals</h2>
       <div id="goals"></div>
+    </section>
+
+
+    <section class="card full development-panel" id="ninjaDevelopmentPanel">
+      <div class="dev-shell">
+        <div>
+          <h2>Ninja Development</h2>
+          <p class="small">Use this independent system to develop an existing ninja through training, combat, new techniques, chakra development, ability growth, recovery, setbacks, and breakthroughs. It does not advance the Character Creation Wheel.</p>
+        </div>
+
+        <div class="dev-input-grid">
+          <div class="dev-card">
+            <h3>1. Existing Ninja</h3>
+            <p class="small">Load a generated/logged ninja, or enter an existing ninja manually. All fields remain editable before development.</p>
+            <div class="dev-load-row">
+              <div><label class="small" for="devNinjaSource">Ninja source</label><select id="devNinjaSource" onchange="loadDevelopmentNinja()"></select></div>
+              <button type="button" class="secondary" onclick="loadDevelopmentNinja()">Load Ninja</button>
+              <button type="button" class="secondary" onclick="resetDevelopmentInputs()">Reset</button>
+            </div>
+            <h4>Current D100 Stats</h4>
+            <div id="devStatsGrid" class="dev-stats-grid"></div>
+          </div>
+
+          <div class="dev-card">
+            <h3>2. Abilities &amp; Knowledge</h3>
+            <p class="small">Choose the ninja's current abilities from the same structured option pools used by the generator. Add additional selections wherever the ninja can possess multiple abilities.</p>
+            <div class="dev-ability-grid">
+              <div class="dev-select-group"><label class="small">Chakra Natures</label><div id="devNaturesFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('natures')">+ Add Chakra Nature</button></div>
+              <div class="dev-select-group"><label class="small">Dōjutsu / Stage</label><div id="devDojutsuFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('dojutsu')">+ Add Dōjutsu</button></div>
+              <div class="dev-select-group"><label class="small">Kekkei Genkai / Bloodlines</label><div id="devKekkeiFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('kekkei')">+ Add Kekkei Genkai</button></div>
+              <div class="dev-select-group"><label class="small">Known Jutsu</label><div id="devJutsuFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('jutsu')">+ Add Jutsu</button></div>
+              <div class="dev-select-group"><label class="small">Summoning / Contracts</label><div id="devSummoningFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('summoning')">+ Add Summoning Contract</button></div>
+              <div class="dev-select-group"><label class="small">Weapons / Special Tools</label><div id="devWeaponsFields" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addDevelopmentAbilityField('weapons')">+ Add Weapon / Tool</button></div>
+            </div>
+            <div class="dev-ability-refresh"><button type="button" class="secondary" onclick="refreshDevelopmentAbilityFields()">Refresh Option Lists</button><span class="small">Refreshing is useful after loading additional canon catalogues.</span></div>
+          </div>
+        </div>
+
+        <div class="dev-wheel-shell">
+          <div class="dev-wheel-head">
+            <div><h3 style="margin:0">Development Wheel</h3><div id="devWheelProgress" class="small">Wheel 1 of 2</div></div>
+            <label class="spin-preferences"><input type="checkbox" id="devSkipAnimation"> Skip wheel animations and roll instantly</label>
+          </div>
+          <div id="devWheelStage" class="dev-wheel-stage">
+            <h3 id="devWheelTitle" class="dev-wheel-title">Development Category</h3>
+            <div class="dev-wheel-wrap">
+              <div class="dev-pointer"></div>
+              <div class="dev-wheel" id="devFortuneWheel"><svg id="devWheelSvg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"></svg></div>
+              <button type="button" class="dev-spin-button" id="devSpinButton" onclick="spinDevelopmentWheel()">SPIN</button>
+              <div class="dev-overlay" id="devWheelOverlay"><div class="dev-result-card"><small>Development Result</small><strong id="devWheelResultValue">—</strong></div></div>
+            </div>
+            <div id="devWheelHint" class="dev-status">Load an existing ninja, then spin Wheel 1.</div>
+          </div>
+
+          <div class="dev-test-panel">
+            <h3 style="margin:0 0 6px">Development Wheel Testing</h3>
+            <p class="small" style="margin:0 0 12px">Test a particular development wheel without running the other one. You can also force an exact result. During a five-branch session, completed test results are applied immediately and return to Development Category when appropriate.</p>
+            <div class="dev-test-grid">
+              <div><label class="small" for="devTestWheel">Wheel to test</label><select id="devTestWheel" onchange="populateDevForceResults()"><option value="category">Development Category</option><option value="trainingWhat">Training What</option><option value="trainingLevel">Training Level</option><option value="opponent">Combat — Opponent</option><option value="combatOutcome">Combat — Fight Outcome</option><option value="combatRewardStat">Combat — Reward Stat</option><option value="combatRewardLevel">Combat — Reward Level</option><option value="weapon">Find New Weapon</option><option value="weaponDecision">Weapon — Keep / Replace</option><option value="summoning">New Summoning Contract</option><option value="gates">Eight Gates Mastery</option><option value="chakraChoice">Chakra Development Choice</option><option value="chakraJutsu">Chakra — New Jutsu</option><option value="chakraNature">Chakra — New Nature</option><option value="setbackType">Setback Type</option><option value="setbackStat">Setback — Affected Stat</option><option value="setbackAmount">Setback — D10 Amount</option><option value="outcome">Specific Development</option></select></div>
+              <div><label class="small" for="devForceResult">Predetermined result</label><select id="devForceResult"></select></div>
+            </div>
+            <div class="dev-actions" style="margin-top:10px">
+              <button type="button" class="secondary" onclick="openDevelopmentTestWheel()">Open Selected Wheel</button>
+              <button type="button" class="secondary" onclick="spinDevelopmentTestWheel()">Run Selected Test</button>
+              <button type="button" class="secondary" onclick="clearDevelopmentForce()">Clear Forced Result</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="dev-card dev-result-panel">
+          <h3>Development Result</h3>
+          <div id="devResultText" class="result">No development event yet.</div>
+          <div id="devChangeGrid" class="dev-change-grid"></div>
+          <div class="dev-actions"><button type="button" id="applyDevResultBtn" onclick="applyDevelopmentResult()" disabled>Apply Result to Ninja</button><button type="button" class="secondary" onclick="startDevelopment()">Start New Development Roll</button></div>
+        </div>
+
+        <div class="dev-card">
+          <h3>Development History</h3>
+          <div id="devHistory" class="dev-history-list"><div class="small">No development events recorded for this ninja.</div></div>
+        </div>
+      </div>
     </section>
 
 
@@ -5098,6 +5236,516 @@ function debugRespinCurrent(){
 }
 try{ populateDebugWheelSelect(); }catch(e){ console.warn(e); }
 
+
+
+/* ===================== NINJA DEVELOPMENT SYSTEM ===================== */
+const DEV_OPPONENTS=[
+  {name:"Naruto Uzumaki",category:"Protagonist",rank:"Kage (7th Hokage); formerly Genin"},
+  {name:"Sasuke Uchiha",category:"Both",rank:"Genin (official); later Missing-nin / equal to Kage-level"},
+  {name:"Sakura Haruno",category:"Protagonist",rank:"Jōnin"},
+  {name:"Kakashi Hatake",category:"Protagonist",rank:"Kage (6th Hokage); formerly Jōnin / ANBU"},
+  {name:"Sai",category:"Protagonist",rank:"Chūnin / ANBU background"},
+  {name:"Yamato",category:"Protagonist",rank:"ANBU / Jōnin-level"},
+  {name:"Shikamaru Nara",category:"Protagonist",rank:"Jōnin"},
+  {name:"Ino Yamanaka",category:"Protagonist",rank:"Jōnin"},
+  {name:"Chōji Akimichi",category:"Protagonist",rank:"Jōnin"},
+  {name:"Rock Lee",category:"Protagonist",rank:"Jōnin"},
+  {name:"Neji Hyūga",category:"Protagonist",rank:"Jōnin"},
+  {name:"Tenten",category:"Protagonist",rank:"Chūnin"},
+  {name:"Hinata Hyūga",category:"Protagonist",rank:"Chūnin / later Jōnin-level (civilian focus)"},
+  {name:"Kiba Inuzuka",category:"Protagonist",rank:"Chūnin"},
+  {name:"Shino Aburame",category:"Protagonist",rank:"Chūnin / later instructor"},
+  {name:"Might Guy",category:"Protagonist",rank:"Jōnin"},
+  {name:"Asuma Sarutobi",category:"Protagonist",rank:"Jōnin"},
+  {name:"Kurenai Yūhi",category:"Protagonist",rank:"Jōnin"},
+  {name:"Iruka Umino",category:"Protagonist",rank:"Chūnin"},
+  {name:"Konohamaru Sarutobi",category:"Protagonist",rank:"Jōnin (Boruto era); formerly Genin/Chūnin"},
+  {name:"Shisui Uchiha",category:"Protagonist",rank:"Jōnin / ANBU"},
+  {name:"Jiraiya",category:"Protagonist",rank:"Sannin (Jōnin-level legend)"},
+  {name:"Tsunade",category:"Protagonist",rank:"Kage (5th Hokage); Sannin"},
+  {name:"Minato Namikaze",category:"Protagonist",rank:"Kage (4th Hokage); formerly Jōnin"},
+  {name:"Kushina Uzumaki",category:"Protagonist",rank:"Jōnin"},
+  {name:"Hashirama Senju",category:"Protagonist",rank:"Kage (1st Hokage)"},
+  {name:"Tobirama Senju",category:"Protagonist",rank:"Kage (2nd Hokage)"},
+  {name:"Hiruzen Sarutobi",category:"Protagonist",rank:"Kage (3rd Hokage)"},
+  {name:"Rin Nohara",category:"Protagonist",rank:"Chūnin"},
+  {name:"Obito Uchiha (young / ally phases)",category:"Both",rank:"Chūnin (official at death); later Kage-level threat"},
+  {name:"Hanabi Hyūga",category:"Protagonist",rank:"Chūnin / clan heir"},
+  {name:"Danzo Shimura",category:"Antagonist",rank:"Elder / Root leader (Jōnin/ANBU authority)"},
+  {name:"Gaara",category:"Both",rank:"Kage (5th Kazekage); formerly Genin"},
+  {name:"Temari",category:"Protagonist",rank:"Jōnin"},
+  {name:"Kankurō",category:"Protagonist",rank:"Jōnin"},
+  {name:"Chiyo",category:"Protagonist",rank:"Elder / legendary puppeteer"},
+  {name:"Fourth Kazekage (Rasa)",category:"Antagonist",rank:"Kage (4th Kazekage)"},
+  {name:"A (Fourth Raikage)",category:"Protagonist",rank:"Kage (4th Raikage)"},
+  {name:"Killer B",category:"Protagonist",rank:"Jōnin / A-rank equivalent"},
+  {name:"Darui",category:"Protagonist",rank:"Jōnin; later 5th Raikage"},
+  {name:"Third Raikage",category:"Protagonist",rank:"Kage (3rd Raikage)"},
+  {name:"Yugito Nii",category:"Protagonist",rank:"Jōnin"},
+  {name:"Ōnoki",category:"Protagonist",rank:"Kage (3rd Tsuchikage)"},
+  {name:"Roshi",category:"Protagonist",rank:"Jōnin"},
+  {name:"Han",category:"Protagonist",rank:"Jōnin"},
+  {name:"Mei Terumī",category:"Protagonist",rank:"Kage (5th Mizukage)"},
+  {name:"Zabuza Momochi",category:"Antagonist",rank:"Missing-nin (formerly Kirigakure ANBU/hunter-nin)"},
+  {name:"Haku",category:"Antagonist",rank:"Missing-nin (no formal rank stated; genin-age operative)"},
+  {name:"Yagura Karatachi",category:"Antagonist",rank:"Kage (4th Mizukage)"},
+  {name:"Second Mizukage (Gengetsu)",category:"Antagonist",rank:"Kage (2nd Mizukage)"},
+  {name:"Utakata",category:"Protagonist",rank:"Jōnin / Missing-nin period"},
+  {name:"Fū",category:"Protagonist",rank:"Jōnin"},
+  {name:"Pain (Nagato)",category:"Antagonist",rank:"Village leader (Ame); no standard rank"},
+  {name:"Nagato",category:"Antagonist",rank:"None (Ame orphan / Akatsuki)"},
+  {name:"Konan",category:"Antagonist",rank:"None (Ame / Akatsuki)"},
+  {name:"Itachi Uchiha",category:"Both",rank:"ANBU captain / Missing-nin (official)"},
+  {name:"Kisame Hoshigaki",category:"Antagonist",rank:"Missing-nin (formerly Kirigakure)"},
+  {name:"Deidara",category:"Antagonist",rank:"Missing-nin (formerly Iwagakure)"},
+  {name:"Sasori",category:"Antagonist",rank:"Missing-nin (formerly Sunagakure)"},
+  {name:"Hidan",category:"Antagonist",rank:"Missing-nin"},
+  {name:"Kakuzu",category:"Antagonist",rank:"Missing-nin (formerly Takigakure)"},
+  {name:"Tobi / Masked Man",category:"Antagonist",rank:"None (masked identity)"},
+  {name:"Madara Uchiha",category:"Antagonist",rank:"Co-founder of Konoha; later missing-nin / god-tier threat"},
+  {name:"Kaguya Ōtsutsuki",category:"Antagonist",rank:"None (progenitor of chakra)"},
+  {name:"Black Zetsu",category:"Antagonist",rank:"None"},
+  {name:"Orochimaru",category:"Antagonist",rank:"Sannin / Missing-nin (formerly Konoha)"},
+  {name:"Kabuto Yakushi",category:"Both",rank:"Genin (official Leaf rank); later rogue / Sage"},
+  {name:"Kimimaro",category:"Antagonist",rank:"None (Kaguya clan survivor / Oto)"},
+  {name:"Jūgo",category:"Both",rank:"None (Sage-related / Taka)"},
+  {name:"Suigetsu Hōzuki",category:"Both",rank:"None / Missing-nin"},
+  {name:"Karin",category:"Both",rank:"None / Missing-nin"},
+  {name:"Kidōmaru",category:"Antagonist",rank:"None (Oto)"},
+  {name:"Sakon and Ukon",category:"Antagonist",rank:"None (Oto)"},
+  {name:"Jirōbō",category:"Antagonist",rank:"None (Oto)"},
+  {name:"Tayuya",category:"Antagonist",rank:"None (Oto)"},
+  {name:"Mifune",category:"Protagonist",rank:"Samurai general (not shinobi rank)"},
+  {name:"Hanzō",category:"Antagonist",rank:"Village leader (Ame); legendary"},
+  {name:"Boruto Uzumaki",category:"Protagonist",rank:"Genin"},
+  {name:"Sarada Uchiha",category:"Protagonist",rank:"Chūnin"},
+  {name:"Mitsuki",category:"Protagonist",rank:"Genin"},
+  {name:"Kawaki",category:"Both",rank:"None (Kara vessel / later Leaf resident)"},
+  {name:"Delta",category:"Antagonist",rank:"None (Kara Inners)"},
+  {name:"Boro",category:"Antagonist",rank:"None (Kara Inners)"},
+  {name:"Jigen / Isshiki Ōtsutsuki",category:"Antagonist",rank:"None (Kara leader / Ōtsutsuki)"},
+  {name:"Koji Kashin",category:"Both",rank:"None (Kara Inner; clone of Jiraiya)"},
+  {name:"Momoshiki Ōtsutsuki",category:"Antagonist",rank:"None (Ōtsutsuki)"},
+  {name:"Kinshiki Ōtsutsuki",category:"Antagonist",rank:"None (Ōtsutsuki)"},
+  {name:"Indra Ōtsutsuki",category:"Antagonist",rank:"None (ancient)"},
+  {name:"Ashura Ōtsutsuki",category:"Protagonist",rank:"None (ancient)"},
+  {name:"Hagoromo Ōtsutsuki",category:"Protagonist",rank:"None (Sage of Six Paths)"}
+];
+const DEV_STAT_NAMES={chakraQuantity:'Chakra Quantity',chakraControl:'Chakra Control',ninjutsu:'Ninjutsu',taijutsu:'Taijutsu',genjutsu:'Genjutsu',speed:'Speed',strength:'Strength',durability:'Durability',intelligence:'Intelligence',battleIQ:'Battle IQ',stamina:'Stamina',handSeals:'Hand Seals',sensory:'Sensory Ability',willpower:'Willpower',stealth:'Stealth',weaponSkill:'Weapon Skill'};
+const DEV_CATEGORY_POOL=[
+  W('Training',18),W('Seek Combat',16),W('Learn Jutsu',10),W('Chakra Development',11),
+  W('Dōjutsu Development',6),W('Find New Weapon',6),
+  W('Contract New Summoning',6),W('Physical Development',8),W('Setback',5),W('Personal Goal',3)
+];
+
+const DEV_TRAINING_LEVELS=[
+  W('Level 1 — Light Training (+1 to +2)',30,{min:1,max:2}),
+  W('Level 2 — Standard Training (+2 to +4)',25,{min:2,max:4}),
+  W('Level 3 — Focused Training (+3 to +6)',20,{min:3,max:6}),
+  W('Level 4 — Intensive Training (+5 to +8)',15,{min:5,max:8}),
+  W('Level 5 — Exceptional Training (+7 to +10)',10,{min:7,max:10})
+];
+const DEV_COMBAT_REWARD_LEVELS=DEV_TRAINING_LEVELS.map(x=>W(x.name,x.weight,{min:x.min,max:x.max}));
+const DEV_COMBAT_OUTCOMES=[
+  W('Easy Victory',24,{result:'victory',reward:1}),
+  W('Complicated Victory',28,{result:'victory',reward:2}),
+  W('Narrow Victory',18,{result:'victory',reward:3}),
+  W('Draw / Inconclusive Fight',10,{result:'draw',reward:0}),
+  W('Harsh Defeat',12,{result:'defeat',reward:0}),
+  W('Overwhelming Defeat',8,{result:'defeat',reward:0})
+];
+const DEV_CHAPTER_NATURES=[
+  W('Fire Release',100,{id:'fire'}),W('Wind Release',100,{id:'wind'}),W('Lightning Release',100,{id:'lightning'}),
+  W('Earth Release',100,{id:'earth'}),W('Water Release',100,{id:'water'}),W('Yin Release',5,{id:'yin'}),
+  W('Yang Release',5,{id:'yang'}),W('Yin–Yang Release',2,{id:'yin-yang'})
+];
+
+function devIsMissingNin(n){return /missing[- ]?nin/i.test(String(n?.type||n?.status||''))}
+function devCombatRelationship(n){return devIsMissingNin(n)?{rival:'Antagonist',enemy:'Protagonist'}:{rival:'Protagonist',enemy:'Antagonist'}}
+function devOpponentWeight(rank,n,role){
+  const r=String(rank||'').toLowerCase(), nr=String(n?.rank||'').toLowerCase();
+  let w=2;
+  if(/academy/.test(r))w=5;
+  else if(/genin/.test(r))w=4;
+  else if(/chūnin|chunin/.test(r))w=3;
+  else if(/jōnin|jonin/.test(r))w=2.5;
+  else if(/sannin|legendary/.test(r))w=1.5;
+  else if(/kage/.test(r))w=1;
+  if(/genin/.test(nr)&&/genin|academy|chūnin|chunin/.test(r))w+=2;
+  if(/kage/.test(nr)&&/kage/.test(r))w+=1;
+  return Math.max(.5,role==='rival'?w+0.5:w);
+}
+function devOpponentPool(){
+  const n=devState.ninja||{}, relation=devCombatRelationship(n), pool=[];
+  const roster=Array.isArray(DEV_OPPONENTS)?DEV_OPPONENTS:[];
+  roster.forEach(o=>{
+    if(o.category===relation.rival||o.category==='Both') pool.push(W(`Rival — ${o.name} (${o.rank})`,devOpponentWeight(o.rank,n,'rival'),{opponent:o,relationship:'Rival'}));
+    if(o.category===relation.enemy||o.category==='Both') pool.push(W(`Enemy — ${o.name} (${o.rank})`,devOpponentWeight(o.rank,n,'enemy'),{opponent:o,relationship:'Enemy'}));
+  });
+  return pool;
+}
+
+let devState={
+  ninja:null,category:null,outcome:null,pending:null,history:[],spinning:false,
+  forced:{category:null,outcome:null,trainingWhat:null,trainingLevel:null,opponent:null,combatOutcome:null,combatRewardStat:null,combatRewardLevel:null,
+    weapon:null,weaponDecision:null,summoning:null,gates:null,chakraNature:null,chakraJutsu:null,setbackType:null,setbackStat:null,setbackAmount:null},
+  wheel:'category',context:{},sessionRolls:0,sessionEvents:[],sessionActive:false
+};
+function devEsc(x){return esc(x??'')}
+function devSplit(v){return String(v??'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean)}
+function devClamp(n){return Math.max(1,Math.min(100,Math.round(Number(n)||1))) }
+function devNinjaName(c){return c?.name||c?.fullName||characterDisplayName(c||{})}
+function devGetCurrent(){return lastCharacter||null}
+function devSourceOptions(){
+  const sel=document.getElementById('devNinjaSource');if(!sel)return;const prev=sel.value;
+  let html='<option value="current">Current Generated Ninja</option><option value="manual">Manual / Existing Ninja</option>';
+  characterLog.forEach((c,i)=>html+=`<option value="log:${i}">Character Log — ${devEsc(characterDisplayName(c))}</option>`);
+  sel.innerHTML=html;if([...sel.options].some(o=>o.value===prev))sel.value=prev;
+}
+function devRenderStats(){
+  const el=document.getElementById('devStatsGrid');if(!el)return;const st=devState.ninja?.stats||{};
+  el.innerHTML=Object.entries(DEV_STAT_NAMES).map(([k,label])=>`<div class="dev-stat-input"><label>${devEsc(label)}</label><input type="number" min="1" max="100" id="devStat_${k}" value="${devClamp(st[k]??50)}" oninput="syncDevelopmentInputs()"></div>`).join('');
+}
+function devAbilityCatalog(kind){
+  const d=(typeof DATA!=='undefined'&&DATA)||{};
+  if(kind==='natures') return DEV_CHAPTER_NATURES||[];
+  if(kind==='dojutsu') return Array.isArray(d.dojutsu)?d.dojutsu:[];
+  if(kind==='kekkei') return Array.isArray(d.bloodlines)?d.bloodlines:[];
+  if(kind==='summoning') return Array.isArray(d.summonTypes)?d.summonTypes:[];
+  if(kind==='weapons') return Array.isArray(d.weapons)?d.weapons:[];
+  if(kind==='jutsu'){
+    const src=(typeof LOCAL_JUTSU_CATALOG!=='undefined'&&Array.isArray(LOCAL_JUTSU_CATALOG)&&LOCAL_JUTSU_CATALOG.length)
+      ? LOCAL_JUTSU_CATALOG
+      : ((typeof CANON!=='undefined'&&CANON.catalogues&&Array.isArray(CANON.catalogues.canonJutsu))?CANON.catalogues.canonJutsu:[]);
+    return src.map(x=>({name:x.name||x.technique||'',weight:x.weight||1})).filter(x=>x.name);
+  }
+  return [];
+}
+function devAbilityName(x){return typeof x==='string'?x:String(x?.name||x?.technique||'')}
+function devAbilityValues(kind){
+  const src=devAbilityCatalog(kind), seen=new Set(), out=[{name:'None',weight:1}];
+  for(const x of src){const name=devAbilityName(x).trim();if(!name||/^none$/i.test(name)||seen.has(name.toLowerCase()))continue;seen.add(name.toLowerCase());out.push({name,weight:x.weight||1});}
+  return out;
+}
+function devCurrentAbilityValues(kind){
+  const n=devState.ninja||{};
+  if(kind==='natures') return Array.isArray(n.natures)?n.natures.map(x=>devAbilityName(x)).filter(Boolean):devSplit(n.natures||n.natureNames||'');
+  if(kind==='dojutsu') return n.dojutsu?[String(n.dojutsu)]:[];
+  if(kind==='kekkei') return devSplit(n.kekkeiGenkai||n.bloodline||'');
+  if(kind==='jutsu') return Array.isArray(n.jutsu)?n.jutsu.map(x=>devAbilityName(x)).filter(Boolean):devSplit(n.jutsu||n.knownJutsu||'');
+  if(kind==='summoning') return devSplit(n.summoning||n.summonType||'');
+  if(kind==='weapons') return devSplit(n.weapon||'');
+  return [];
+}
+function devSelectOptions(kind,selected=''){
+  const values=devAbilityValues(kind);
+  return values.map(x=>`<option value="${devEsc(x.name)}" ${String(x.name).toLowerCase()===String(selected).toLowerCase()?'selected':''}>${devEsc(x.name)}</option>`).join('');
+}
+function devFieldContainer(kind){return document.getElementById({natures:'devNaturesFields',dojutsu:'devDojutsuFields',kekkei:'devKekkeiFields',jutsu:'devJutsuFields',summoning:'devSummoningFields',weapons:'devWeaponsFields'}[kind])}
+function addDevelopmentAbilityField(kind,selected=''){
+  const el=devFieldContainer(kind);if(!el)return;
+  const row=document.createElement('div');row.className='dev-repeat-row';
+  const select=document.createElement('select');select.dataset.devAbility=kind;select.innerHTML=devSelectOptions(kind,selected);
+  const remove=document.createElement('button');remove.type='button';remove.className='secondary';remove.textContent='Remove';remove.onclick=()=>{row.remove();syncDevelopmentInputs()};
+  select.onchange=syncDevelopmentInputs;row.append(select,remove);el.appendChild(row);
+}
+function refreshDevelopmentAbilityFields(){
+  for(const kind of ['natures','dojutsu','kekkei','jutsu','summoning','weapons']){
+    const el=devFieldContainer(kind);if(!el)continue;
+    const vals=[...el.querySelectorAll('select')].map(x=>x.value);el.innerHTML='';
+    (vals.length?vals:['None']).forEach(v=>addDevelopmentAbilityField(kind,v));
+  }
+  syncDevelopmentInputs();
+}
+function renderDevelopmentAbilityFields(){
+  const kinds=['natures','dojutsu','kekkei','jutsu','summoning','weapons'];
+  for(const kind of kinds){const el=devFieldContainer(kind);if(!el)continue;el.innerHTML='';const vals=devCurrentAbilityValues(kind);(vals.length?vals:['None']).forEach(v=>addDevelopmentAbilityField(kind,v));}
+}
+function devSetText(id,val){const el=document.getElementById(id);if(el)el.value=Array.isArray(val)?val.map(x=>typeof x==='object'?(x.name||x.technique||''):x).join(', '):String(val??'')}
+function loadDevelopmentNinja(){
+  const sel=document.getElementById('devNinjaSource');if(!sel)return;let c;
+  if(sel.value==='current')c=devGetCurrent();else if(sel.value.startsWith('log:'))c=characterLog[Number(sel.value.slice(4))];
+  devState.ninja=c?JSON.parse(JSON.stringify(c)):{name:'Existing Ninja',stats:{},natures:[],jutsu:[]};
+  devState.history=Array.isArray(devState.ninja.developmentHistory)?devState.ninja.developmentHistory.slice():[];
+  devRenderStats();renderDevelopmentAbilityFields();
+  devState.category=null;devState.outcome=null;devState.pending=null;devState.context={};devState.wheel='category';devState.sessionRolls=0;devState.sessionEvents=[];devState.sessionActive=true;
+  renderDevHistory();renderDevWheel();
+}
+function resetDevelopmentInputs(){document.getElementById('devNinjaSource').value='manual';loadDevelopmentNinja()}
+function syncDevelopmentInputs(){
+  if(!devState.ninja)devState.ninja={name:'Existing Ninja',stats:{}};devState.ninja.stats=devState.ninja.stats||{};
+  for(const k of Object.keys(DEV_STAT_NAMES)){const el=document.getElementById('devStat_'+k);if(el)devState.ninja.stats[k]=devClamp(el.value)}
+  const readAbilities=kind=>{const el=devFieldContainer(kind);return el?[...el.querySelectorAll('select')].map(x=>x.value).filter(v=>v&&v!=='None'):[]};
+  devState.ninja.natures=readAbilities('natures');
+  devState.ninja.dojutsu=readAbilities('dojutsu')[0]||'None';
+  devState.ninja.kekkeiGenkai=readAbilities('kekkei').join(', ')||'None';
+  devState.ninja.jutsu=readAbilities('jutsu');
+  devState.ninja.summoning=readAbilities('summoning').join(', ')||'None';
+  devState.ninja.weapon=readAbilities('weapons').join(', ')||'None';
+}
+function devKnown(list,needle){return list.some(x=>String(x).toLowerCase().includes(String(needle).toLowerCase()))}
+function devStatKeyByLabel(label){const e=Object.entries(DEV_STAT_NAMES).find(([,v])=>v===label);return e?.[0]||null}
+function devEligibleCategory(name){
+  const n=devState.ninja||{};
+  if(name==='Dōjutsu Development'&&(!n.dojutsu||/^(none|no)$/i.test(String(n.dojutsu))))return false;
+  return true;
+}
+function devCategoryOptions(){return DEV_CATEGORY_POOL.filter(x=>devEligibleCategory(x.name))}
+function devTrainingStatPool(){
+  const s=devState.ninja?.stats||{};
+  return Object.entries(DEV_STAT_NAMES).map(([key,label])=>W(label,Math.max(1,110-Number(s[key]??50)),{stat:key}));
+}
+function devTrainingLevelPool(){return DEV_TRAINING_LEVELS}
+function devKnownWeaponNames(){return devSplit(devState.ninja?.weapon||'').map(x=>x.toLowerCase())}
+function devKnownSummoningNames(){return devSplit(devState.ninja?.summoning||'').map(x=>x.toLowerCase())}
+function devWeaponPool(){
+  const known=devKnownWeaponNames();const src=(typeof DATA!=='undefined'&&DATA.weapons)?DATA.weapons:[];
+  return src.filter(x=>x?.name&&!known.some(k=>String(x.name).toLowerCase()===k)).map(x=>W(x.name,x.weight||1,{weapon:x}));
+}
+function devSummoningPool(){
+  const known=devKnownSummoningNames();const src=(typeof DATA!=='undefined'&&DATA.summonTypes)?DATA.summonTypes:[];
+  return src.filter(x=>x?.name&&!known.some(k=>String(x.name).toLowerCase().includes(k)||k.includes(String(x.name).toLowerCase()))).map(x=>W(x.name,x.weight||1,{summoning:x}));
+}
+function devWeaponDecisionPool(){return [W('Keep New Weapon — Add it alongside existing weapon(s)',50,{keep:true}),W('Replace Existing Weapon — New weapon becomes the active weapon',50,{keep:false})]}
+function devGateLevel(n){
+  const exact=String(n?.eightGates||'').trim();const data=(typeof DATA!=='undefined'&&DATA.eightGates)||[];
+  const found=data.find(x=>String(x.name).toLowerCase()===exact.toLowerCase());return found?.gateLevel||Number(n?.eightGatesLevel||0)||0;
+}
+function devGatePool(){
+  const current=devGateLevel(devState.ninja);const src=(typeof DATA!=='undefined'&&DATA.eightGates)||[];
+  if(current>=8)return [W('None — no higher mastery available',100,{none:true,gateLevel:current})];
+  const out=[W('None — training produces no mastery increase',65,{none:true,gateLevel:current})];
+  src.filter(g=>(g.gateLevel||0)>current).forEach(g=>out.push(W(g.name,g.weight||1,{gate:g,gateLevel:g.gateLevel,taiMod:g.taiMod||0})));
+  return out;
+}
+function devNaturePool(){
+  const known=(devState.ninja?.natures||[]).map(x=>String(x).toLowerCase());
+  return DEV_CHAPTER_NATURES.filter(x=>!known.some(k=>k===x.name.toLowerCase()||k.includes(x.name.toLowerCase().replace(' release',''))));
+}
+function devNatureJutsuPool(){
+  const n=devState.ninja||{},knownN=(n.natures||[]).map(x=>String(x).toLowerCase()),knownKG=devSplit(n.kekkeiGenkai||'').map(x=>x.toLowerCase()),knownJ=devSplit(n.jutsu||'').map(x=>x.toLowerCase());
+  const src=(typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[]);const out=[];const seen=new Set();
+  for(const j of src){const name=String(j?.name||j?.technique||'').trim();if(!name||seen.has(name.toLowerCase())||knownJ.includes(name.toLowerCase()))continue;
+    const nature=String(j.chakraNature||'').toLowerCase(),kg=String(j.requiredKekkeiGenkai||j.kekkeiGenkai||'').toLowerCase();
+    const natureMatch=!nature||knownN.some(x=>nature.includes(x.replace(' release',''))||x.includes(nature));
+    const kgMatch=!kg||knownKG.some(x=>kg.includes(x)||x.includes(kg));
+    if(natureMatch||kgMatch){out.push(W(name,1,{jutsu:j}));seen.add(name.toLowerCase())}
+  }
+  return out.length?out:[W('No eligible new jutsu in the current local catalogue',1,{none:true})];
+}
+function devSetbackPool(){return [W('Training Injury',3,{stat:'stamina'}),W('Jutsu Training Failure',3,{stat:'ninjutsu'}),W('Combat Injury',3,{stat:'durability'}),W('Physical Overtraining',2,{stat:'strength'}),W('Chakra Exhaustion',2,{stat:'chakraQuantity'}),W('Mental Strain',2,{stat:'willpower'}),W('Weapon Damage / Mishap',1,{stat:'weaponSkill'}),W('Sensory Fatigue',1,{stat:'sensory'})]}
+function devSetbackStatPool(){
+  const p=devState.context?.setbackType;if(p?.stat)return [W(DEV_STAT_NAMES[p.stat],100,{stat:p.stat})];return devTrainingStatPool();
+}
+function devD10Pool(){return Array.from({length:10},(_,i)=>W(`−${i+1}`,1,{amount:i+1}))}
+function devOutcomeOptions(){
+  const cat=devState.category||'Training';
+  if(cat==='Training')return devTrainingStatPool();
+  if(cat==='Seek Combat')return devOpponentPool();
+  if(cat==='Learn Jutsu')return [W('Learn a New Ninjutsu',3),W('Learn a New Taijutsu',2),W('Learn a New Genjutsu',2),W('Improve an Existing Jutsu',3),W('Fail to Learn the Technique',1)];
+  if(cat==='Chakra Development')return [W('Deepen Mastery of...',60,{next:'jutsu'}),W('Study a New Chakra Nature',40,{next:'nature'})];
+  if(cat==='Dōjutsu Development')return [W('Improve Dōjutsu Control',3),W('Advance Dōjutsu Stage',2),W('Develop a New Dōjutsu Application',3),W('Train Dōjutsu-Linked Perception',2),W('Dōjutsu Training Setback',1)];
+  if(cat==='Find New Weapon')return devWeaponPool();
+  if(cat==='Contract New Summoning')return devSummoningPool();
+  if(cat==='Physical Development')return devGatePool();
+  if(cat==='Setback')return devSetbackPool();
+  if(cat==='Personal Goal')return [W('Pursue Current Goal',3),W('Find a Mentor',2),W('Take on a Difficult Mission',2),W('Develop a New Rivalry',1)];
+  return [W('Unexpected Breakthrough',1)];
+}
+function devNextWheelForCategory(){
+  const c=devState.category;
+  if(c==='Training')return 'trainingWhat';
+  if(c==='Seek Combat')return 'opponent';
+  if(c==='Find New Weapon')return 'weapon';
+  if(c==='Contract New Summoning')return 'summoning';
+  if(c==='Physical Development')return 'gates';
+  if(c==='Chakra Development')return 'chakraChoice';
+  if(c==='Setback')return 'setbackType';
+  return 'outcome';
+}
+function devOptionsForWheel(wheel){
+  switch(wheel){
+    case 'category':return devCategoryOptions();case 'outcome':return devOutcomeOptions();case 'trainingWhat':return devTrainingStatPool();case 'trainingLevel':return devTrainingLevelPool();
+    case 'opponent':return devOpponentPool();case 'combatOutcome':return DEV_COMBAT_OUTCOMES;case 'combatRewardStat':return devTrainingStatPool();case 'combatRewardLevel':return DEV_COMBAT_REWARD_LEVELS;case 'weapon':return devWeaponPool();case 'weaponDecision':return devWeaponDecisionPool();
+    case 'summoning':return devSummoningPool();case 'gates':return devGatePool();case 'chakraChoice':return [W('Deepen Mastery of...',60),W('Study a New Chakra Nature',40)];case 'chakraJutsu':return devNatureJutsuPool();case 'chakraNature':return devNaturePool();
+    case 'setbackType':return devSetbackPool();case 'setbackStat':return devSetbackStatPool();case 'setbackAmount':return devD10Pool();default:return [W('No Result',1)];
+  }
+}
+function devRoll(pool){return rollWeighted(pool.length?pool:[W('No Result',1)]).name}
+function devForcedForWheel(wheel){return devState.forced[wheel]}
+function buildDevWheel(pool){
+  const svg=document.getElementById('devWheelSvg');if(!svg)return[];svg.innerHTML='';svg.setAttribute('viewBox','0 0 200 200');svg.setAttribute('preserveAspectRatio','xMidYMid meet');
+  const cx=100,cy=100,r=98,segs=normalizeWheelEntries(pool),total=segs.reduce((a,b)=>a+b.weight,0)||1;let angle=0;const parts=[];
+  const colors=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e84393','#00b894','#6c5ce7'];
+  const polar=(deg,rad)=>{const a=(deg-90)*Math.PI/180;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)]};const escSvg=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  for(let i=0;i<segs.length;i++){const x=segs[i],frac=x.weight/total,start=angle,end=i===segs.length-1?360:angle+frac*360;angle=end;const[x1,y1]=polar(start,r),[x2,y2]=polar(end,r),span=end-start,large=span>180?1:0,mid=(start+end)/2;parts.push({...x,startAngle:start,endAngle:end,frac,pct:frac*100});
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);path.setAttribute('fill',colors[i%colors.length]);path.setAttribute('stroke','#0d1119');path.setAttribute('stroke-width','1.2');svg.appendChild(path);
+    if(span>=3.5){const lr=span>=30?52:span>=16?58:span>=8?64:70,[tx,ty]=polar(mid,lr),maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3,raw=String(x.name||''),label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4,t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',tx.toFixed(2));t.setAttribute('y',ty.toFixed(2));t.setAttribute('fill','#0b0e14');t.setAttribute('font-size',fontSize);t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');t.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);t.innerHTML=escSvg(label);svg.appendChild(t)}
+  }
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke','#c5cedd');c.setAttribute('stroke-width','1.5');c.setAttribute('opacity','.35');svg.appendChild(c);return parts;
+}
+function renderDevWheel(){
+  const title=document.getElementById('devWheelTitle'),prog=document.getElementById('devWheelProgress'),hint=document.getElementById('devWheelHint');if(!title)return;const wheel=devState.wheel,pool=devOptionsForWheel(wheel);
+  const labels={category:'Development Category',outcome:'Specific Development',trainingWhat:'Training What',trainingLevel:'Training Level',opponent:'Opponent',combatOutcome:'Combat Outcome',combatRewardStat:'Combat Reward — Stat',combatRewardLevel:'Combat Reward — Level',weapon:'Find New Weapon',weaponDecision:'Keep or Replace Weapon',summoning:'New Summoning Contract',gates:'Eight Gates Mastery',chakraChoice:'Chakra Development',chakraJutsu:'New Jutsu',chakraNature:'New Chakra Nature',setbackType:'Setback',setbackStat:'Affected Stat',setbackAmount:'Setback Amount'};
+  title.textContent=labels[wheel]||'Development Wheel';prog.textContent=wheel==='category'?`Development Category — Roll ${Math.min(5,devState.sessionRolls+1)} of 5`:`Development Stage: ${labels[wheel]||wheel}`;buildDevWheel(pool);
+  hint.textContent=devState.ninja?'Spin this wheel, or use the testing controls below to force a particular result.':'Load an existing ninja first.';const btn=document.getElementById('devSpinButton');if(btn)btn.disabled=!devState.ninja||devState.spinning;populateDevForceResults();
+}
+function devShowOverlay(v){const o=document.getElementById('devWheelOverlay'),r=document.getElementById('devWheelResultValue');if(r)r.textContent=v;if(o)o.classList.add('show')}
+function devHideOverlay(){document.getElementById('devWheelOverlay')?.classList.remove('show')}
+function devSpinVisual(value,pool){return new Promise(resolve=>{const wheel=document.getElementById('devFortuneWheel');let segs=buildDevWheel(pool),idx=segs.findIndex(x=>x.name===value);if(idx<0){segs=buildDevWheel([...pool,W(value,1)]);idx=segs.findIndex(x=>x.name===value)}const win=segs[idx]||segs[0],mid=(win.startAngle+win.endAngle)/2,current=Number(wheel?.dataset.rot||0),norm=((current%360)+360)%360;let delta=(360-(mid%360)-norm+360)%360;delta+=360*(5+Math.floor(Math.random()*3));const target=current+delta;if(wheel){wheel.dataset.rot=String(target);wheel.classList.add('spinning');wheel.style.transform=`rotate(${target}deg)`}setTimeout(()=>{wheel?.classList.remove('spinning');resolve()},document.getElementById('devSkipAnimation')?.checked?0:3200)})}
+function devResetForNextStage(){devState.pending=null;document.getElementById('applyDevResultBtn').disabled=true;document.getElementById('devChangeGrid').innerHTML=''}
+function devSetResult(text,html=''){const el=document.getElementById('devResultText');if(el)el.innerHTML=html||`<b>${devEsc(text)}</b>`}
+function devScheduleWheel(next){devState.wheel=next;renderDevWheel()}
+function devCombatPower(n){const s=n.stats||{};const vals=['ninjutsu','taijutsu','genjutsu','speed','strength','durability','stamina','battleIQ','sensory','weaponSkill'];return vals.reduce((a,k)=>a+Number(s[k]??50),0)/vals.length}
+function devOpponentDifficulty(rank){const r=String(rank||'').toLowerCase();if(/academy/.test(r))return 35;if(/genin/.test(r))return 48;if(/chūnin|chunin/.test(r))return 58;if(/jōnin|jonin/.test(r))return 70;if(/sannin|legendary/.test(r))return 82;if(/kage/.test(r))return 90;return 62}
+function devCombatCheck(opponent){
+  const n=devState.ninja||{},base=devCombatPower(n),difficulty=devOpponentDifficulty(opponent?.rank||''),roll=Math.floor(Math.random()*101),score=base*0.7+roll*0.3;
+  const won=score>=difficulty;return{won,base:Math.round(base),roll,score:Math.round(score),difficulty};
+}
+function prepareDevelopmentResult(outcome){
+  syncDevelopmentInputs();const n=devState.ninja,s=n.stats||{},cat=devState.category;devResetForNextStage();
+  if(cat==='Training'){devState.context.trainingStat=devStatKeyByLabel(outcome);devState.context.trainingStatLabel=outcome;devScheduleWheel('trainingLevel');devSetResult('Training focus selected',`<b>Training What:</b> ${devEsc(outcome)}<br><span class="small">Now spin the five-level training wheel.</span>`);return;}
+  if(cat==='Seek Combat'){
+    const m=String(outcome).match(/^(Rival|Enemy) — (.+) \((.+)\)$/),opponent= m?{name:m[2],rank:m[3]}:{name:String(outcome),rank:''},relationship=m?m[1]:'Opponent';
+    devState.context={...devState.context,opponent,relationship};
+    devState.wheel='combatOutcome';renderDevWheel();
+    devSetResult('Opponent Selected',`<b>${devEsc(relationship)}: ${devEsc(opponent.name)}</b><br><span class="small">Now spin the Fight Outcome wheel to determine how the battle goes.</span>`);
+    return;
+  }
+  if(cat==='Find New Weapon'){devState.context.newWeapon=outcome;devState.wheel='weaponDecision';renderDevWheel();devSetResult('New weapon found',`<b>${devEsc(outcome)}</b><br><span class="small">Now spin the 50/50 Keep or Replace wheel.</span>`);return;}
+  if(cat==='Contract New Summoning'){devState.pending={outcome,ability:{type:'summoning',name:outcome},stat:null,delta:0,narrative:`The ninja establishes a new ${outcome} summoning contract.`};devSetResult('New Summoning Contract',`<b>${devEsc(outcome)}</b>`);document.getElementById('applyDevResultBtn').disabled=false;return;}
+  if(cat==='Physical Development'){devState.context.gateResult=outcome;const g=(typeof DATA!=='undefined'&&DATA.eightGates||[]).find(x=>x.name===outcome);if(!g||g.name.startsWith('None')){devState.pending={outcome,stat:null,delta:0,narrative:'The Eight Gates training produces no mastery increase.'};devSetResult('No mastery increase','<b>None</b><br><span class="small">The training produced no new Eight Gates mastery.</span>');document.getElementById('applyDevResultBtn').disabled=false;return;}const current=(typeof DATA!=='undefined'&&DATA.eightGates||[]).find(x=>x.name===n.eightGates),oldMod=current?.taiMod||Number(n.eightGatesTaiMod||0),newMod=g.taiMod||0;devState.pending={outcome,stat:'taijutsu',delta:newMod-oldMod,gate:g,narrative:`Eight Gates mastery increased to ${outcome}. Taijutsu modifier changes from +${oldMod} to +${newMod}.`};devSetResult('Eight Gates mastery increased',`<b>${devEsc(outcome)}</b><br>Taijutsu modifier: +${oldMod} → +${newMod}`);document.getElementById('applyDevResultBtn').disabled=false;return;}
+  if(cat==='Chakra Development'){if(/Deepen Mastery/.test(outcome)){devState.wheel='chakraJutsu';renderDevWheel();devSetResult('Deepen Chakra Mastery','<span class="small">Choose a new jutsu compatible with the ninja’s existing chakra natures or Kekkei Genkai.</span>')}else{devState.wheel='chakraNature';renderDevWheel();devSetResult('Study a New Chakra Nature','<span class="small">Only chakra natures the ninja does not already possess are available.</span>')}return;}
+  if(cat==='Setback'){devState.context.setbackType=devSetbackPool().find(x=>x.name===outcome)?.data||{};devState.context.setbackType.name=outcome;devState.wheel='setbackStat';renderDevWheel();devSetResult('Setback identified',`<b>${devEsc(outcome)}</b><br><span class="small">Now determine the affected stat.</span>`);return;}
+  const gain=(key,min=1,max=5)=>{const current=Number(s[key]??50);return Math.min(max,Math.max(min,Math.round(min+(100-current)/25)))};
+  let stat=null,delta=0,narrative=`${outcome} produces a development opportunity appropriate to the ninja's current abilities.`,ability=null;
+  if(/Ninjutsu/.test(outcome))stat='ninjutsu';else if(/Taijutsu/.test(outcome))stat='taijutsu';else if(/Genjutsu/.test(outcome))stat='genjutsu';else if(/Speed/.test(outcome))stat='speed';else if(/Strength/.test(outcome))stat='strength';else if(/Durability/.test(outcome))stat='durability';else if(/Stamina/.test(outcome))stat='stamina';else if(/Chakra Control/.test(outcome))stat='chakraControl';else if(/Battle IQ/.test(outcome))stat='battleIQ';else if(/Intelligence/.test(outcome))stat='intelligence';else if(/Willpower/.test(outcome))stat='willpower';else if(/Sensory/.test(outcome))stat='sensory';else if(/Stealth/.test(outcome))stat='stealth';else if(/Weapon/.test(outcome))stat='weaponSkill';
+  if(stat)delta=gain(stat);if(/Learn a New|Improve an Existing/.test(outcome))ability={type:'jutsu',name:outcome};if(/Dōjutsu/.test(outcome))ability={type:'dojutsu',name:'Dōjutsu development'};if(/Kekkei Genkai/.test(outcome))ability={type:'kekkei',name:'Kekkei Genkai development'};
+  if(/Failure|Setback/.test(outcome))delta=-Math.max(1,Math.min(5,Math.round(1+(Number(s[stat||'stamina']??50))/35)));
+  devState.pending={outcome,stat,delta,narrative,ability};devSetResult(outcome);const grid=document.getElementById('devChangeGrid');if(grid&&stat)grid.innerHTML=`<div class="dev-change"><span>${devEsc(DEV_STAT_NAMES[stat])}</span><strong>${devEsc(s[stat]??50)} → ${devEsc(devClamp((s[stat]??50)+delta))}</strong></div>`;document.getElementById('applyDevResultBtn').disabled=false;
+}
+function devPersistNinja(){
+  const n=devState.ninja,source=document.getElementById('devNinjaSource')?.value||'';
+  if(source==='current'){
+    lastCharacter=JSON.parse(JSON.stringify(n));
+    if(lastCharacter.logId){const idx=characterLog.findIndex(x=>x.logId===lastCharacter.logId);if(idx>=0){characterLog[idx]=JSON.parse(JSON.stringify(lastCharacter));saveCharacterLog();renderCharacterLog();}}
+    try{render(lastCharacter)}catch(e){}
+  }else if(source.startsWith('log:')){
+    const idx=Number(source.slice(4));if(Number.isInteger(idx)&&characterLog[idx]){characterLog[idx]=JSON.parse(JSON.stringify(n));saveCharacterLog();renderCharacterLog();}
+  }
+}
+function devFinishBranch(){
+  const completed=devState.sessionRolls>=5;
+  devState.pending=null;devState.category=null;devState.outcome=null;devState.context={};
+  document.getElementById('applyDevResultBtn').disabled=true;
+  if(completed){
+    devState.sessionActive=false;devState.wheel='category';renderDevWheel();
+    const n=devState.ninja,st=n.stats||{};
+    const statHTML=Object.entries(DEV_STAT_NAMES).map(([k,v])=>`<div class="dev-change"><span>${devEsc(v)}</span><strong>${devEsc(st[k]??50)}</strong></div>`).join('');
+    const events=devState.sessionEvents.map((e,i)=>`<div class="small" style="margin-top:6px"><b>Branch ${i+1}:</b> ${devEsc(e.summary||e.category||'Development')}</div>`).join('');
+    devSetResult('Development Generation Complete',`<b>All 5 development paths are complete.</b><div style="margin-top:10px">${events}</div><div style="margin-top:12px"><b>Updated Stats</b><div class="dev-change-grid" style="margin-top:8px">${statHTML}</div></div>`);
+    devRenderStats();return;
+  }
+  devState.wheel='category';renderDevWheel();
+  devSetResult('Branch Applied',`<b>Branch ${devState.sessionRolls} of 5 complete.</b><br><span class="small">The result was applied immediately. Return to Development Category for the next branch.</span>`);
+}
+function applyDevelopmentResult(){
+  if(!devState.pending||!devState.ninja)return;syncDevelopmentInputs();const p=devState.pending,n=devState.ninja;n.stats=n.stats||{};
+  if(p.stat){const before=devClamp(n.stats[p.stat]??50);n.stats[p.stat]=devClamp(before+p.delta);p.before=before;p.after=n.stats[p.stat]}
+  if(devState.category==='Training'){p.outcome=`Training — ${devState.context.trainingStatLabel}`;p.narrative=`${devState.context.trainingStatLabel} training completed at ${devState.context.trainingLevel?.name||'selected level'}.`}
+  if(devState.category==='Seek Combat'&&devState.context.combat?.won){p.narrative=`Victory over ${devState.context.opponent.name} (${devState.context.opponent.rank}).`}
+  if(devState.category==='Find New Weapon'){const newW=devState.context.newWeapon,existing=devSplit(n.weapon||'').filter(x=>!/^none$/i.test(x));const keep=devState.context.weaponDecision?.keep!==false;if(!existing.length||keep)n.weapon=[...existing,newW].join(', ');else n.weapon=newW;p.narrative=existing.length?(keep?`The ninja keeps ${newW} in addition to existing weapon(s).`:`The ninja replaces existing weapon(s) with ${newW}.`):`The ninja acquires ${newW}.`;p.outcome=`New Weapon — ${newW}`}
+  if(devState.category==='Contract New Summoning'){const existing=devSplit(n.summoning||'').filter(x=>!/^none$/i.test(x));n.summoning=[...existing,p.outcome].join(', ')}
+  if(devState.category==='Physical Development'&&p.gate){n.eightGates=p.gate.name;n.eightGatesLevel=p.gate.gateLevel;n.eightGatesTaiMod=p.gate.taiMod||0}
+  if(devState.category==='Chakra Development'&&p.ability?.type==='jutsu'){n.jutsu=n.jutsu||[];if(!devKnown(n.jutsu,p.ability.name))n.jutsu.push(p.ability.name)}
+  if(devState.category==='Chakra Development'&&p.ability?.type==='nature'){n.natures=n.natures||[];if(!devKnown(n.natures,p.ability.name))n.natures.push(p.ability.name)}
+  const event={date:new Date().toISOString(),category:devState.category,outcome:p.outcome,stat:p.stat,delta:p.delta,before:p.before??null,after:p.after??null,narrative:p.narrative,opponent:p.opponent||null,relationship:p.relationship||null,opponentRank:p.opponentRank||null,developmentSession:devState.sessionActive?Math.min(5,devState.sessionRolls):null};
+  devState.history.unshift(event);if(devState.history.length>100)devState.history=devState.history.slice(0,100);n.developmentHistory=devState.history;
+  const sessionEvent=devState.sessionEvents[devState.sessionEvents.length-1];if(sessionEvent){sessionEvent.status='Complete';sessionEvent.summary=p.outcome||devState.category;sessionEvent.stat=p.stat;sessionEvent.delta=p.delta;sessionEvent.before=p.before??null;sessionEvent.after=p.after??null;sessionEvent.opponent=p.opponent||null;sessionEvent.relationship=p.relationship||null}
+  devPersistNinja();
+  renderDevHistory();devRenderStats();renderDevelopmentAbilityFields();
+  devSetResult('Applied',`<b>Applied immediately.</b> ${devEsc(p.outcome||'Development result')} has been added to this ninja's development history.`);
+  devFinishBranch();
+}
+function renderDevHistory(){const el=document.getElementById('devHistory');if(!el)return;if(!devState.history.length){el.innerHTML='<div class="small">No development events recorded for this ninja.</div>';return}el.innerHTML=devState.history.map((x,i)=>`<div class="dev-history-item"><b>#${devState.history.length-i} — ${devEsc(x.category||'Development')} → ${devEsc(x.outcome||'')}</b><span>${devEsc(formatGeneratedDate(x.date))}${x.stat?` · ${devEsc(DEV_STAT_NAMES[x.stat])}: ${devEsc(x.before)} → ${devEsc(x.after)}`:''}</span><div class="small" style="margin-top:4px">${devEsc(x.narrative||'')}</div></div>`).join('')}
+function populateDevForceResults(){
+  const sel=document.getElementById('devTestWheel'),out=document.getElementById('devForceResult');if(!sel||!out)return;const wheel=sel.value,pool=devOptionsForWheel(wheel);out.innerHTML='<option value="">Random result</option>'+pool.map(x=>`<option value="${devEsc(x.name)}">${devEsc(x.name)}</option>`).join('');if(devState.forced[wheel])out.value=devState.forced[wheel];
+}
+function clearDevelopmentForce(){const wheel=document.getElementById('devTestWheel')?.value||'category';devState.forced[wheel]=null;populateDevForceResults()}
+function openDevelopmentTestWheel(){
+  if(!devState.ninja)loadDevelopmentNinja();
+  const wheel=document.getElementById('devTestWheel')?.value||'category';
+  const categoryFor={outcome:'Training',trainingWhat:'Training',trainingLevel:'Training',opponent:'Seek Combat',combatOutcome:'Seek Combat',combatRewardStat:'Seek Combat',combatRewardLevel:'Seek Combat',weapon:'Find New Weapon',weaponDecision:'Find New Weapon',summoning:'Contract New Summoning',gates:'Physical Development',chakraChoice:'Chakra Development',chakraJutsu:'Chakra Development',chakraNature:'Chakra Development',setbackType:'Setback',setbackStat:'Setback',setbackAmount:'Setback'};
+  if(wheel!=='category')devState.category=categoryFor[wheel]||devState.category||'Training';
+  devState.wheel=wheel;
+  if(wheel==='weaponDecision'&&!devState.context.newWeapon){devState.context.newWeapon=devWeaponPool()[0]?.name||'New Weapon'}
+  if((wheel==='combatOutcome'||wheel==='combatRewardStat'||wheel==='combatRewardLevel')&&!devState.context.opponent){devState.context.opponent={name:'Test Opponent',rank:'Jōnin'};devState.context.relationship='Rival';devState.context.combat={won:true}}
+  if(wheel==='combatRewardLevel'&&!devState.context.rewardStat){devState.context.rewardStat='ninjutsu';devState.context.rewardStatLabel='Ninjutsu'}
+  if(wheel==='setbackAmount'&&!devState.context.setbackStat)devState.context.setbackStat='stamina';
+  if(wheel==='setbackAmount'&&!devState.context.setbackType)devState.context.setbackType={name:'Test Setback'};
+  renderDevWheel();document.getElementById('devWheelStage')?.scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function spinDevelopmentTestWheel(){if(!devState.ninja)loadDevelopmentNinja();const wheel=document.getElementById('devTestWheel')?.value||'category',forced=document.getElementById('devForceResult')?.value||null;devState.wheel=wheel;devState.forced[wheel]=forced;await spinDevelopmentWheel(forced)}
+async function spinDevelopmentWheel(forceValue=null){
+  if(devState.spinning||!devState.ninja)return;
+  if(devState.wheel==='category' && (!devState.sessionActive || devState.sessionRolls>=5)){
+    devState.sessionActive=false;
+    devSetResult('Development Generation Complete','<b>All 5 development branches have already been completed.</b>');
+    renderDevWheel();
+    return;
+  }syncDevelopmentInputs();devState.spinning=true;const btn=document.getElementById('devSpinButton');if(btn)btn.disabled=true;devHideOverlay();
+  const wheel=devState.wheel,pool=devOptionsForWheel(wheel),forced=forceValue||devForcedForWheel(wheel),result=forced||devRoll(pool);await devSpinVisual(result,pool);devShowOverlay(result);await new Promise(r=>setTimeout(r,document.getElementById('devSkipAnimation')?.checked?0:1200));devHideOverlay();
+  if(wheel==='category'){
+    devState.category=result;devState.outcome=null;devState.sessionRolls=Math.min(5,devState.sessionRolls+1);
+    devState.sessionEvents.push({category:result,status:'In progress'});
+    devScheduleWheel(devNextWheelForCategory());
+  }
+  else if(wheel==='trainingWhat'){devState.context.trainingStat=devStatKeyByLabel(result);devState.context.trainingStatLabel=result;devScheduleWheel('trainingLevel')}
+  else if(wheel==='trainingLevel'){const lvl=pool.find(x=>x.name===result)||DEV_TRAINING_LEVELS[0];devState.context.trainingLevel=lvl;const stat=devState.context.trainingStat,delta=Math.floor(lvl.min+Math.random()*(lvl.max-lvl.min+1));devState.pending={outcome:`Training — ${devState.context.trainingStatLabel}`,stat,delta,narrative:`Training completed at ${lvl.name}; ${devState.context.trainingStatLabel} increased by ${delta}.`};devSetResult('Training Complete',`<b>${devEsc(devState.context.trainingStatLabel)}</b><br>${devEsc(lvl.name)}<br>Increase: <b>+${delta}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='opponent')prepareDevelopmentResult(result)
+  else if(wheel==='combatOutcome'){
+    const outcome=DEV_COMBAT_OUTCOMES.find(x=>x.name===result)||DEV_COMBAT_OUTCOMES[0];
+    const ctx=devState.context,op=ctx.opponent||{name:'Opponent',rank:''};
+    const combatResult=outcome.result;
+    devState.context.combatOutcome=outcome;
+    if(combatResult==='victory'){
+      devState.pending=null;
+      devState.wheel='combatRewardStat';renderDevWheel();
+      devSetResult('Combat Victory',`<b>${devEsc(ctx.relationship||'Opponent')}: ${devEsc(op.name)}</b><br>${devEsc(result)}<br><span class="small">Victory earned a development reward. Spin the reward-stat wheel next.</span>`);
+    } else {
+      devState.pending={outcome:`Combat — ${result}`,stat:null,delta:0,narrative:`${ctx.relationship||'Opponent'} against ${op.name} (${op.rank}). Result: ${result}.`,opponent:op.name,relationship:ctx.relationship||'Opponent',opponentRank:op.rank};
+      devSetResult('Combat Result',`<b>${devEsc(ctx.relationship||'Opponent')}: ${devEsc(op.name)}</b><br>${devEsc(result)}<br><span class="small">No positive stat reward from this fight.</span>`);
+      document.getElementById('applyDevResultBtn').disabled=false;
+    }
+  }
+  else if(wheel==='combatRewardStat'){devState.context.rewardStat=devStatKeyByLabel(result);devState.context.rewardStatLabel=result;devScheduleWheel('combatRewardLevel')}
+  else if(wheel==='combatRewardLevel'){const lvl=pool.find(x=>x.name===result)||DEV_COMBAT_REWARD_LEVELS[0],stat=devState.context.rewardStat,delta=Math.floor(lvl.min+Math.random()*(lvl.max-lvl.min+1));devState.pending={outcome:`Combat Victory — ${devState.context.opponent.name}`,stat,delta,opponent:devState.context.opponent.name,relationship:devState.context.relationship,opponentRank:devState.context.opponent.rank,narrative:`${devState.context.combatOutcome?.name||'Victory'} over ${devState.context.opponent.name} (${devState.context.opponent.rank}) earned ${devState.context.rewardStatLabel} training, +${delta}.`};devSetResult('Combat Reward',`<b>${devEsc(devState.context.rewardStatLabel)}</b><br>${devEsc(lvl.name)}<br>Increase: <b>+${delta}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='weapon'){prepareDevelopmentResult(result)}
+  else if(wheel==='weaponDecision'){devState.context.weaponDecision=devWeaponDecisionPool().find(x=>x.name===result)||{};devState.pending={outcome:`New Weapon — ${devState.context.newWeapon}`,stat:null,delta:0,narrative:''};devSetResult('Weapon Decision',devEsc(result));document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='summoning'){prepareDevelopmentResult(result)}
+  else if(wheel==='gates'){prepareDevelopmentResult(result)}
+  else if(wheel==='chakraChoice'){devState.context.chakraChoice=result;devScheduleWheel(/Deepen/.test(result)?'chakraJutsu':'chakraNature')}
+  else if(wheel==='chakraJutsu'){const j=(typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[]).find(x=>x.name===result);devState.pending={outcome:`Deepen Mastery — ${result}`,ability:{type:'jutsu',name:result},stat:'ninjutsu',delta:0,narrative:`The ninja learns ${result} using an existing chakra nature or Kekkei Genkai pathway.`};devSetResult('New Jutsu Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='chakraNature'){devState.pending={outcome:`New Chakra Nature — ${result}`,ability:{type:'nature',name:result},stat:null,delta:0,narrative:`The ninja learns ${result}, adding a new chakra nature to their repertoire.`};devSetResult('New Chakra Nature Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='setbackType'){const item=devSetbackPool().find(x=>x.name===result);devState.context.setbackType=item||{};devState.context.setbackType.name=result;devScheduleWheel('setbackStat')}
+  else if(wheel==='setbackStat'){const stat=devStatKeyByLabel(result);devState.context.setbackStat=stat;devScheduleWheel('setbackAmount')}
+  else if(wheel==='setbackAmount'){const amount=Math.abs(Number(String(result).replace(/[^0-9]/g,''))||1),stat=devState.context.setbackStat;devState.pending={outcome:`Setback — ${devState.context.setbackType.name}`,stat,delta:-amount,narrative:`${devState.context.setbackType.name} reduces ${DEV_STAT_NAMES[stat]} by ${amount}.`};devSetResult('Setback Applied',`<b>${devEsc(devState.context.setbackType.name)}</b><br>${devEsc(DEV_STAT_NAMES[stat])}: <b>−${amount}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else {prepareDevelopmentResult(result)}
+  devState.outcome=result;devState.spinning=false;if(btn)btn.disabled=false;
+  if(devState.pending && ['opponent','combatOutcome','trainingLevel','combatRewardLevel','weaponDecision','summoning','gates','chakraJutsu','chakraNature','setbackAmount','outcome'].includes(wheel)) applyDevelopmentResult();
+}
+function startDevelopment(){
+  if(!devState.ninja){loadDevelopmentNinja();return}
+  syncDevelopmentInputs();
+  devState.category=null;devState.outcome=null;devState.pending=null;devState.context={};devState.wheel='category';
+  devState.sessionRolls=0;devState.sessionEvents=[];devState.sessionActive=true;
+  Object.keys(devState.forced).forEach(k=>devState.forced[k]=null);
+  renderDevWheel();devSetResult('Development Generation Started',`<b>Development session:</b> 0 of 5 branches completed.<br><span class="small">Complete five Development Category paths. Each completed path is applied immediately.</span>`);
+  document.getElementById('devChangeGrid').innerHTML='';document.getElementById('applyDevResultBtn').disabled=true;
+}
+function initDevelopmentSystem(){devSourceOptions();const sel=document.getElementById('devNinjaSource');if(sel)sel.value='current';loadDevelopmentNinja()}
+window.addEventListener('DOMContentLoaded',()=>{try{initDevelopmentSystem()}catch(e){console.warn('Development system init',e)}});
+
 /* ===================== OPTIONAL NINJA PORTRAIT (Grok prompt helper) ===================== */
 function enablePortraitControls(on){
   const a=document.getElementById('buildPortraitPromptBtn');
@@ -5383,10 +6031,12 @@ function characterDetailHTML(c){
     ${logRowAlways("Exceptional trait", c.exceptional)}
   </div>
   </div>
-  <div class="log-detail-card" style="margin-top:14px"><b>D100 / Final Stats</b><div class="log-detail-stats">${statHTML || '<span class="small">No stats recorded.</span>'}</div></div>`;
+  <div class="log-detail-card" style="margin-top:14px"><b>D100 / Final Stats</b><div class="log-detail-stats">${statHTML || '<span class="small">No stats recorded.</span>'}</div></div>
+  ${Array.isArray(c.developmentHistory)&&c.developmentHistory.length ? `<div class="log-detail-card" style="margin-top:14px"><b>Ninja Development History</b>${c.developmentHistory.slice(0,20).map((e,i)=>`<div class="dev-history-item"><b>#${c.developmentHistory.length-i} — ${esc(e.category||'Development')} → ${esc(e.outcome||'')}</b><span>${esc(formatGeneratedDate(e.date))}${e.opponent?` · Fought ${esc(e.opponent)}${e.relationship?` (${esc(e.relationship)})`:''}${e.opponentRank?` · ${esc(e.opponentRank)}`:''}`:''}${e.stat&&e.before!=null&&e.after!=null?` · ${esc(DEV_STAT_NAMES[e.stat]||e.stat)}: ${esc(e.before)} → ${esc(e.after)}`:''}</span><div class="small" style="margin-top:4px">${esc(e.narrative||'')}</div></div>`).join('')}</div>` : ''}`;
 }
 function renderCharacterLog(){
   const list=document.getElementById("characterLogList"),detail=document.getElementById("characterLogDetail");if(!list||!detail)return;
+  try{devSourceOptions()}catch(e){}
   if(!characterLog.length){list.innerHTML='<div class="log-empty">No ninjas have been generated yet. Complete a generation and it will appear here.</div>';detail.style.display="none";return}
   list.innerHTML=characterLog.map((c,i)=>`<div class="character-log-entry ${i===selectedLogIndex?"selected":""}" onclick="openCharacterLogEntry(${i})"><div class="entry-main"><div class="entry-name">Ninja #${characterLog.length-i}: ${esc(characterDisplayName(c))}</div><div class="entry-meta">${esc(formatGeneratedDate(c.generatedAt))} · ${esc(c.age??"?")}-year-old ${esc(c.type||"Ninja")} · ${esc(c.land||"Unknown land")}</div></div><div class="entry-number">›</div></div>`).join("");
   if(selectedLogIndex!==null&&characterLog[selectedLogIndex]){detail.innerHTML=characterDetailHTML(characterLog[selectedLogIndex]);detail.style.display="block"}else detail.style.display="none";
@@ -5398,7 +6048,7 @@ function clearCharacterLog(){if(!characterLog.length)return;if(!confirm("Clear a
 renderCharacterLog();
 
 const _finishInteractiveWithLog=finishInteractive;
-finishInteractive=function(){_finishInteractiveWithLog();if(lastCharacter)addCharacterToLog(lastCharacter)};
+finishInteractive=function(){_finishInteractiveWithLog();if(lastCharacter)addCharacterToLog(lastCharacter);try{devSourceOptions();if(document.getElementById('devNinjaSource')?.value==='current')loadDevelopmentNinja()}catch(e){console.warn('Development refresh',e)}};
 
 </script>
 
