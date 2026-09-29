@@ -394,33 +394,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div id="goals"></div>
     </section>
 
-    <section class="card full portrait-panel" id="portraitSection">
-      <h2>Ninja Portrait (optional)</h2>
-      <p class="portrait-hint">After your character is complete, a Grok image prompt is built from <b>Identity</b>, <b>Lineage &amp; Abilities</b>, and <b>Combat</b>. Use <b>Open in Grok</b> to open grok.com with the prompt loaded (it often auto-submits), or copy the prompt manually. When the image is ready, upload it below to show it on this page.</p>
-      <div class="portrait-actions">
-        <button type="button" id="buildPortraitPromptBtn" class="secondary" onclick="buildNinjaPortraitPrompt()" disabled="">Build portrait prompt</button>
-        <button type="button" id="copyPortraitPromptBtn" class="secondary" onclick="copyNinjaPortraitPrompt()" disabled="">Copy prompt for Grok</button>
-        <button type="button" id="openGrokPortraitBtn" onclick="openPortraitInGrok()" disabled="">Open in Grok</button>
-      </div>
-      <textarea id="portraitPrompt" class="portrait-prompt-box" placeholder="Portrait prompt will appear here after you generate a character…" readonly=""></textarea>
-      <div id="portraitStatus" class="portrait-status"></div>
-      <div class="portrait-frame" id="portraitFrame">
-        <div class="placeholder" id="portraitPlaceholder">No portrait yet. Generate a character, build the prompt, ask Grok for an image, then paste or drop the image here.</div>
-        <img id="portraitImage" alt="Custom ninja portrait" hidden="">
-      </div>
-      <div class="portrait-actions">
-        <label class="secondary" style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:#1a2230">
-          <input type="file" id="portraitFileInput" accept="image/*" style="display:none" onchange="loadPortraitFromFile(event)">
-          Upload / show generated image
-        </label>
-        <button type="button" class="secondary" onclick="clearPortraitImage()">Clear image</button>
-      </div>
-    </section>
 
-    <section class="card full">
-      <h2>Generation Log</h2>
-      <div id="log" class="log"><div>• Land: Land of Wind</div></div>
-    </section>
 
   </div>
 </div>
@@ -517,13 +491,13 @@ const DATA = {
     W("Aburame Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Parasitic Insects", dojutsu:null, hiden:"Parasitic Insects", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:5,taijutsu:2,genjutsu:2,speed:1,strength:2,durability:2,intelligence:5,battleIQ:5,stamina:4,sensory:8,willpower:5,stealth:7,weaponSkill:1}}),
     W("Akimichi Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Multi-Size / Expansion", dojutsu:null, hiden:"Multi-Size / Expansion", hasBloodline:true, mods:{chakraQuantity:6,chakraControl:-1,ninjutsu:1,taijutsu:6,genjutsu:-3,speed:5,strength:10,durability:9,intelligence:-1,battleIQ:5,stamina:9,sensory:-1,willpower:7,stealth:-4,weaponSkill:1}}),
     W("Amagiri Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:3,ninjutsu:4,taijutsu:1,genjutsu:1,speed:3,durability:1,intelligence:3,battleIQ:3,stamina:2,sensory:2,willpower:3,stealth:3,weaponSkill:2}}),
-    W("Chinoike Clan", 2, {lands:["Land of Lightning", "Minor Land / Other Country"], village:"Independent Settlement", bloodline:"Ketsury\u016bgan", dojutsu:"Ketsury\u016bgan", hiden:null, hasBloodline:true, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:6,taijutsu:1,genjutsu:8,speed:2,strength:1,durability:3,intelligence:4,battleIQ:6,stamina:4,sensory:5,willpower:7,stealth:3}}),
+    W("Chinoike Clan", 2, {lands:["Land of Lightning", "Minor Land / Other Country"], village:"Independent Settlement", bloodline:null, dojutsu:"Ketsury\u016bgan", hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:6,taijutsu:1,genjutsu:8,speed:2,strength:1,durability:3,intelligence:4,battleIQ:6,stamina:4,sensory:5,willpower:7,stealth:3}}),
     W("Funato Clan", 2, {lands:["Land of Water"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:1,ninjutsu:3,taijutsu:5,genjutsu:-2,speed:4,strength:5,durability:6,intelligence:1,battleIQ:5,stamina:8,sensory:2,willpower:7,stealth:1,weaponSkill:-5}}),
     W("F\u016bma Clan (Land of Sound)", 2, {lands:["Land of Fire"], village:"Land of Sound", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:1,ninjutsu:4,taijutsu:5,speed:7,strength:2,durability:2,intelligence:2,battleIQ:6,stamina:4,sensory:1,willpower:4,stealth:6,weaponSkill:10}}),
     W("Hatake Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:4,chakraControl:5,ninjutsu:7,taijutsu:7,genjutsu:2,speed:7,strength:4,durability:4,intelligence:8,battleIQ:10,stamina:6,sensory:5,willpower:7,stealth:7,weaponSkill:8}}),
     W("Hirasaka Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:5,taijutsu:2,genjutsu:3,speed:6,strength:1,durability:2,intelligence:6,battleIQ:7,stamina:4,sensory:4,willpower:5,stealth:5,weaponSkill:3}}),
     W("Hoshigaki Clan", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Shark-person", dojutsu:null, hiden:"Shark-person", hasBloodline:true, mods:{chakraQuantity:7,chakraControl:-1,ninjutsu:3,taijutsu:8,genjutsu:-4,speed:4,strength:8,durability:10,intelligence:6,battleIQ:8,stamina:10,sensory:2,willpower:9,stealth:-2,weaponSkill:3}}),
-    W("Hy\u016bga Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Byakugan", dojutsu:"Byakugan", hiden:null, hasBloodline:true, mods:{chakraQuantity:3,chakraControl:9,ninjutsu:7,taijutsu:9,genjutsu:1,speed:6,strength:5,durability:3,intelligence:7,battleIQ:9,stamina:5,sensory:10,willpower:7,stealth:5,weaponSkill:2}}),
+    W("Hy\u016bga Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:"Byakugan", hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:9,ninjutsu:7,taijutsu:9,genjutsu:1,speed:6,strength:5,durability:3,intelligence:7,battleIQ:9,stamina:5,sensory:10,willpower:7,stealth:5,weaponSkill:2}}),
     W("H\u014dki Family", 2, {lands:["Land of Wind"], village:"Sunagakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:4,taijutsu:2,genjutsu:2,speed:3,strength:1,durability:1,intelligence:7,battleIQ:8,stamina:3,sensory:4,willpower:4,stealth:6,weaponSkill:4}}),
     W("H\u014dzuki Clan", 2, {lands:["Land of Water"], village:"Kirigakure", bloodline:"Hydrification Technique", dojutsu:null, hiden:"Hydrification Technique", hasBloodline:true, mods:{chakraQuantity:6,chakraControl:4,ninjutsu:7,taijutsu:5,genjutsu:-2,speed:7,strength:5,durability:8,intelligence:3,battleIQ:6,stamina:7,sensory:2,willpower:6,stealth:2,weaponSkill:3}}),
     W("Iburi Clan", 2, {lands:["Land of Fire"], village:"Independent Settlement", bloodline:"Smoke-Body", dojutsu:null, hiden:"Smoke-Body", hasBloodline:true, mods:{chakraQuantity:3,chakraControl:5,ninjutsu:7,taijutsu:-1,genjutsu:3,speed:5,strength:-2,durability:3,intelligence:4,battleIQ:4,stamina:4,sensory:3,willpower:5,stealth:9}}),
@@ -551,7 +525,7 @@ const DATA = {
     W("Taketori Clan", 2, {lands:["Minor Land / Other Country"], village:"Independent Settlement", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:4,ninjutsu:4,taijutsu:4,genjutsu:2,speed:3,strength:4,durability:4,intelligence:4,battleIQ:5,stamina:5,sensory:3,willpower:6,stealth:3,weaponSkill:6}}),
     W("Tenr\u014d Clan", 2, {lands:["Land of Fire", "Minor Land / Other Country"], village:"Yumegakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:3,chakraControl:3,ninjutsu:3,taijutsu:8,genjutsu:-2,speed:7,strength:7,durability:7,intelligence:1,battleIQ:7,stamina:8,sensory:7,willpower:8,stealth:3,weaponSkill:6}}),
     W("Tsuchigumo Clan", 2, {lands:["Minor Land / Other Country"], village:"Tsuchigumo Village", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:5,chakraControl:5,ninjutsu:8,taijutsu:3,genjutsu:3,speed:3,strength:3,durability:4,intelligence:5,battleIQ:6,stamina:6,sensory:4,willpower:7,stealth:4,weaponSkill:2}}),
-    W("Uchiha Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:"Sharingan", dojutsu:"Sharingan", hiden:null, hasBloodline:true, mods:{chakraQuantity:6,chakraControl:8,ninjutsu:9,taijutsu:6,genjutsu:9,speed:6,strength:3,durability:4,intelligence:8,battleIQ:9,stamina:5,sensory:6,willpower:8,stealth:5,weaponSkill:5}}),
+    W("Uchiha Clan", 2, {lands:["Land of Fire"], village:"Konohagakure", bloodline:null, dojutsu:"Sharingan", hiden:null, hasBloodline:false, mods:{chakraQuantity:6,chakraControl:8,ninjutsu:9,taijutsu:6,genjutsu:9,speed:6,strength:3,durability:4,intelligence:8,battleIQ:9,stamina:5,sensory:6,willpower:8,stealth:5,weaponSkill:5}}),
     W("Uzumaki Clan", 2, {lands:["Land of Water"], village:"Uzushiogakure", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:10,chakraControl:5,ninjutsu:6,taijutsu:3,genjutsu:2,speed:2,strength:4,durability:9,intelligence:7,battleIQ:7,stamina:10,sensory:4,willpower:10,stealth:2,weaponSkill:2}}),
     W("Wagarashi Family", 2, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:1,chakraControl:2,ninjutsu:2,taijutsu:1,genjutsu:1,speed:2,durability:1,intelligence:5,battleIQ:4,stamina:2,sensory:1,willpower:3,stealth:4,weaponSkill:2}}),
     W("Wasabi Family", 2, {lands:["Minor Land / Other Country"], village:"Land of Tea", bloodline:null, dojutsu:null, hiden:null, hasBloodline:false, mods:{chakraQuantity:2,chakraControl:3,ninjutsu:3,taijutsu:4,speed:9,strength:2,durability:2,intelligence:2,battleIQ:5,stamina:5,sensory:2,willpower:5,stealth:4,weaponSkill:2}}),
@@ -607,12 +581,11 @@ const DATA = {
 
   /* Dōjutsu catalogue (user-provided). Clan eyes are automatic; non-clan is rare transplant/awakening. */
   dojutsu:[
+    /* Mangekyō Sharingan and Rinne Sharingan are not rolled here — they come from the Sharingan Stage wheel after landing on Sharingan. */
     {name:"Byakugan",weight:40,clans:["Hyūga Clan","Ōtsutsuki Clan"],mods:{sensory:10,chakraControl:5}},
     {name:"Jōgan",weight:3,clans:[],mods:{sensory:10}},
     {name:"Ketsuryūgan",weight:8,clans:["Chinoike Clan"],mods:{genjutsu:7,willpower:5}},
     {name:"Kokugan",weight:3,clans:[],mods:{sensory:9}},
-    {name:"Mangekyō Sharingan",weight:2,clans:["Uchiha Clan"],special:"sharinganEvolution",mods:{genjutsu:10,battleIQ:8}},
-    {name:"Rinne Sharingan",weight:0.5,clans:[],mods:{chakraQuantity:10,ninjutsu:10}},
     {name:"Rinnegan",weight:1.5,clans:[],mods:{chakraQuantity:10,ninjutsu:10}},
     {name:"Senrigan",weight:3,clans:[],mods:{sensory:10}},
     {name:"Sharingan",weight:38,clans:["Uchiha Clan"],mods:{genjutsu:8,battleIQ:6}},
@@ -945,8 +918,8 @@ function rollD100(){return Math.floor(Math.random()*100)+1}
 function randInt(a,b){return Math.floor(Math.random()*(b-a+1))+a}
 function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
 function clone(x){return JSON.parse(JSON.stringify(x))}
-function logLine(s){document.getElementById("log").innerHTML += `<div>• ${s}</div>`}
-function clearLog(){document.getElementById("log").innerHTML=""}
+function logLine(s){ const el=document.getElementById("log"); if(el) el.innerHTML += `<div>• ${s}</div>`; }
+function clearLog(){ const el=document.getElementById("log"); if(el) el.innerHTML=""; }
 function addMods(target,mods={}){for(const [k,v] of Object.entries(mods))target[k]=(target[k]||0)+v}
 
 function rollNatures(count){
@@ -958,7 +931,9 @@ function rollNatures(count){
   return out;
 }
 function legalBloodlines(c){
+  /* Nature-based / clan-tied KG only — never dōjutsu (Sharingan, Byakugan, etc.). */
   const eligible=DATA.bloodlines.filter(b=>{
+    if(!b || !b.name || isDojutsuName(b.name)) return false;
     if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
     if(b.clans?.length && !b.clans.includes(c.clan)) return false;
     if(b.heritage && !b.heritage.some(h=>(c.heritage||[]).includes(h))) return false;
@@ -1069,15 +1044,64 @@ function rollDojutsuEyes(c){
   c.dojutsuEyes = rollWeighted([W("One eye", 88), W("Both eyes", 12)]).name;
   return c.dojutsuEyes;
 }
+/* Sharingan stage rank (lowest → highest). Higher ranks supersede lower ones. */
+const SHARINGAN_STAGE_RANK = {
+  "1-tomoe Sharingan": 1,
+  "2-tomoe Sharingan": 2,
+  "3-tomoe Sharingan": 3,
+  "Mangekyō Sharingan": 4,
+  "Eternal Mangekyō Sharingan": 5,
+  "Rinnegan": 6,
+  "Rinne Sharingan": 6
+};
+function sharinganStageRank(name){
+  if(!name) return 0;
+  const s = String(name);
+  if(SHARINGAN_STAGE_RANK[s]!=null) return SHARINGAN_STAGE_RANK[s];
+  const lower = s.toLowerCase();
+  if(lower.includes("rinne")) return 6;
+  if(lower.includes("eternal")) return 5;
+  if(lower.includes("mangekyō")||lower.includes("mangekyo")) return 4;
+  if(lower.includes("3-tomoe")||lower.includes("3 tomoe")) return 3;
+  if(lower.includes("2-tomoe")||lower.includes("2 tomoe")) return 2;
+  if(lower.includes("1-tomoe")||lower.includes("1 tomoe")) return 1;
+  if(lower.includes("sharingan")) return 1;
+  return 0;
+}
+function stageFromDojutsu(dojutsuName){
+  const r = sharinganStageRank(dojutsuName);
+  if(r >= 6) return "Rinnegan";
+  if(r === 5) return "Eternal Mangekyō Sharingan";
+  if(r === 4) return "Mangekyō Sharingan";
+  if(r === 3) return "3-tomoe Sharingan";
+  if(r === 2) return "2-tomoe Sharingan";
+  if(r === 1) return "1-tomoe Sharingan";
+  return null;
+}
+function applySharinganStageToDojutsu(c, stage){
+  if(!c || !stage) return;
+  const rank = sharinganStageRank(stage);
+  const cur = sharinganStageRank(c.dojutsu||c.dojutsuStage||"");
+  if(rank < cur) return; // never downgrade
+  c.dojutsuStage = stage;
+  if(rank >= 6) c.dojutsu = "Rinnegan";
+  else if(rank === 5) c.dojutsu = "Eternal Mangekyō Sharingan";
+  else if(rank === 4) c.dojutsu = "Mangekyō Sharingan";
+  else if(rank >= 1) {
+    if(!c.dojutsu || c.dojutsu==="None" || /sharingan/i.test(c.dojutsu)) {
+      if(rank < 4) c.dojutsu = "Sharingan";
+    }
+  }
+}
 function sharinganStage(){
-  /* 1-tomoe most common → Rinne Sharingan exceptionally rare */
+  /* 1-tomoe most common → Rinnegan exceptionally rare (lowest → highest ladder). */
   return rollWeighted([
     W("1-tomoe Sharingan", 30),
     W("2-tomoe Sharingan", 28),
     W("3-tomoe Sharingan", 22),
     W("Mangekyō Sharingan", 12),
     W("Eternal Mangekyō Sharingan", 6),
-    W("Rinne Sharingan", 2)
+    W("Rinnegan", 2)
   ]).name;
 }
 function rollKekkeiGenkaiAccess(c){
@@ -1102,8 +1126,15 @@ function hasAccess(c,cat){
   if(cat==="Space-Time Ninjutsu") return c.dojutsu==="Rinnegan"||c.dojutsu==="Rinne Sharingan"||c.heritage.includes("Ōtsutsuki");
   return true;
 }
+function isIronSamurai(c){
+  return !!(c && c.land==="Land of Iron" && c.type==="Samurai");
+}
 function rollCombat(c,exclude=[]){
-  /* Puppet-class tools force Primary = Puppetry (secondary still rolls normally). */
+  /* Land of Iron Samurai: Primary is always Kenjutsu.
+     Puppet-class tools force Primary = Puppetry (secondary still rolls normally). */
+  if(!exclude.length && isIronSamurai(c)){
+    return {name:"Kenjutsu", weight:1};
+  }
   if(!exclude.length && characterHasPuppetTool(c)){
     return {name:"Puppetry", weight:1};
   }
@@ -1140,6 +1171,10 @@ function rollStats(c){
   if(c.weaponData && c.weaponData.category === "Seven Swords"){
     s.weaponSkill = (s.weaponSkill || 0) + 10;
   }
+  /* Land of Iron Samurai: significant kenjutsu / weapon skill bonus */
+  if(typeof isIronSamurai==="function" && isIronSamurai(c)){
+    s.weaponSkill = (s.weaponSkill || 0) + 25;
+  }
   for(const k in s)s[k]=Math.min(100,s[k]);
   return s;
 }
@@ -1158,15 +1193,23 @@ function rollClanFor(c){
   const pool=DATA.clans.filter(x=>clanEligibleFor(c,x));
   return rollWeighted(pool.length?pool:DATA.clans);
 }
+/* Dōjutsu names must never appear on the Bloodline / Kekkei Genkai wheel. */
+function isDojutsuName(name){
+  if(!name) return false;
+  const n = String(name).toLowerCase();
+  return /sharingan|byakugan|rinnegan|tenseigan|ketsury|jōgan|jogan|kokugan|senrigan|rinne sharingan/.test(n);
+}
 function applyClanTraits(c){
-  /* Record clan-forced lineage. Actual bloodline/dōjutsu wheels still spin (full options)
-     but land on these forced values when present. */
+  /* Clan dōjutsu (e.g. Uchiha → Sharingan) is forced on the dōjutsu track.
+     Bloodline / KG is only forced for true bloodlines (Ice Release, Shikotsumyaku, hiden, etc.).
+     Dōjutsu names are never treated as clan-forced bloodlines. */
   const d=c.clanData||{};
   c.clanForcedDojutsu = d.dojutsu || null;
-  c.clanForcedBloodline = (d.hasBloodline || d.bloodline) ? (d.bloodline || d.hiden || "Clan bloodline") : null;
-  if(d.hiden){ c.hiden=d.hiden; }
+  let bl = (d.hasBloodline || d.bloodline) ? (d.bloodline || d.hiden || null) : null;
+  if(bl && isDojutsuName(bl)) bl = null;
+  c.clanForcedBloodline = bl;
+  if(d.hiden && !isDojutsuName(d.hiden)){ c.hiden=d.hiden; }
   if(d.mods) c.clanData={...d, mods:d.mods};
-  // Pre-seed so downstream eligibility sees the clan grant early, wheels still force-spin to these
   if(c.clanForcedDojutsu){
     c.dojutsu=c.clanForcedDojutsu;
     c.dojutsuData=DATA.dojutsu.find(x=>x.name===c.clanForcedDojutsu)||{name:c.clanForcedDojutsu,mods:{}};
@@ -1175,9 +1218,8 @@ function applyClanTraits(c){
   if(c.clanForcedBloodline){
     c.bloodline=c.clanForcedBloodline;
     c.bloodlineData={name:c.bloodline,mods:d.mods||{}};
-    // If the "bloodline" is actually a nature KG (e.g. Ice Release), mirror onto kekkeiGenkai
-    const bl=(c.bloodline||"").toLowerCase();
-    if(bl.includes("release") || bl.includes("shikotsumyaku")){
+    const bln=(c.bloodline||"").toLowerCase();
+    if(bln.includes("release") || bln.includes("shikotsumyaku") || bln.includes("sand")){
       c.kekkeiGenkai=c.bloodline;
     }
   }
@@ -1188,10 +1230,14 @@ function getClanForcedDojutsu(c){
   return (d && d.dojutsu) || null;
 }
 function getClanForcedBloodline(c){
-  if(c && c.clanForcedBloodline) return c.clanForcedBloodline;
-  const d=c && c.clanData;
-  if(d && (d.hasBloodline || d.bloodline)) return d.bloodline || d.hiden || "Clan bloodline";
-  return null;
+  let bl = null;
+  if(c && c.clanForcedBloodline) bl = c.clanForcedBloodline;
+  else {
+    const d=c && c.clanData;
+    if(d && (d.hasBloodline || d.bloodline)) bl = d.bloodline || d.hiden || null;
+  }
+  if(bl && isDojutsuName(bl)) return null;
+  return bl;
 }
 
 function generate(){
@@ -1251,10 +1297,7 @@ function generate(){
     if(c.dojutsuSource==="non-clan") rollDojutsuEyes(c);
     else c.dojutsuEyes="Both";
     if(c.dojutsu==="Sharingan" || c.dojutsu==="Mangekyō Sharingan"){
-      c.dojutsuStage=sharinganStage();
-      if(c.dojutsuStage.includes("Rinne")) c.dojutsu="Rinne Sharingan";
-      else if(c.dojutsuStage.includes("Eternal")) c.dojutsu="Eternal Mangekyō Sharingan";
-      else if(c.dojutsuStage.includes("Mangekyō")) c.dojutsu="Mangekyō Sharingan";
+      applySharinganStageToDojutsu(c, sharinganStage());
     }
   }
   logLine("Dōjutsu: "+(c.dojutsu||"None")+(c.dojutsuEyes?" ["+c.dojutsuEyes+"]":"")+(c.dojutsuStage?" — "+c.dojutsuStage:""));
@@ -1337,7 +1380,7 @@ function render(c){
   document.getElementById("lineage").innerHTML=
     row("Bloodline",c.bloodline||"None")+(c.hiden?row("Hiden technique",c.hiden):"")+row("Dōjutsu",c.dojutsu||"None")+
     (c.dojutsuEyes?row("Dōjutsu eyes",c.dojutsuEyes):"")+
-    (c.dojutsuStage?row("Dōjutsu stage",c.dojutsuStage):"")+
+    (c.dojutsuStage?row("Dōjutsu stage",c.dojutsuStage):"")+(c.susanooAccess?row("Susanoo access",c.susanooAccess):"")+
     row("Senjutsu",c.senjutsu+(c.sageType?" — "+c.sageType:""))+
     row("Jinchūriki",c.jinchuriki+(c.beast?` — ${c.beast}; ${c.relationship}`:""))+
     row("Summoning",c.summoning+(c.summonType?" — "+c.summonType:""))+
@@ -1426,7 +1469,7 @@ const LOCAL_JUTSU_CATALOG = [
   {name:"Fire Style: Majestic Destroyer Flame",classification:"Ninjutsu",chakraNature:"Fire Release"},
   {name:"Amaterasu",classification:"Ninjutsu / Dōjutsu",chakraNature:"Fire Release",requiredDojutsu:"Mangekyō Sharingan"},
   {name:"Kagutsuchi / Flame Control",classification:"Ninjutsu / Dōjutsu",chakraNature:"Fire Release",requiredKekkeiGenkai:"Blaze Release",requiredDojutsu:"Mangekyō Sharingan"},
-  {name:"Inferno Style: Susanoo Flame Control",classification:"Ninjutsu / Dōjutsu",chakraNature:"Fire Release",requiredKekkeiGenkai:"Blaze Release",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Inferno Style: Susanoo Flame Control",classification:"Ninjutsu / Dōjutsu",chakraNature:"Fire Release",requiredKekkeiGenkai:"Blaze Release",requiredDojutsu:"Mangekyō Sharingan",requiredSusanoo:true},
   {name:"Susanoo",classification:"Ninjutsu / Dōjutsu",requiredSusanoo:true,requiredDojutsu:"Mangekyō Sharingan"},
   {name:"Perfect Susanoo",classification:"Ninjutsu / Dōjutsu",requiredSusanoo:true,requiredDojutsu:"Eternal Mangekyō Sharingan"},
   {name:"Yasaka Magatama",classification:"Ninjutsu / Dōjutsu",requiredSusanoo:true,requiredDojutsu:"Mangekyō Sharingan"},
@@ -1657,10 +1700,10 @@ const LOCAL_JUTSU_CATALOG = [
   {name:"Inferno Style: Flame Control", classification:"Ninjutsu / Dōjutsu", chakraNature:"Blaze Release", requiredDojutsu:"Mangekyō Sharingan", requiredKekkeiGenkai:"Blaze Release"},
   {name:"Inferno Style: Flame Control Jumping Flames", classification:"Ninjutsu / Dōjutsu", chakraNature:"Blaze Release", requiredDojutsu:"Mangekyō Sharingan", requiredKekkeiGenkai:"Blaze Release"},
   {name:"Flame Control Sword", classification:"Ninjutsu / Dōjutsu", chakraNature:"Blaze Release", requiredDojutsu:"Mangekyō Sharingan", requiredKekkeiGenkai:"Blaze Release"},
-  {name:"Susanoo: Flame Bind", classification:"Ninjutsu / Dōjutsu", chakraNature:"Blaze Release", requiredDojutsu:"Mangekyō Sharingan", requiredKekkeiGenkai:"Blaze Release"},
-  {name:"Susanoo: Fire Thrust", classification:"Ninjutsu / Dōjutsu", chakraNature:"Fire Release", requiredDojutsu:"Mangekyō Sharingan"},
-  {name:"Susanoo: Flame Spiral", classification:"Ninjutsu / Dōjutsu", chakraNature:"Fire Release", requiredDojutsu:"Mangekyō Sharingan"},
-  {name:"Susanoo: Tsukumo", classification:"Ninjutsu / Dōjutsu", requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Susanoo: Flame Bind", classification:"Ninjutsu / Dōjutsu", chakraNature:"Blaze Release", requiredDojutsu:"Mangekyō Sharingan", requiredKekkeiGenkai:"Blaze Release", requiredSusanoo:true},
+  {name:"Susanoo: Fire Thrust", classification:"Ninjutsu / Dōjutsu", chakraNature:"Fire Release", requiredDojutsu:"Mangekyō Sharingan", requiredSusanoo:true},
+  {name:"Susanoo: Flame Spiral", classification:"Ninjutsu / Dōjutsu", chakraNature:"Fire Release", requiredDojutsu:"Mangekyō Sharingan", requiredSusanoo:true},
+  {name:"Susanoo: Tsukumo", classification:"Ninjutsu / Dōjutsu", requiredDojutsu:"Mangekyō Sharingan", requiredSusanoo:true},
   {name:"Indra's Arrow / Takemikazuchi-no-Kami", classification:"Ninjutsu / Dōjutsu", chakraNature:"Lightning Release", requiredDojutsu:"Mangekyō Sharingan"},
   {name:"Planetary Devastation: Heavenly Drop", classification:"Ninjutsu / Dōjutsu", requiredDojutsu:"Rinnegan"},
   {name:"Curse Mark Chidori", classification:"Ninjutsu", chakraNature:"Lightning Release"},
@@ -1672,7 +1715,7 @@ const LOCAL_JUTSU_CATALOG = [
   {name:"Combustive Sword Attack", classification:"Kenjutsu / Ninjutsu", chakraNature:"Fire Release"},
   {name:"Lightning Blade: Speed", classification:"Ninjutsu", chakraNature:"Lightning Release"},
   {name:"Lightning Blade: Double Lightning Quake", classification:"Ninjutsu", chakraNature:"Lightning Release"},
-  {name:"Susanoo: Kamui Lightning Blade", classification:"Ninjutsu / Dōjutsu", chakraNature:"Lightning Release", requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Susanoo: Kamui Lightning Blade", classification:"Ninjutsu / Dōjutsu", chakraNature:"Lightning Release", requiredDojutsu:"Mangekyō Sharingan", requiredSusanoo:true},
   {name:"White Light Blade", classification:"Kenjutsu", requiredWeapon:"White Light Chakra Sabre"},
   {name:"Summoning: Demonic Statue of the Outer Path", classification:"Ninjutsu", requiredDojutsu:"Rinnegan"},
   {name:"Eight Trigrams 64 Palms Guard", classification:"Taijutsu / Dōjutsu", requiredDojutsu:"Byakugan"},
@@ -2777,16 +2820,22 @@ function dojutsuSatisfied(required, c){
   if(!have || have==="None") return false;
   const r = required.toLowerCase();
   const h = have.toLowerCase();
-  if(h.includes(r) || r.includes(h)) return true;
-  // Evolution chains
-  if(r.includes("sharingan")){
-    return ["sharingan","mangekyō sharingan","mangekyo sharingan","eternal mangekyō sharingan","eternal mangekyo sharingan"].some(x=>h.includes(x));
-  }
-  if(r.includes("mangekyō")||r.includes("mangekyo")){
-    return h.includes("mangekyō")||h.includes("mangekyo")||h.includes("eternal");
-  }
-  if(r.includes("rinnegan")) return h.includes("rinnegan")||h.includes("rinne sharingan");
+  // Exact / contains: character must meet or exceed the required tier
+  if(h.includes(r)) return true;
+  // Evolution chains (higher forms satisfy lower requirements; not the reverse)
+  const isRinneSharingan = h.includes("rinne sharingan");
+  const isEternal = h.includes("eternal mangekyō")||h.includes("eternal mangekyo")||isRinneSharingan;
+  const isMangekyo = h.includes("mangekyō")||h.includes("mangekyo")||isEternal;
+  const isSharingan = h.includes("sharingan")||isMangekyo;
+  if(r.includes("rinne sharingan")) return isRinneSharingan;
+  if(r.includes("eternal mangekyō")||r.includes("eternal mangekyo")) return isEternal;
+  if(r.includes("mangekyō")||r.includes("mangekyo")) return isMangekyo;
+  if(r.includes("sharingan") && !r.includes("rinne")) return isSharingan;
+  if(r.includes("rinnegan")) return h.includes("rinnegan")||isRinneSharingan;
   if(r.includes("byakugan")) return h.includes("byakugan")||h.includes("tenseigan");
+  if(r.includes("tenseigan")) return h.includes("tenseigan");
+  // Generic contains either way for other named dōjutsu (Jōgan, Ketsuryūgan, etc.)
+  if(h.includes(r) || r.includes(h)) return true;
   return false;
 }
 function clanSatisfied(required, c){
@@ -2874,11 +2923,12 @@ function localJutsuEligible(j, c){
   if(m.requiredClan && !clanSatisfied(m.requiredClan, c)) return false;
   if(m.requiredDojutsu && !dojutsuSatisfied(m.requiredDojutsu, c)) return false;
   if(m.requiredSusanoo){
-    // Susanoo-capable: Mangekyō or higher
+    // Requires explicit Susanoo Access = Yes (rolled after Mangekyō+) and Mangekyō-tier dōjutsu
+    if(c.susanooAccess!=="Yes") return false;
     if(!dojutsuSatisfied("Mangekyō Sharingan", c)) return false;
   }
   if(m.requiredKekkeiGenkai){
-    const kg = (c.kekkeiGenkai||c.bloodline||"").toLowerCase();
+    const kg = (c.kekkeiGenkai||c.bloodline||c.hiden||"").toLowerCase();
     const need = m.requiredKekkeiGenkai.toLowerCase();
     // Blaze Release often via Mangekyō Amaterasu path
     if(need.includes("blaze")){
@@ -2891,10 +2941,15 @@ function localJutsuEligible(j, c){
     } else if(need.includes("shikotsumyaku")){
       if(!(kg.includes("shikotsumyaku") || clanSatisfied("Kaguya", c))) return false;
     } else {
+      /* Advanced nature KGs (Typhoon, Ice, Wood, Lava, Storm, etc.) require the
+         actual kekkei genkai on the character. Matching only the underlying basic
+         nature (e.g. Wind for Typhoon) is NOT enough. */
       const needCore = need.replace(/\s+release$/,"").trim();
-      const hasKg = kg && (kg.includes(needCore) || need.includes(kg.replace(/\s+release$/,"").trim()));
-      const hasNature = natureIdsMatch(m.chakraNature||need, c);
-      if(!hasKg && !hasNature) return false;
+      const kgCore = kg.replace(/\s+release$/,"").trim();
+      const hasKg = !!(kg && needCore && (
+        kg.includes(needCore) || need.includes(kgCore) || kgCore === needCore
+      ));
+      if(!hasKg) return false;
     }
   } else if(m.chakraNature){
     if(!natureIdsMatch(m.chakraNature, c)) return false;
@@ -3019,22 +3074,20 @@ const FALLBACK_PUPPET_TECHNIQUES=[
 
 /* Ultimate / Secret Technique catalogue — eligibility-gated for the Ultimate Jutsu wheel */
 const ULTIMATE_JUTSU_CATALOG = [
-  {name:"Naruto's Ninja Handbook",classification:"Ultimate Jutsu"},
   {name:"Sealed Power",classification:"Ultimate Jutsu",requiredJinchuriki:true},
-  {name:"The Nine-Tailed Rasengan",classification:"Ultimate Jutsu",chakraNature:"Wind Release",requiredJinchuriki:true},
+  {name:"The Nine-Tailed Rasengan",classification:"Ultimate Jutsu",chakraNature:"Wind Release",requiredJinchuriki:true,requiredTailedBeast:"Kurama"},
   {name:"Wind Style: Rasenshuriken (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Wind Release"},
   {name:"True Wind Style: Rasenshuriken",classification:"Ultimate Jutsu",chakraNature:"Wind Release",requiredSageMode:"Sage Mode"},
   {name:"Sage Art: Massive Rasengan Mega Barrage",classification:"Ultimate Jutsu",requiredSageMode:"Sage Mode"},
   {name:"Tailed Beast Bomb",classification:"Ultimate Jutsu",requiredJinchuriki:true},
   {name:"Tailed Beast Planetary Rasenshuriken",classification:"Ultimate Jutsu",chakraNature:"Wind Release",requiredJinchuriki:true},
   {name:"Six Paths: Massive Rasenshuriken",classification:"Ultimate Jutsu",chakraNature:"Wind Release",requiredSixPaths:true},
-  {name:"Naruto 5K Uzumaki Barrage",classification:"Ultimate Jutsu"},
   {name:"Baryon Mode Ultimate",classification:"Ultimate Jutsu",requiredJinchuriki:true},
   {name:"Kirin",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredDojutsu:"Sharingan"},
   {name:"Chidori True Spear",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredDojutsu:"Sharingan"},
   {name:"Amaterasu (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Fire Release",requiredDojutsu:"Mangekyō Sharingan"},
   {name:"Susanoo (Ultimate)",classification:"Ultimate Jutsu",requiredSusanoo:true,requiredDojutsu:"Mangekyō Sharingan"},
-  {name:"Inferno Style: Susanoo Flame Control",classification:"Ultimate Jutsu",chakraNature:"Fire Release",requiredDojutsu:"Eternal Mangekyō Sharingan",requiredKekkeiGenkai:"Blaze Release"},
+  {name:"Inferno Style: Susanoo Flame Control",classification:"Ultimate Jutsu",chakraNature:"Fire Release",requiredDojutsu:"Eternal Mangekyō Sharingan",requiredKekkeiGenkai:"Blaze Release",requiredSusanoo:true},
   {name:"Flame Control Sword",classification:"Ultimate Jutsu",chakraNature:"Fire Release",requiredDojutsu:"Eternal Mangekyō Sharingan",requiredKekkeiGenkai:"Blaze Release",requiredWeapon:"Sword"},
   {name:"Indra's Arrow",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredDojutsu:"Rinnegan",requiredSixPaths:true},
   {name:"The Great Sakura",classification:"Ultimate Jutsu",requiredCombat:"taijutsu"},
@@ -3046,7 +3099,7 @@ const ULTIMATE_JUTSU_CATALOG = [
   {name:"Lightning Blade: Twin Lightning Shiver",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredClan:"Hatake Clan",requiredDojutsu:"Sharingan"},
   {name:"Lightning Blade: Speed",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredClan:"Hatake Clan",requiredDojutsu:"Sharingan"},
   {name:"Kamui (Ultimate)",classification:"Ultimate Jutsu",requiredClan:"Uchiha Clan",requiredDojutsu:"Mangekyō Sharingan",requiredSpaceTime:true},
-  {name:"Susanoo: Kamui Lightning Blade",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredClan:"Hatake Clan",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Susanoo: Kamui Lightning Blade",classification:"Ultimate Jutsu",chakraNature:"Lightning Release",requiredClan:"Hatake Clan",requiredDojutsu:"Mangekyō Sharingan",requiredSusanoo:true},
   {name:"White Light Blade",classification:"Ultimate Jutsu",requiredClan:"Hatake Clan"},
   {name:"Asakujaku (Morning Peacock Ultimate)",classification:"Ultimate Jutsu",requiredEightGatesMin:7},
   {name:"Hirudora (Daytime Tiger Ultimate)",classification:"Ultimate Jutsu",requiredEightGatesMin:7},
@@ -3154,7 +3207,7 @@ function ultimateMatchesActiveExclusive(j, c, set){
   if(m.requiredClan && clanSatisfied(m.requiredClan, c)) return true;
   // Dōjutsu / Susanoo lock
   if(m.requiredDojutsu && dojutsuSatisfied(m.requiredDojutsu, c)) return true;
-  if(m.requiredSusanoo && dojutsuSatisfied("Mangekyō Sharingan", c)) return true;
+  if(m.requiredSusanoo && c.susanooAccess==="Yes" && dojutsuSatisfied("Mangekyō Sharingan", c)) return true;
   // Kekkei Genkai / bloodline lock
   if(m.requiredKekkeiGenkai){
     const kg = (c.kekkeiGenkai || c.bloodline || "").toLowerCase();
@@ -3274,9 +3327,12 @@ function eligibleUltimatePool(c){
 }
 
 function rollUltimateJutsu(c){
-  const pool = eligibleUltimatePool(c);
-  const pick = pool[Math.floor(Math.random()*pool.length)];
-  return {name: pick.name, meta: pick};
+  const pool = eligibleUltimatePool(c)||[];
+  if(!pool.length) return {name:"None", meta:{name:"None"}};
+  const weighted = pool.map(j => W(j.name||"None", jutsuPriorityWeight(c, j), {ref:j}));
+  const pick = rollWeighted(weighted);
+  const ref = pick.ref || pool.find(x => x.name===pick.name) || pool[0];
+  return {name: pick.name, meta: ref};
 }
 
 FALLBACK_GENERAL_TECHNIQUES=[
@@ -3308,56 +3364,148 @@ function filterSpecialtySignaturePool(pool){
   });
   return out.length ? out : pool;
 }
+function characterKekkeiGenkaiName(c){
+  /* True nature/advanced KG only — not generic hiden like "Has a dog". */
+  if(!c) return null;
+  const candidates = [c.kekkeiGenkai, c.bloodline, c.hiden].filter(Boolean);
+  const looksLikeKg = (s) => /release|shikotsumyaku|dust|blaze|ketsury|sand manipulation|hydrification|crystal|magnet|scorch|storm|boil|lava|explosion|swift|steel|typhoon|mud|dark|wood|ice|kekkei/i.test(String(s));
+  for(const kg of candidates){
+    if(!kg || kg==="None" || kg==="Skipped") continue;
+    if(looksLikeKg(kg)) return String(kg);
+  }
+  // Explicit kekkeiGenkai field wins even if name is uncommon
+  if(c.kekkeiGenkai && c.kekkeiGenkai!=="None" && c.kekkeiGenkai!=="Skipped") return String(c.kekkeiGenkai);
+  return null;
+}
+function techniqueMatchesCharacterKg(t, c){
+  const kg = characterKekkeiGenkaiName(c);
+  if(!kg) return false;
+  const m = (t && (t.meta||t)) || {};
+  const need = String(m.requiredKekkeiGenkai||"").toLowerCase();
+  const kgL = kg.toLowerCase();
+  const kgCore = kgL.replace(/\s+release$/,"").trim();
+  const wordMatch = (hay, token) => {
+    if(!hay || !token || token.length < 3) return false;
+    try { return new RegExp("\\b" + token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "i").test(hay); }
+    catch(_e){ return hay.includes(token); }
+  };
+  if(need){
+    const needCore = need.replace(/\s+release$/,"").trim();
+    if(kgCore && (wordMatch(kgL, needCore) || wordMatch(need, kgCore) || kgCore === needCore)) return true;
+  }
+  // Advanced nature on the technique equals the character's KG (Ice Release, Wood Release, …)
+  const cn = String(m.chakraNature||"").toLowerCase();
+  if(cn){
+    const cnCore = cn.replace(/\s+release$/,"").trim();
+    if(kgCore && (cnCore === kgCore || wordMatch(cn, kgCore) || wordMatch(kgL, cnCore))) return true;
+  }
+  // Technique name carries the KG token as a whole word (avoids "ice" matching inside "slice")
+  const name = String(t.name||m.name||"").toLowerCase();
+  if(kgCore && wordMatch(name, kgCore)) return true;
+  // Explicit "X Release" phrase in the name
+  if(kgL.includes("release") && name.includes(kgL)) return true;
+  return false;
+}
+function techniqueMatchesCharacterNature(t, c){
+  const m = (t && (t.meta||t)) || {};
+  if(!m.chakraNature) return false;
+  // Do not count advanced KG natures here when they already match as KG (handled separately)
+  try{ return natureIdsMatch(m.chakraNature, c||{}); }catch(_e){ return false; }
+}
+/* Priority weights for Jutsu 1 / Jutsu 2 (wheel wedges use these).
+   Strong tiers so preferred techniques dominate without removing other options:
+   - Has Kekkei Genkai: KG-matching 50 · clan/weapon exclusive 25 · nature 8 · general 1
+   - No Kekkei Genkai: nature-matching 25 · clan/weapon exclusive 12 · general 1 */
+function techniqueRequiresSusanoo(t){
+  const m = (t && (t.meta||t)) || {};
+  if(m.requiredSusanoo) return true;
+  const name = String(t.name||m.name||"").toLowerCase();
+  return name.includes("susanoo");
+}
+function characterHasSusanoo(c){
+  return !!(c && c.susanooAccess==="Yes" && dojutsuSatisfied("Mangekyō Sharingan", c));
+}
+function jutsuPriorityWeight(c, t){
+  /* Susanoo Access = Yes: Susanoo techniques get top priority on Jutsu 1 / 2 / Ultimate. */
+  if(characterHasSusanoo(c) && techniqueRequiresSusanoo(t)) return 60;
+  const hasKg = !!characterKekkeiGenkaiName(c);
+  const kgMatch = techniqueMatchesCharacterKg(t, c);
+  const natMatch = techniqueMatchesCharacterNature(t, c);
+  const exclusiveMatch = !!(t && t.exclusive);
+  if(hasKg){
+    if(kgMatch) return 50;
+    if(exclusiveMatch) return 25;
+    if(natMatch) return 8;
+    return 1;
+  }
+  if(natMatch) return 25;
+  if(exclusiveMatch) return 12;
+  return 1;
+}
 function eligibleSignaturePool(c){
-  // Exclusive local catalogue — never depends on Narutopedia load.
-  // Cache on the character so wheel UI does not re-filter ~1000 entries every frame.
+  /* Full eligibility-gated catalogue for Jutsu 1 / Jutsu 2.
+     Exclusive clan/dōjutsu/KG/weapon techniques are MERGED into the general
+     eligible pool (never replace it). No synthetic fallback techniques.
+     Weights are applied by jutsuPriorityWeight() at roll / wheel time. */
   try{
     if(c && c._sigPoolCache) return c._sigPoolCache;
-    // Priority 1: clan / dōjutsu / KG exclusive; Priority 2: weapon/tool exclusive
-    const prio = getPriorityExclusiveTechniquePool(c||{});
-    if(prio && prio.pool && prio.pool.length){
-      const exclusive = filterSpecialtySignaturePool(prio.pool);
-      if(c) c._sigPoolCache = exclusive;
-      return exclusive;
-    }
     const src = (typeof LOCAL_JUTSU_CATALOG!=="undefined" && LOCAL_JUTSU_CATALOG && LOCAL_JUTSU_CATALOG.length)
       ? LOCAL_JUTSU_CATALOG
       : ((CANON && CANON.catalogues && CANON.catalogues.canonJutsu) || []);
     const out=[];
+    const seen=new Set();
     for(const j of src){
       try{
         const t = j.meta ? j : {name:j.name||j.technique||j, meta:j, local:true};
-        if(canonicalTechniqueEligible(t, c||{})) out.push(t);
+        const nm = String(t.name||"").trim();
+        if(!nm) continue;
+        const key = nm.toLowerCase();
+        if(seen.has(key)) continue;
+        if(canonicalTechniqueEligible(t, c||{})){
+          out.push(t);
+          seen.add(key);
+        }
       }catch(_e){ /* skip broken entry */ }
     }
-    // Puppet users: restrict to puppet-related techniques when any exist
+    // Merge exclusive lineage / weapon techniques (do not replace the general pool).
+    // Still run eligibility so gated techniques (e.g. Susanoo) cannot bypass requirements.
+    const prio = getPriorityExclusiveTechniquePool(c||{});
+    if(prio && prio.pool && prio.pool.length){
+      for(const t of prio.pool){
+        const nm = String(t.name||(t.meta&&t.meta.name)||"").trim();
+        if(!nm) continue;
+        const key = nm.toLowerCase();
+        if(seen.has(key)) continue;
+        try{
+          if(!canonicalTechniqueEligible(t, c||{})) continue;
+        }catch(_e){ continue; }
+        out.push(t);
+        seen.add(key);
+      }
+    }
+    // Puppet users: restrict to puppet-related techniques when any exist (no fallback catalogue)
     let final=out;
     if(characterHasPuppetTool(c||{})){
       const pup=out.filter(isPuppetRelatedJutsu);
-      final=pup.length?pup:FALLBACK_PUPPET_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true}));
+      if(pup.length) final=pup;
     }
-    // Never empty — every ninja gets a signature/specialty option
     final = filterSpecialtySignaturePool(final);
-    if(!final.length){
-      final=filterSpecialtySignaturePool(FALLBACK_GENERAL_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true})));
-    }
     if(c) c._sigPoolCache = final;
     return final;
   }catch(e){
     console.warn("eligibleSignaturePool failed", e);
-    return filterSpecialtySignaturePool(FALLBACK_GENERAL_TECHNIQUES.map(j=>({name:j.name,meta:j,local:true})));
+    return [];
   }
 }
 
 function rollSignatureTechnique(c){
-  /* Uniform pick from the same eligibleSignaturePool the wheel displays — wedge % = roll odds. */
-  c._sigPoolCache=null; // refresh for current combat/weapon state
+  /* Weighted pick from eligibleSignaturePool — weights match wheel wedges. */
+  c._sigPoolCache=null;
   let pool=eligibleSignaturePool(c)||[];
   pool=pool.filter(x=>{
     const n=x.name||(x.meta&&x.meta.name)||"";
     return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
   });
-  // Prefer a different technique than Jutsu 1 when possible
   if(c.specialtyJutsu && c.specialtyJutsu.name){
     const used=String(c.specialtyJutsu.name);
     const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
@@ -3368,24 +3516,24 @@ function rollSignatureTechnique(c){
     if(pup.length) pool=pup;
   }
   if(!pool.length){
-    const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;
-    const fb=fbList[Math.floor(Math.random()*fbList.length)];
-    return {name:fb.name, classification:fb.classification||"", meta:fb};
+    return {name:"None", classification:"", meta:{name:"None"}};
   }
-  const pick = pool[Math.floor(Math.random()*pool.length)];
-  const name = pick.name || (pick.meta&&pick.meta.name) || FALLBACK_GENERAL_TECHNIQUES[Math.floor(Math.random()*FALLBACK_GENERAL_TECHNIQUES.length)].name;
-  return {name, meta:pick.meta||pick, classification:(pick.meta&&pick.meta.classification)||pick.classification||""};
+  const weighted=pool.map(t=>{
+    const nm=t.name||(t.meta&&t.meta.name)||"Unknown";
+    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
+  });
+  const pick=rollWeighted(weighted);
+  const ref=pick.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===pick.name)||pool[0];
+  return {name:pick.name, meta:ref.meta||ref, classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
 }
 function addSignatureToCharacter(c){
   try{
     c.signatureTechnique=rollSignatureTechnique(c);
   }catch(e){
     console.warn(e);
-    const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;
-    const fb=fbList[Math.floor(Math.random()*fbList.length)];
-    c.signatureTechnique={name:fb.name, classification:fb.classification||""};
+    c.signatureTechnique={name:"None", classification:""};
   }
-  logLine("Jutsu 2: "+(c.signatureTechnique?.name||"Unknown"));
+  logLine("Jutsu 2: "+(c.signatureTechnique?.name||"None"));
 }
 
 /* A named, canon-oriented weapons/tools registry used immediately by the
@@ -3595,29 +3743,30 @@ function exportJutsuMetadata(){
   a.download="narutopedia-canon-jutsu-metadata.json";a.click();URL.revokeObjectURL(a.href);
 }
 function rollSignatureTechnique(c){
-  // Prefer structured metadata when loaded; otherwise use the name catalogue.
-  const meta=CANON.jutsuMetadata||[];
-  if(meta.length){
-    const pool=meta.filter(t=>{
-      if(t.requiredClan?.length&&!t.requiredClan.includes(c.clan))return false;
-      if(t.requiredDojutsu?.length&&!t.requiredDojutsu.includes(c.dojutsu))return false;
-      if(t.requiredBloodline?.length&&!t.requiredBloodline.includes(c.bloodline))return false;
-      if(t.requiredSageMode?.length&&!t.requiredSageMode.includes(c.senjutsu))return false;
-      if(t.requiredTailedBeast?.length&&t.requiredTailedBeast[0]!==c.beast)return false;
-      if(t.requiredSummoningContract?.length&&t.requiredSummoningContract[0]!==c.summonType)return false;
-      if(t.requiredHeritage?.length&&!t.requiredHeritage.every(h=>(c.heritage||[]).includes(h)))return false;
-      if(t.chakraNature?.length&&!t.chakraNature.every(n=>(c.natures||[]).some(x=>x.name===n)))return false;
-      return true;
-    });
-    if(pool.length){
-      const x=pool[Math.floor(Math.random()*pool.length)];
-      return {name:x.technique||x.name, url:x.sourceUrl};
-    }
+  /* Weighted pick from eligibleSignaturePool — KG / nature priority; no synthetic fallbacks. */
+  c._sigPoolCache=null;
+  let pool=eligibleSignaturePool(c)||[];
+  pool=pool.filter(x=>{
+    const n=x.name||(x.meta&&x.meta.name)||"";
+    return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
+  });
+  if(c && c.specialtyJutsu && c.specialtyJutsu.name){
+    const used=String(c.specialtyJutsu.name);
+    const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
+    if(filtered.length) pool=filtered;
   }
-  // Fallback: name-only catalogue with local PREREQUISITES checks
-  const pool=eligibleSignaturePool(c);
-  if(!pool.length)return null;
-  return pool[Math.floor(Math.random()*pool.length)];
+  if(characterHasPuppetTool(c||{})){
+    const pup=pool.filter(isPuppetRelatedJutsu);
+    if(pup.length) pool=pup;
+  }
+  if(!pool.length) return {name:"None", classification:"", meta:{name:"None"}};
+  const weighted=pool.map(t=>{
+    const nm=t.name||(t.meta&&t.meta.name)||"Unknown";
+    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
+  });
+  const pick=rollWeighted(weighted);
+  const ref=pick.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===pick.name)||pool[0];
+  return {name:pick.name, meta:ref.meta||ref, classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
 }
 
 </script>
@@ -3708,27 +3857,42 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='ultimate_jutsu'){
-      /* Full eligible pool — equal weight per option so wedge % = true roll odds */
-      const pool=eligibleUltimatePool(c);
-      let names=pool.map(x=>x.name||"?").filter(n=>n && n!=="None");
-      if(!names.length) names=["None"];
-      options=names.map(n=>({name:n,weight:1}));
+      /* Weighted eligible pool — Susanoo / KG / nature priority; wedge % = roll odds */
+      const pool=eligibleUltimatePool(c)||[];
+      if(!pool.length) options=[{name:"None",weight:1}];
+      else {
+        options=pool.map(j=>{
+          const n=j.name||"?";
+          return {name:n, weight:jutsuPriorityWeight(c, j)};
+        });
+      }
     }
     else if(s.key==='specialty_jutsu' || s.key==='signature'){
-      /* Full eligibleSignaturePool — uniform weight so every wedge % matches roll odds.
-         Signature excludes the specialty already rolled (if any) so the two wheels stay independent. */
+      /* Weighted eligibleSignaturePool — KG-exclusive or nature priority; no synthetic fallbacks.
+         Signature excludes the specialty already rolled (if any). Wedge % = weight / total. */
       c._sigPoolCache=null;
-      let pool=eligibleSignaturePool(c);
-      let names=pool.map(x=>x.name||(x.meta&&x.meta.name)||"?").filter(n=>n && n!=="None" && !isExcludedSpecialtyJutsu(n));
+      let pool=eligibleSignaturePool(c)||[];
+      pool=pool.filter(x=>{
+        const n=x.name||(x.meta&&x.meta.name)||"";
+        return n && n!=="None" && !isExcludedSpecialtyJutsu(n);
+      });
       if(s.key==='signature' && c.specialtyJutsu && c.specialtyJutsu.name){
         const used=String(c.specialtyJutsu.name);
-        const filtered=names.filter(n=>n!==used);
-        if(filtered.length) names=filtered;
+        const filtered=pool.filter(x=>(x.name||(x.meta&&x.meta.name))!==used);
+        if(filtered.length) pool=filtered;
       }
-      if(!names.length){
-        names=(characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES).map(x=>x.name);
+      if(characterHasPuppetTool(c)){
+        const pup=pool.filter(isPuppetRelatedJutsu);
+        if(pup.length) pool=pup;
       }
-      options=names.map(n=>({name:n,weight:1}));
+      if(!pool.length){
+        options=[{name:"None",weight:1}];
+      } else {
+        options=pool.map(t=>{
+          const n=t.name||(t.meta&&t.meta.name)||"?";
+          return {name:n, weight:jutsuPriorityWeight(c, t)};
+        });
+      }
     }
     else if(s.key==='dojutsu'){
       // Same weighted pool as the actual roll so the wheel odds match the result
@@ -3745,7 +3909,8 @@ function getWheelSegments(){
       else options=DATA.summoning||[];
     }
     else if(s.key==='primary'){
-      if(characterHasPuppetTool(c)) options=[{name:"Puppetry",weight:1}];
+      if(isIronSamurai(c)) options=[{name:"Kenjutsu",weight:1}];
+      else if(characterHasPuppetTool(c)) options=[{name:"Puppetry",weight:1}];
       else options=DATA.primaryCombat||[];
     }
     else if(s.key==='secondary'){
@@ -3761,8 +3926,9 @@ function getWheelSegments(){
     else if(s.key==='dojutsuStage') options=[
       {name:"1-tomoe Sharingan",weight:30},{name:"2-tomoe Sharingan",weight:28},
       {name:"3-tomoe Sharingan",weight:22},{name:"Mangekyō Sharingan",weight:12},
-      {name:"Eternal Mangekyō Sharingan",weight:6},{name:"Rinne Sharingan",weight:2}
+      {name:"Eternal Mangekyō Sharingan",weight:6},{name:"Rinnegan",weight:2}
     ];
+    else if(s.key==='susanooAccess') options=[{name:"Yes",weight:45},{name:"No",weight:55}];
     else if(s.key==='moral') options=DATA.moral||[];
     else if(s.key==='weapon'){
       // Full catalogue including None at ~5% total probability (weight calibrated vs named tools)
@@ -3777,17 +3943,17 @@ function getWheelSegments(){
     else if(s.key==='spaceTime') options=[{name:"No",weight:95},{name:"Yes",weight:5}];
     else if(s.key==='currentGoal') options=GOAL_POOL||[];
     else if(s.key==='bloodline'){
+      /* Nature-based / clan-tied KG only — never dōjutsu. Weights match legalBloodlines. */
       const forcedBl = getClanForcedBloodline(c) || c.weaponForcedBloodline || null;
-      if(forcedBl){
-        /* Full visual pool — spin lands on clan-forced value */
-        const all=(DATA.bloodlines||[]).filter(b=>(Number(b.weight)||0)>0);
+      if(forcedBl && !isDojutsuName(forcedBl)){
+        const all=(DATA.bloodlines||[]).filter(b=>(Number(b.weight)||0)>0 && b.name && !isDojutsuName(b.name));
         const sum=all.reduce((s,b)=>s+(Number(b.weight)||1),0)||1;
         options=[{name:"None",weight:10}];
         all.forEach(b=>options.push({name:b.name, weight:((Number(b.weight)||1)/sum)*90}));
         if(!options.some(o=>o.name===forcedBl)) options.push({name:forcedBl, weight:10});
       } else {
-        /* Match legalBloodlines: 50% None; remaining 50% split evenly among eligible nature-based KG */
         const eligible=(DATA.bloodlines||[]).filter(b=>{
+          if(!b || !b.name || isDojutsuName(b.name)) return false;
           if(b.requires?.length && !b.requires.every(r=>(c.natureIds||[]).includes(r))) return false;
           if(b.clans?.length && !b.clans.includes(c.clan)) return false;
           if(b.heritage && !b.heritage.some(h=>(c.heritage||[]).includes(h))) return false;
@@ -3879,20 +4045,21 @@ function buildFortuneWheel(segments){
     const end=seg.endAngle;
     const mid=(start+end)/2;
     html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"/>`;
-    // Radial labels: text runs along the wedge (center → rim), not across it
+    // Radial labels: text runs along the wedge (center → rim), not across it.
+    // Lower threshold so denser Jutsu 1/2 pools still get short labels when possible.
     const span=end-start;
-    if(span>=7){
-      // Place label along the mid-ray; slightly farther out for narrow wedges
-      const lr = span>=30 ? 52 : span>=16 ? 58 : 66;
+    if(span>=3.5){
+      // Place label along the mid-ray; farther out for narrow wedges
+      const lr = span>=30 ? 52 : span>=16 ? 58 : span>=8 ? 64 : 70;
       const [lx,ly]=polar(cx,cy,lr,mid);
-      const maxChars = span>=45 ? 18 : span>=28 ? 14 : span>=16 ? 10 : span>=10 ? 7 : 5;
+      const maxChars = span>=45 ? 18 : span>=28 ? 14 : span>=16 ? 10 : span>=10 ? 7 : span>=6 ? 5 : 3;
       const label=truncateLabel(seg.name, maxChars);
       // mid is degrees from top, clockwise. Default SVG text is horizontal L→R.
       // mid-90 aligns the baseline with the radius so text follows the wedge.
       // Flip on the left/bottom half so labels stay readable (not upside-down).
       let textRot = mid - 90;
       if(mid > 90 && mid < 270) textRot += 180;
-      const fontSize = span>=36 ? 7.8 : span>=22 ? 6.8 : span>=12 ? 6.0 : 5.4;
+      const fontSize = span>=36 ? 7.8 : span>=22 ? 6.8 : span>=12 ? 6.0 : span>=7 ? 5.2 : 4.4;
       html += `<text x="${lx.toFixed(2)}" y="${ly.toFixed(2)}" fill="#0b0e14" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${textRot.toFixed(2)} ${lx.toFixed(2)} ${ly.toFixed(2)})">${label.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
     }
   });
@@ -4031,8 +4198,10 @@ function normalizedStyleName(v){
   return map[s] || s;
 }
 function availableKekkeiGenkai(c){
+  /* Chakra-nature KG and clan-tied non-dōjutsu bloodlines only. */
   const ids = new Set((c.natureIds||[]).map(String));
   return DATA.bloodlines.filter(b=>{
+    if(!b || !b.name || isDojutsuName(b.name)) return false;
     if(b.clans && b.clans.some(cl=>clanSatisfied(cl,c))) return true;
     if(!b.requires || !b.requires.length) return false;
     return b.requires.every(n=>ids.has(n));
@@ -4061,7 +4230,7 @@ const SIGNATURE_TECHNIQUES = {
   "Wood Style":["Wood Release: Deep Forest Emergence","Wood Release: Deep Forest Creation"]
 };
 function rollSpecialtyJutsu(c){
-  /* Uniform pick from the same eligibleSignaturePool the wheel displays — wedge % = roll odds. */
+  /* Weighted pick from eligibleSignaturePool — weights match wheel wedges (KG / nature priority). */
   if(c) c._sigPoolCache = null;
   let pool = eligibleSignaturePool(c) || [];
   pool = pool.filter(x=>{
@@ -4073,15 +4242,20 @@ function rollSpecialtyJutsu(c){
     if(pup.length) pool = pup;
   }
   if(!pool.length){
-    const fbList = characterHasPuppetTool(c) ? FALLBACK_PUPPET_TECHNIQUES : FALLBACK_GENERAL_TECHNIQUES;
-    const fb = fbList[Math.floor(Math.random()*fbList.length)];
-    return {name: fb.name, style: characterHasPuppetTool(c) ? "Puppetry" : "General", meta: fb};
+    return {name: "None", style: "None", meta: {name:"None"}};
   }
-  const pick = pool[Math.floor(Math.random()*pool.length)];
-  const name = pick.name || (pick.meta && pick.meta.name) || "Unknown";
+  const weighted = pool.map(t=>{
+    const nm = t.name || (t.meta && t.meta.name) || "Unknown";
+    return W(nm, jutsuPriorityWeight(c, t), {ref:t});
+  });
+  const picked = rollWeighted(weighted);
+  const pick = picked.ref || pool.find(x=>(x.name||(x.meta&&x.meta.name))===picked.name) || pool[0];
+  const name = pick.name || (pick.meta && pick.meta.name) || picked.name || "Unknown";
   const prio = getPriorityExclusiveTechniquePool(c);
   let style = "General";
-  if(prio && prio.pool && prio.pool.length){
+  if(characterKekkeiGenkaiName(c) && techniqueMatchesCharacterKg(pick, c)){
+    style = characterKekkeiGenkaiName(c);
+  } else if(prio && prio.pool && prio.pool.length){
     const set = getExclusiveTechniqueSet(c);
     style = (set && set.label) || (prio.source === "weapon" ? "Weapon-Linked" : "Exclusive");
   } else if(characterHasPuppetTool(c)){
@@ -4137,7 +4311,7 @@ function baseSteps(){
     c.summoning=rollWeighted(DATA.summoning).name;
     return c.summoning;
   });
-  step('primary','Primary Combat Specialization','Puppet-class tools always force Primary = Puppetry. Otherwise eligibility is conditioned on prior results.',c=>{c.primary=rollCombat(c).name;return c.primary});
+  step('primary','Primary Combat Specialization','Land of Iron Samurai always force Primary = Kenjutsu. Puppet-class tools force Primary = Puppetry. Otherwise eligibility is conditioned on prior results.',c=>{c.primary=rollCombat(c).name;return c.primary});
   step('secondary','Secondary Combat Specialization','The primary specialization is removed from the secondary pool.',c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary});
   step('exceptional','Exceptional Trait','Each named trait is 1%; None is 90%.',c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional});
   step('legendary','Legendary Heritage','Distant legendary lineage is kept separate from direct Ōtsutsuki heritage.',c=>{c.legendary=rollWeighted(DATA.legendaryHeritage).name;return c.legendary});
@@ -4145,12 +4319,12 @@ function baseSteps(){
   step('otsutsuki','Ōtsutsuki Heritage','The final lineage layer can unlock additional downstream eligibility.',c=>{c.otsutsuki=rollWeighted(DATA.otsutsuki).name;return c.otsutsuki});
   /* Space-Time Ninjutsu is inserted only when eligible (see addConditionalSteps). No "Skipped" wedge on the wheel. */
   /* Jutsu 1 / Jutsu 2 run near the end so eligibility (combat, weapon, lineage) is fully resolved. */
-  step('specialty_jutsu','Jutsu 1','Every ninja receives a specialty technique. Puppet users are restricted to puppet-related techniques.',c=>{
+  step('specialty_jutsu','Jutsu 1','Full eligibility-gated catalogue. If the character has a Kekkei Genkai, KG-exclusive techniques are heavily prioritized; otherwise nature-matching techniques are prioritized. No synthetic fallback list. Puppet users are restricted to puppet-related techniques.',c=>{
     c.specialtyJutsu=rollSpecialtyJutsu(c);
     return c.specialtyJutsu.name;
   });
-  step('signature','Jutsu 2','Every ninja receives a signature technique (eligibility-gated). Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);const fbList=characterHasPuppetTool(c)?FALLBACK_PUPPET_TECHNIQUES:FALLBACK_GENERAL_TECHNIQUES;const fb=fbList[Math.floor(Math.random()*fbList.length)];c.signatureTechnique={name:fb.name};}return (c.signatureTechnique&&c.signatureTechnique.name)||FALLBACK_GENERAL_TECHNIQUES[Math.floor(Math.random()*FALLBACK_GENERAL_TECHNIQUES.length)].name});
-  step('ultimate_jutsu','Ultimate Jutsu','Secret Technique / Ultimate Jutsu. Only eligible options appear (clan, dōjutsu, KG, natures, weapons, senjutsu, jinchūriki, Eight Gates, space-time, Ōtsutsuki, etc.).',c=>{
+  step('signature','Jutsu 2','Same prioritized eligible pool as Jutsu 1 (excludes the Jutsu 1 pick when possible). KG or nature priority weights apply. No synthetic fallback list. Puppet users are restricted to puppet-related techniques.',c=>{try{c._sigPoolCache=null;addSignatureToCharacter(c);}catch(e){console.warn(e);c.signatureTechnique={name:'None'};}return (c.signatureTechnique&&c.signatureTechnique.name)||'None';});
+  step('ultimate_jutsu','Ultimate Jutsu','Secret Technique / Ultimate Jutsu. Only eligible options appear. Susanoo Access = Yes prioritises Susanoo techniques; KG and nature priority also apply.',c=>{
     const u=rollUltimateJutsu(c);
     c.ultimateJutsu=u;
     return u.name;
@@ -4183,24 +4357,31 @@ function insertLineageAbilitySteps(){
   c.kekkeiGenkaiEligible=c.kekkeiGenkaiEligible||[];
   const forcedBl = getClanForcedBloodline(c) || c.weaponForcedBloodline || null;
   const forceSource = getClanForcedBloodline(c) ? 'clan-forced' : (c.weaponForcedBloodline ? 'weapon-forced' : null);
-  if(forcedBl){
-    /* Clan or weapon-linked bloodline/KG: spin full wheel, force the result. Clan beats weapon. */
-    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Linked bloodline is forced — wheel shows full options but lands on the required result (clan overrides weapon).',fn:x=>{
+  /* Bloodline / KG wheel: nature-based KG and true clan bloodlines only — never dōjutsu.
+     Eye clans (Uchiha, Hyūga, etc.) get dōjutsu on the Dōjutsu track and may still roll a nature-based KG here. */
+  if(forcedBl && !isDojutsuName(forcedBl)){
+    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Clan or weapon-linked bloodline/KG (not dōjutsu). Lands on the forced result. Clan overrides weapon.',fn:x=>{
       const forced = getClanForcedBloodline(x) || x.weaponForcedBloodline || forcedBl;
+      if(!forced || isDojutsuName(forced)){ x.bloodline='None'; return 'None'; }
       const src = getClanForcedBloodline(x) ? 'clan-forced' : 'weapon-forced';
       x.bloodline = forced;
       x.bloodlineData = {name:forced, mods:(x.clanData&&x.clanData.mods)||{}};
-      if(x.clanData && x.clanData.hiden) x.hiden = x.clanData.hiden;
+      if(x.clanData && x.clanData.hiden && !isDojutsuName(x.clanData.hiden)) x.hiden = x.clanData.hiden;
       const bl=(forced||'').toLowerCase();
       if(bl.includes('release') || bl.includes('shikotsumyaku') || bl.includes('sand')) x.kekkeiGenkai = forced;
-      if(x.weaponForcedKekkei) x.kekkeiGenkai = x.weaponForcedKekkei;
+      if(x.weaponForcedKekkei && !isDojutsuName(x.weaponForcedKekkei)) x.kekkeiGenkai = x.weaponForcedKekkei;
       return forced + ' ('+src+')';
     }});
   } else if(bloodlineRollEligible(c)){
-    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Eligibility-gated bloodline roll (nature / clan prerequisites). ~55% None when eligible.',fn:x=>{
-      x.bloodlineData=legalBloodlines(x); x.bloodline=x.bloodlineData?.name||'None'; return x.bloodline;
+    extra.push({key:'bloodline',label:'Bloodline / Kekkei Genkai',desc:'Nature-based or clan-tied Kekkei Genkai only (dōjutsu such as Sharingan are on the Dōjutsu wheel). ~50% None when eligible.',fn:x=>{
+      x.bloodlineData=legalBloodlines(x); x.bloodline=x.bloodlineData?.name||'None';
+      if(x.bloodline && x.bloodline!=='None' && !isDojutsuName(x.bloodline)){
+        const bl=(x.bloodline||'').toLowerCase();
+        if(bl.includes('release') || bl.includes('shikotsumyaku')) x.kekkeiGenkai=x.bloodline;
+      }
+      return x.bloodline;
     }});
-  } else if(!c.bloodline || c.bloodline==='None'){
+  } else if(!c.bloodline || c.bloodline==='None' || isDojutsuName(c.bloodline)){
     c.bloodline='None';
   }
   if(extra.length) insertAfterCurrent(extra);
@@ -4230,11 +4411,29 @@ function addConditionalSteps(){
     } else if(c.dojutsuSource==='clan'){
       c.dojutsuEyes='Both';
     }
-    // Sharingan progression
-    if(c.dojutsu==='Sharingan' || c.dojutsu==='Mangekyō Sharingan'){
-      extra.push({key:'dojutsuStage',label:'Sharingan Stage',desc:'1-tomoe most common → Rinne Sharingan exceptionally rare.',fn:x=>{x.dojutsuStage=sharinganStage(); if(x.dojutsuStage.includes('Rinne')) x.dojutsu='Rinne Sharingan'; else if(x.dojutsuStage.includes('Eternal')) x.dojutsu='Eternal Mangekyō Sharingan'; else if(x.dojutsuStage.includes('Mangekyō')) x.dojutsu='Mangekyō Sharingan'; return x.dojutsuStage;}});
+    // Sharingan ladder (lowest → highest): 1-tomoe → 2-tomoe → 3-tomoe → Mangekyō → Eternal Mangekyō → Rinnegan.
+    // Mangekyō / Eternal Mangekyō / Rinnegan already on the character supersede the stage wheel.
+    const doj = String(c.dojutsu||'');
+    const rank = sharinganStageRank(doj);
+    if(rank >= 4){
+      c.dojutsuStage = stageFromDojutsu(doj) || doj;
+      extra.push({key:'susanooAccess',label:'Susanoo Access',desc:'Mangekyō-tier dōjutsu may awaken Susanoo. Yes 45% · No 55%. Susanoo techniques are prioritised on later jutsu wheels when Yes.',fn:x=>{x.susanooAccess=rollWeighted([W('Yes',45),W('No',55)]).name;return x.susanooAccess;}});
+    } else if(/sharingan/i.test(doj) && rank < 4){
+      extra.push({key:'dojutsuStage',label:'Sharingan Stage',desc:'Lowest → highest: 1-tomoe · 2-tomoe · 3-tomoe · Mangekyō · Eternal Mangekyō · Rinnegan. Higher stages supersede lower ones.',fn:x=>{
+        const stage=sharinganStage();
+        applySharinganStageToDojutsu(x, stage);
+        return x.dojutsuStage;
+      }});
     }
     if(extra.length) insertAfterCurrent(extra);
+  }
+  if(s.key==='dojutsuStage'){
+    const stage=String(c.dojutsuStage||c.dojutsu||'');
+    if(sharinganStageRank(stage) >= 4){
+      insertAfterCurrent([{key:'susanooAccess',label:'Susanoo Access',desc:'Mangekyō-tier dōjutsu may awaken Susanoo. Yes 45% · No 55%. Susanoo techniques are prioritised on later jutsu wheels when Yes.',fn:x=>{x.susanooAccess=rollWeighted([W('Yes',45),W('No',55)]).name;return x.susanooAccess;}}]);
+    } else {
+      c.susanooAccess='No';
+    }
   }
   if(s.key==='senjutsu' && c.senjutsu!=='None') insertAfterCurrent([{key:'sageType',label:'Sage Type',desc:'Named sage traditions only. Toad/Snake/Slug lock the matching summoning contract; Jūgo-style and Six Paths force Summoning Yes with a free contract roll.',fn:x=>{
     x.sageType=rollWeighted(DATA.sageTypes).name;
@@ -4297,6 +4496,10 @@ function finalizeStats(c){
   /* Seven Swords of the Mist: +10 Weapon Skill (kenjutsu) */
   if(c.weaponData && c.weaponData.category === "Seven Swords"){
     s.weaponSkill = (s.weaponSkill || 0) + 10;
+  }
+  /* Land of Iron Samurai: significant kenjutsu / weapon skill bonus */
+  if(isIronSamurai(c)){
+    s.weaponSkill = (s.weaponSkill || 0) + 25;
   }
   for(const k in s)s[k]=Math.max(1, Math.min(100, s[k]));
   c.stats=s;
@@ -4456,7 +4659,7 @@ function finishInteractive(){
   const spinBtn=document.getElementById('spinButton'); if(spinBtn) spinBtn.disabled=true;
   const stepHint=document.getElementById('stepHint'); if(stepHint) stepHint.textContent='Start a new character to roll again.';
   const logEl=document.getElementById('interactiveLog');
-  if(logEl) logEl.insertAdjacentHTML('beforeend',`<div class="complete-card"><b>Character complete.</b> Final stats were pre-rolled at the start (D100 each) with applicable modifiers applied. Optional: build a Grok portrait prompt below.</div>`);
+  if(logEl) logEl.insertAdjacentHTML('beforeend',`<div class="complete-card"><b>Character complete.</b> Final stats were pre-rolled at the start (D100 each) with applicable modifiers applied. Character sheet is ready above.</div>`);
   try{ enablePortraitControls(true); buildNinjaPortraitPrompt(); }catch(e){ console.warn(e); }
 }
 function generate(){
@@ -4500,6 +4703,7 @@ const DEBUG_WHEEL_CATALOG = [
   {key:'dojutsu',label:'Dōjutsu'},
   {key:'dojutsuEyes',label:'Dōjutsu Eyes'},
   {key:'dojutsuStage',label:'Sharingan Stage'},
+  {key:'susanooAccess',label:'Susanoo Access'},
   {key:'senjutsu',label:'Senjutsu'},
   {key:'sageType',label:'Sage Type'},
   {key:'jinchuriki',label:'Jinchūriki'},
@@ -4559,7 +4763,8 @@ function getForceOptionList(key){
     else if(key==='bloodline'){ list.push('None'); add(DATA.bloodlines); }
     else if(key==='dojutsu'){ list.push('None'); add(DATA.dojutsu); }
     else if(key==='dojutsuEyes') add([{name:'One eye'},{name:'Both eyes'}]);
-    else if(key==='dojutsuStage') add([{name:'1-tomoe Sharingan'},{name:'2-tomoe Sharingan'},{name:'3-tomoe Sharingan'},{name:'Mangekyō Sharingan'},{name:'Eternal Mangekyō Sharingan'},{name:'Rinne Sharingan'}]);
+    else if(key==='dojutsuStage') add([{name:'1-tomoe Sharingan'},{name:'2-tomoe Sharingan'},{name:'3-tomoe Sharingan'},{name:'Mangekyō Sharingan'},{name:'Eternal Mangekyō Sharingan'},{name:'Rinnegan'}]);
+    else if(key==='susanooAccess') add([{name:'Yes'},{name:'No'}]);
     else if(key==='senjutsu') add([{name:'None'},{name:'Sage Training Potential'},{name:'Sage Mode'},{name:'Advanced Sage Mode'},{name:'Six Paths Sage Mode'}]);
     else if(key==='sageType') add(DATA.sageTypes);
     else if(key==='jinchuriki') add(DATA.jinchuriki);
@@ -4583,7 +4788,7 @@ function getForceOptionList(key){
   ; }
     else if(key==='currentGoal') add(GOAL_POOL);
     else if(key==='specialty_jutsu'||key==='signature'){
-      try{ c._sigPoolCache=null; add(eligibleSignaturePool(c)); }catch(e){ add(FALLBACK_GENERAL_TECHNIQUES); }
+      try{ c._sigPoolCache=null; add(eligibleSignaturePool(c)); }catch(e){ add([{name:'None'}]); }
     }
     else list.push('(type a custom value)');
   }catch(e){ console.warn(e); }
@@ -4680,13 +4885,10 @@ function applyForcedResult(key, value, c){
     }
     case 'dojutsuEyes': c.dojutsuEyes=v; return v;
     case 'dojutsuStage': {
-      c.dojutsuStage=v;
-      if(v.includes('Rinne')) c.dojutsu='Rinne Sharingan';
-      else if(v.includes('Eternal')) c.dojutsu='Eternal Mangekyō Sharingan';
-      else if(v.includes('Mangekyō')) c.dojutsu='Mangekyō Sharingan';
-      else c.dojutsu=c.dojutsu||'Sharingan';
-      return v;
+      applySharinganStageToDojutsu(c, v);
+      return c.dojutsuStage||v;
     }
+    case 'susanooAccess': c.susanooAccess=v; return v;
     case 'senjutsu': c.senjutsu=v; if(v!=='None') applySageSummoningLink(c); return v;
     case 'sageType': c.sageType=v; c.senjutsu=c.senjutsu&&c.senjutsu!=='None'?c.senjutsu:'Sage Mode'; applySageSummoningLink(c); return v;
     case 'jinchuriki': c.jinchuriki=v; return v;
@@ -4763,6 +4965,11 @@ function ensureDebugPrereqs(key,c){
   if(key==='dojutsuEyes'||key==='dojutsuStage'){
     if(!c.dojutsu || c.dojutsu==='None'){ c.dojutsu='Sharingan'; c.dojutsuSource=key==='dojutsuEyes'?'non-clan':'clan'; }
   }
+  if(key==='susanooAccess'){
+    if(!c.dojutsu || c.dojutsu==='None' || !/Mangekyō|Rinne/i.test(c.dojutsu+String(c.dojutsuStage||''))){
+      c.dojutsu='Mangekyō Sharingan'; c.dojutsuStage='Mangekyō Sharingan'; c.dojutsuSource='clan';
+    }
+  }
   if(key==='sageType'){ if(!c.senjutsu||c.senjutsu==='None') c.senjutsu='Sage Mode'; }
   if(key==='beast'||key==='relationship'){ c.jinchuriki='Yes'; }
   if(key==='summonType'){ c.summoning='Yes'; }
@@ -4795,7 +5002,8 @@ function forceDebugStep(key){
     bloodline:()=>({key:'bloodline',label,desc:'Debug wheel.',fn:c=>{c.bloodlineData=legalBloodlines(c);c.bloodline=c.bloodlineData?.name||'None';return c.bloodline}}),
     dojutsu:()=>({key:'dojutsu',label,desc:'Debug wheel.',fn:c=>{const d=legalDojutsu(c);c.dojutsu=d||'None';c.dojutsuData=d?DATA.dojutsu.find(x=>x.name===d)||{name:d,mods:{}}:null;return c.dojutsu}}),
     dojutsuEyes:()=>({key:'dojutsuEyes',label,desc:'Debug wheel.',fn:c=>rollDojutsuEyes(c)}),
-    dojutsuStage:()=>({key:'dojutsuStage',label,desc:'Debug wheel.',fn:c=>{c.dojutsuStage=sharinganStage();if(c.dojutsuStage.includes('Rinne'))c.dojutsu='Rinne Sharingan';else if(c.dojutsuStage.includes('Eternal'))c.dojutsu='Eternal Mangekyō Sharingan';else if(c.dojutsuStage.includes('Mangekyō'))c.dojutsu='Mangekyō Sharingan';return c.dojutsuStage}}),
+    dojutsuStage:()=>({key:'dojutsuStage',label,desc:'Debug wheel.',fn:c=>{applySharinganStageToDojutsu(c, sharinganStage());return c.dojutsuStage}}),
+    susanooAccess:()=>({key:'susanooAccess',label,desc:'Debug wheel.',fn:c=>{c.susanooAccess=rollWeighted([W('Yes',45),W('No',55)]).name;return c.susanooAccess}}),
     specialty_jutsu:()=>({key:'specialty_jutsu',label,desc:'Debug wheel.',fn:c=>{c.specialtyJutsu=rollSpecialtyJutsu(c);return c.specialtyJutsu.name}}),
     senjutsu:()=>({key:'senjutsu',label,desc:'Debug wheel.',fn:c=>{c.senjutsu=rollWeighted([{name:'None',weight:90},{name:'Sage Training Potential',weight:4},{name:'Sage Mode',weight:3.5},{name:'Advanced Sage Mode',weight:1.5},{name:'Six Paths Sage Mode',weight:1}]).name;return c.senjutsu}}),
     sageType:()=>({key:'sageType',label,desc:'Debug wheel.',fn:c=>{c.sageType=rollWeighted(DATA.sageTypes).name;applySageSummoningLink(c);return c.sageType}}),
@@ -5149,6 +5357,7 @@ function characterDetailHTML(c){
     ${c.hiden ? logRowAlways("Hiden technique", c.hiden) : ""}
     ${logRowAlways("Kekkei Genkai", kgLabel)}
     ${logRowAlways("Dōjutsu", dojutsuLabel)}
+    ${c.susanooAccess ? logRowAlways("Susanoo access", c.susanooAccess) : ""}
     ${logRowAlways("Senjutsu", senjutsuLabel)}
     ${logRowAlways("Jinchūriki", jinchurikiLabel)}
     ${logRowAlways("Summoning", summoningLabel)}
