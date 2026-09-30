@@ -336,9 +336,69 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .dev-status{color:var(--muted);font-size:13px;min-height:20px}
 @media(max-width:720px){
  .dev-input-grid,.dev-ability-grid,.dev-test-grid{grid-template-columns:1fr}
- .dev-wheel-stage{margin:26vh 0 30vh;gap:28px}
- .dev-wheel-wrap{width:min(88vw,390px);height:min(88vw,390px)}
- .development-panel{border-radius:0}
+ .development-panel{border-radius:0;background:#000;border:0;padding:0}
+ .dev-wheel-shell{
+   background:#000;border:0;border-radius:0;padding:16px 10px 0;box-shadow:none;
+ }
+ .dev-wheel-head{padding:0 6px}
+ /* Match generator wheel: large black space above/below so the wheel fills the viewport */
+ .dev-wheel-stage{
+   display:grid;
+   justify-items:center;
+   align-content:center;
+   text-align:center;
+   gap:clamp(120px,28vh,240px);
+   margin:32vh 0 40vh;
+   padding:0;
+   min-height:calc(100svh - 8vh);
+   box-sizing:border-box;
+   background:#000;
+ }
+ .dev-wheel-title{
+   display:block;
+   font-size:clamp(18px,5.8vw,24px);
+   font-weight:900;
+   margin:0 0 16px;
+   padding:0 12px;
+   color:#fff;
+   text-shadow:0 2px 12px rgba(0,0,0,.55);
+   max-width:min(94vw,430px);
+ }
+ .dev-wheel-wrap{
+   margin:auto;
+   width:min(94vw,430px);height:min(94vw,430px);
+   min-width:min(94vw,430px);min-height:min(94vw,430px);
+   max-width:min(94vw,430px);max-height:min(94vw,430px);
+   aspect-ratio:1 / 1;
+   flex-shrink:0;
+   contain:layout size;
+ }
+ .dev-wheel{
+   width:100%;height:100%;
+   min-width:100%;min-height:100%;
+   max-width:100%;max-height:100%;
+ }
+ .dev-spin-button{width:74px;height:74px;font-size:13px}
+ .dev-status{padding:0 12px;text-align:center}
+}
+@media(max-width:420px){
+ .dev-wheel-shell{padding-left:6px;padding-right:6px}
+ .dev-wheel-stage{
+   margin-top:30vh;
+   margin-bottom:38vh;
+   gap:clamp(110px,26vh,220px);
+   min-height:calc(100svh - 6vh);
+ }
+ .dev-wheel-title{
+   font-size:clamp(17px,6vw,22px);
+   margin-bottom:14px;
+ }
+ .dev-wheel-wrap{
+   width:94vw;height:94vw;
+   min-width:94vw;min-height:94vw;
+   max-width:94vw;max-height:94vw;
+   aspect-ratio:1 / 1;
+ }
 }
 </style>
 </head>
