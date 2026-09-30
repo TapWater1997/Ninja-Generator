@@ -435,12 +435,6 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div id="lineage"></div>
     </section>
 
-    <section class="card full">
-      <h2>D100 Stats</h2>
-      <div id="stats" class="statgrid"></div>
-      <p class="small">Base roll is D100. Canon-derived modifiers are applied afterward and capped at 100. Modifiers are intentionally conservative and are separate from probability weights.</p>
-    </section>
-
     <section class="card">
       <h2>Combat</h2>
       <div id="combat"></div>
@@ -449,6 +443,12 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     <section class="card">
       <h2>Personality / Goals</h2>
       <div id="goals"></div>
+    </section>
+
+    <section class="card full">
+      <h2>D100 Stats</h2>
+      <div id="stats" class="statgrid"></div>
+      <p class="small">Base roll is D100. Canon-derived modifiers are applied afterward and capped at 100. Modifiers are intentionally conservative and are separate from probability weights.</p>
     </section>
 
 
@@ -3395,7 +3395,101 @@ const ULTIMATE_JUTSU_CATALOG = [
   {name:"Scientific Ninja Tool Rasengan variants",classification:"Ultimate Jutsu",requiredWeapon:"Scientific Ninja Tool"},
   {name:"Karma Ultimate",classification:"Ultimate Jutsu",requiredOtsutsuki:true},
   {name:"Sukunahikona / Daikokuten (Isshiki Ultimate)",classification:"Ultimate Jutsu",requiredOtsutsuki:true,requiredOtsutsukiMember:"Isshiki"},
-  {name:"Takamimusubinokami (Momoshiki Ultimate)",classification:"Ultimate Jutsu",requiredOtsutsuki:true,requiredOtsutsukiMember:"Momoshiki"}
+  {name:"Takamimusubinokami (Momoshiki Ultimate)",classification:"Ultimate Jutsu",requiredOtsutsuki:true,requiredOtsutsukiMember:"Momoshiki"},
+  /* ---- Added: Kekkei Genkai ultimate jutsu ---- */
+  {name:"Boil Release: Unrivalled Strength",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Boil Release"},
+  {name:"Boil Release: Skilled Mist Technique (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Boil Release"},
+  {name:"Crystal Release: Crystal Armour — Absolute",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Crystal Release"},
+  {name:"Crystal Release: Jade Crystal Mirror",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Crystal Release"},
+  {name:"Crystal Release: Growing Crystal Thorns",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Crystal Release"},
+  {name:"Dark Release: Inhaling Maw (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Dark Release"},
+  {name:"Dark Release: Judgment",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Dark Release"},
+  {name:"Explosion Release: Landmine Fist (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Explosion Release"},
+  {name:"Explosion Release: C0 (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Explosion Release"},
+  {name:"Ice Release: Demonic Mirroring Ice Crystals (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Ice Release"},
+  {name:"Ice Release: Certain-Kill Ice Spears",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Ice Release"},
+  {name:"Lava Release: Quick Lime Congealing Technique (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Lava Release"},
+  {name:"Lava Release: Rubber Wall / Lava Stream",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Lava Release"},
+  {name:"Lava Release: Scorching Rocks",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Lava Release"},
+  {name:"Magnet Release: Conserving Bee Twin Blades (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Magnet Release"},
+  {name:"Magnet Release: Iron Sand World Method",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Magnet Release"},
+  {name:"Magnet Release: Gold Dust Imperial Funeral",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Magnet Release"},
+  {name:"Mud Release: Quagmire Coffin",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Mud Release"},
+  {name:"Scorch Release: Extremely Steaming Murder (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Scorch Release"},
+  {name:"Scorch Release: Halo Hurricane Jet Black Arrow",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Scorch Release"},
+  {name:"Shikotsumyaku: Dance of the Clematis — Vine",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Shikotsumyaku"},
+  {name:"Shikotsumyaku: Dance of the Seedling Fern (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Shikotsumyaku"},
+  {name:"Shikotsumyaku: Dance of the Larch (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Shikotsumyaku"},
+  {name:"Steel Release: Impervious Armour",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Steel Release"},
+  {name:"Storm Release: Laser Circus (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Storm Release"},
+  {name:"Storm Release: Black Hunting",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Storm Release"},
+  {name:"Swift Release: Shadowless Flight",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Swift Release"},
+  {name:"Typhoon Release: Great Consecutive Breaking Void",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Typhoon Release"},
+  {name:"Wood Release: Advent of a World of Flowering Trees",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Wood Release"},
+  {name:"Wood Release: Wood Dragon Technique (Ultimate)",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Wood Release"},
+  {name:"Wood Release: Hotei Technique",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Wood Release"},
+  {name:"Wood Release: Smothering Binding Technique",classification:"Ultimate Jutsu",requiredKekkeiGenkai:"Wood Release"},
+  /* ---- Added: Dōjutsu ultimate jutsu ---- */
+  {name:"Byakugan: Gentle Fist — Body Blow (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Byakugan"},
+  {name:"Byakugan: Eight Trigrams Palms Revolving Heaven (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Byakugan"},
+  {name:"Byakugan: Air Palm — Mountain Crusher",classification:"Ultimate Jutsu",requiredDojutsu:"Byakugan"},
+  {name:"Byakugan: Gentle Step — Lion Camellia",classification:"Ultimate Jutsu",requiredDojutsu:"Byakugan"},
+  {name:"Jōgan: Dimension Breach",classification:"Ultimate Jutsu",requiredDojutsu:"Jōgan"},
+  {name:"Jōgan: Invisible Barrier Sever",classification:"Ultimate Jutsu",requiredDojutsu:"Jōgan"},
+  {name:"Ketsuryūgan: Blood Dragon Ascension",classification:"Ultimate Jutsu",requiredDojutsu:"Ketsuryūgan"},
+  {name:"Ketsuryūgan: Genjutsu — Blood Prison",classification:"Ultimate Jutsu",requiredDojutsu:"Ketsuryūgan"},
+  {name:"Kokugan: Daikokuten — Complete",classification:"Ultimate Jutsu",requiredDojutsu:"Kokugan"},
+  {name:"Kokugan: Cubes of Ruin",classification:"Ultimate Jutsu",requiredDojutsu:"Kokugan"},
+  {name:"Rinnegan: Outer Path — Samsara of Heavenly Life",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Rinnegan: Planetary Devastation (Chibaku Tensei Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Rinnegan: Human Path — Soul Rip (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Rinnegan: Naraka Path — King of Hell Judgment",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Rinnegan: Asura Path — Arm Cannon Barrage",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Rinnegan: Preta Path — Blocking Technique Absorption (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Rinnegan"},
+  {name:"Senrigan: Omnipresent Insight",classification:"Ultimate Jutsu",requiredDojutsu:"Senrigan"},
+  {name:"Sharingan: Izanagi (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Sharingan: Izanami (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Mangekyō: Yasaka Magatama (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Mangekyō: Kagutsuchi — Blade",classification:"Ultimate Jutsu",requiredDojutsu:"Mangekyō Sharingan"},
+  {name:"Eternal Mangekyō: Susanoo — Yasaka Magatama",classification:"Ultimate Jutsu",requiredDojutsu:"Eternal Mangekyō Sharingan",requiredSusanoo:true},
+  {name:"Tenseigan: Tenseigan Chakra Mode (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Tenseigan"},
+  {name:"Tenseigan: Golden Wheel Reincarnation Explosion",classification:"Ultimate Jutsu",requiredDojutsu:"Tenseigan"},
+  {name:"Tenseigan: Silver Wheel Reincarnation Explosion",classification:"Ultimate Jutsu",requiredDojutsu:"Tenseigan"},
+  {name:"Rinne Sharingan: Amenominaka",classification:"Ultimate Jutsu",requiredDojutsu:"Rinne Sharingan"},
+  {name:"Rinne Sharingan: Yomotsu Hirasaka (Ultimate)",classification:"Ultimate Jutsu",requiredDojutsu:"Rinne Sharingan"},
+  /* ---- Added: Chakra nature ultimate jutsu ---- */
+  {name:"Fire Release: Great Fire Annihilation (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Fire Release"},
+  {name:"Fire Release: Great Fire Destruction",classification:"Ultimate Jutsu",chakraNature:"Fire Release"},
+  {name:"Fire Release: Intelligent Hard Work",classification:"Ultimate Jutsu",chakraNature:"Fire Release"},
+  {name:"Fire Release: Dragon Flame Release Song Technique",classification:"Ultimate Jutsu",chakraNature:"Fire Release"},
+  {name:"Fire Release: Ash Pile Burning (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Fire Release"},
+  {name:"Wind Release: Vacuum Serial Waves (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Wind Release"},
+  {name:"Wind Release: Vacuum Sphere (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Wind Release"},
+  {name:"Wind Release: Great Breakthrough (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Wind Release"},
+  {name:"Wind Release: Pressure Damage",classification:"Ultimate Jutsu",chakraNature:"Wind Release"},
+  {name:"Lightning Release: Lightning Oppression Horizontal (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Lightning Release"},
+  {name:"Lightning Release: Lightning Transmission",classification:"Ultimate Jutsu",chakraNature:"Lightning Release"},
+  {name:"Lightning Release: False Darkness (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Lightning Release"},
+  {name:"Lightning Release: Hell Stab — One-Finger",classification:"Ultimate Jutsu",chakraNature:"Lightning Release"},
+  {name:"Lightning Release: Lightning Beast Tracking Fang",classification:"Ultimate Jutsu",chakraNature:"Lightning Release"},
+  {name:"Earth Release: Earth Style Wall — Great Mountain",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Earth Release: Swamp of the Underworld (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Earth Release: Added-Weight Rock / Super-Weighted Rock",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Earth Release: Light-Weight Rock — Planetary",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Earth Release: Earth Dragon Bullet (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Earth Release: Moving Earth Core",classification:"Ultimate Jutsu",chakraNature:"Earth Release"},
+  {name:"Water Release: Great Exploding Water Colliding Wave (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Water Release"},
+  {name:"Water Release: Water Dragon Bullet — Emperor",classification:"Ultimate Jutsu",chakraNature:"Water Release"},
+  {name:"Water Release: A Thousand Feeding Sharks",classification:"Ultimate Jutsu",chakraNature:"Water Release"},
+  {name:"Water Release: Water Prison Shark Dance (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Water Release"},
+  {name:"Water Release: Tears of the Shinigami",classification:"Ultimate Jutsu",chakraNature:"Water Release"},
+  {name:"Yin Release: Genjutsu — Bringer-of-Darkness (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Yin Release"},
+  {name:"Yin Release: Shadow–Mind Dominion",classification:"Ultimate Jutsu",chakraNature:"Yin Release"},
+  {name:"Yang Release: Multi-Size — Super Expansion (Ultimate)",classification:"Ultimate Jutsu",chakraNature:"Yang Release"},
+  {name:"Yang Release: Creation of All Things (Fragment)",classification:"Ultimate Jutsu",chakraNature:"Yang Release"},
+  {name:"Yin–Yang Release: Truth-Seeking Orbs — Full Set",classification:"Ultimate Jutsu",chakraNature:"Yin Release",requiredSixPaths:true},
+  {name:"Yin–Yang Release: Six Paths — Chibaku Tensei",classification:"Ultimate Jutsu",chakraNature:"Yang Release",requiredSixPaths:true}
+
 ];
 
 function isUltimateHardGated(j){
@@ -5757,10 +5851,46 @@ function buildDevWheel(pool){
   const cx=100,cy=100,r=98,segs=finalizeWheelSegments(pool),parts=[];
   const colors=['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e84393','#00b894','#6c5ce7'];
   const polar=(deg,rad)=>{const a=(deg-90)*Math.PI/180;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)]};const escSvg=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  for(let i=0;i<segs.length;i++){const x=segs[i],start=x.startAngle,end=x.endAngle,frac=x.frac,span=end-start,large=span>180?1:0,mid=(start+end)/2;parts.push(x);
-    const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);path.setAttribute('fill',colors[i%colors.length]);path.setAttribute('stroke','#0d1119');path.setAttribute('stroke-width','1.2');const title=document.createElementNS('http://www.w3.org/2000/svg','title');title.textContent=`${x.name} — ${x.pct>=1?x.pct.toFixed(2):x.pct.toFixed(3)}%`;path.appendChild(title);svg.appendChild(path);
-    if(span>=3.5){const lr=span>=30?52:span>=16?58:span>=8?64:70,[tx,ty]=polar(mid,lr),maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3,raw=String(x.name||''),label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4,t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',tx.toFixed(2));t.setAttribute('y',ty.toFixed(2));t.setAttribute('fill','#0b0e14');t.setAttribute('font-size',fontSize);t.setAttribute('font-weight','800');t.setAttribute('text-anchor','middle');t.setAttribute('dominant-baseline','middle');t.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);t.innerHTML=escSvg(label);svg.appendChild(t)}}
-  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);c.setAttribute('fill','none');c.setAttribute('stroke','#c5cedd');c.setAttribute('stroke-width','1.5');c.setAttribute('opacity','.35');svg.appendChild(c);return parts;
+  for(let i=0;i<segs.length;i++){
+    const x=segs[i],start=x.startAngle,end=x.endAngle,span=end-start,large=span>180?1:0,mid=(start+end)/2;
+    parts.push(x);
+    const [x1,y1]=polar(start,r),[x2,y2]=polar(end,r);
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);
+    path.setAttribute('fill',colors[i%colors.length]);
+    path.setAttribute('stroke','#0d1119');
+    path.setAttribute('stroke-width','1.2');
+    const title=document.createElementNS('http://www.w3.org/2000/svg','title');
+    title.textContent=`${x.name} — ${x.pct>=1?x.pct.toFixed(2):x.pct.toFixed(3)}%`;
+    path.appendChild(title);
+    svg.appendChild(path);
+    if(span>=3.5){
+      const lr=span>=30?52:span>=16?58:span>=8?64:70;
+      const [tx,ty]=polar(mid,lr);
+      const maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3;
+      const raw=String(x.name||'');
+      const label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';
+      let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;
+      const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4;
+      const t=document.createElementNS('http://www.w3.org/2000/svg','text');
+      t.setAttribute('x',tx.toFixed(2));
+      t.setAttribute('y',ty.toFixed(2));
+      t.setAttribute('fill','#0b0e14');
+      t.setAttribute('font-size',fontSize);
+      t.setAttribute('font-weight','800');
+      t.setAttribute('text-anchor','middle');
+      t.setAttribute('dominant-baseline','middle');
+      t.setAttribute('transform',`rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);
+      t.textContent=label;
+      svg.appendChild(t);
+    }
+  }
+  const c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('cx',cx);c.setAttribute('cy',cy);c.setAttribute('r',r);
+  c.setAttribute('fill','none');c.setAttribute('stroke','#c5cedd');
+  c.setAttribute('stroke-width','1.5');c.setAttribute('opacity','.35');
+  svg.appendChild(c);
+  return parts;
 }
 function renderDevWheel(){
   const title=document.getElementById('devWheelTitle'),prog=document.getElementById('devWheelProgress'),hint=document.getElementById('devWheelHint');if(!title)return;const wheel=devState.wheel,pool=devOptionsForWheel(wheel);
@@ -5871,7 +6001,10 @@ async function spinDevelopmentWheel(forceValue=null){
     devSetResult('Development Generation Complete','<b>All 5 development branches have already been completed.</b>');
     renderDevWheel();
     return;
-  }syncDevelopmentInputs();devState.spinning=true;const btn=document.getElementById('devSpinButton');if(btn)btn.disabled=true;devHideOverlay();
+  }
+  const btn=document.getElementById('devSpinButton');
+  try{
+  syncDevelopmentInputs();devState.spinning=true;if(btn)btn.disabled=true;devHideOverlay();
   const wheel=devState.wheel,pool=devOptionsForWheel(wheel),forced=forceValue||devForcedForWheel(wheel),result=forced||devRoll(pool);await devSpinVisual(result,pool);devShowOverlay(result);await new Promise(r=>setTimeout(r,document.getElementById('devSkipAnimation')?.checked?0:1200));devHideOverlay();
   if(wheel==='category'){
     devState.category=result;devState.outcome=null;devState.sessionRolls=Math.min(5,devState.sessionRolls+1);
@@ -5909,8 +6042,18 @@ async function spinDevelopmentWheel(forceValue=null){
   else if(wheel==='setbackStat'){const stat=devStatKeyByLabel(result);devState.context.setbackStat=stat;devScheduleWheel('setbackAmount')}
   else if(wheel==='setbackAmount'){const amount=Math.abs(Number(String(result).replace(/[^0-9]/g,''))||1),stat=devState.context.setbackStat;devState.pending={outcome:`Setback — ${devState.context.setbackType.name}`,stat,delta:-amount,narrative:`${devState.context.setbackType.name} reduces ${DEV_STAT_NAMES[stat]} by ${amount}.`};devSetResult('Setback Applied',`<b>${devEsc(devState.context.setbackType.name)}</b><br>${devEsc(DEV_STAT_NAMES[stat])}: <b>−${amount}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
   else {prepareDevelopmentResult(result)}
-  devState.outcome=result;devState.spinning=false;if(btn)btn.disabled=false;
-  if(devState.pending && ['opponent','combatOutcome','trainingLevel','combatRewardLevel','weaponDecision','summoning','gates','chakraJutsu','chakraNature','setbackAmount','outcome'].includes(wheel)) applyDevelopmentResult();
+  devState.outcome=result;
+  if(devState.pending && ['opponent','combatOutcome','trainingLevel','combatRewardLevel','weaponDecision','summoning','gates','chakraJutsu','chakraNature','setbackAmount','outcome'].includes(wheel)){
+    try{ applyDevelopmentResult(); }catch(e){ console.warn('applyDevelopmentResult', e); }
+  }
+  }catch(err){
+    console.warn('spinDevelopmentWheel error', err);
+    try{ devSetResult('Development error', '<b>Something went wrong spinning this wheel.</b><br><span class="small">'+devEsc(err&&err.message||err)+'</span>'); }catch(_e){}
+  }finally{
+    devState.spinning=false;
+    const b=document.getElementById('devSpinButton');
+    if(b) b.disabled=!devState.ninja;
+  }
 }
 function startDevelopment(){
   if(!devState.ninja){loadDevelopmentNinja();return}
