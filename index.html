@@ -27,7 +27,22 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .nameList a{color:#d9e4f2;text-decoration:none;font-size:12px}
 .nameList a:hover{text-decoration:underline;color:var(--accent)}
 @media(max-width:800px){#canonCatalog{grid-template-columns:1fr}}
-.jutsuMetaLoader{margin-bottom:18px;padding:14px;background:#111722;border:1px solid var(--line);border-radius:12px}.jutsuMetaLoader button{margin:6px 6px 6px 0}.metaStats{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.metaStats span{padding:3px 8px;background:#202938;border-radius:99px}</style>
+.jutsuMetaLoader{margin-bottom:18px;padding:14px;background:#111722;border:1px solid var(--line);border-radius:12px}.jutsuMetaLoader button{margin:6px 6px 6px 0}.metaStats{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.metaStats span{padding:3px 8px;background:#202938;border-radius:99px}
+/* Persistent Ninja Catalogue */
+.catalogue-toolbar{display:grid;grid-template-columns:1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px}
+.catalogue-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.catalogue-stat-card{background:#121720;border:1px solid var(--line);border-radius:10px;padding:10px}
+.catalogue-stat-card label{display:block;font-size:12px;color:#cbd5e1;margin-bottom:6px}
+.catalogue-stat-card select{font-weight:800}
+.catalogue-note{padding:10px 12px;border-radius:10px;background:#111722;border:1px solid var(--line);color:var(--muted);margin-bottom:14px}
+.catalogue-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.catalogue-manual-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.catalogue-manual-grid .full{grid-column:1/-1}
+.catalogue-manual-grid input,.catalogue-manual-grid select,.catalogue-manual-grid textarea{width:100%}
+.catalogue-manual-grid textarea{min-height:78px;resize:vertical}
+@media(max-width:800px){.catalogue-toolbar{grid-template-columns:1fr}.catalogue-stat-grid{grid-template-columns:repeat(2,1fr)}.catalogue-manual-grid{grid-template-columns:1fr}.catalogue-manual-grid .full{grid-column:auto}}
+
+</style>
 
 <style>
 /* Interactive wheel experience */
@@ -534,6 +549,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 }
 
 </style>
+
 </head>
 <body>
 <div class="wrap">
@@ -545,6 +561,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
     <div>
       <button onclick="generate();showGeneratorView()">Start Character Generator</button>
       <button class="secondary" onclick="showLogView()">Character Log</button>
+      <button class="secondary" onclick="showCatalogueView()">Ninja Catalogue</button>
       <button class="secondary" onclick="exportJSON()">Export JSON</button>
     </div>
   </div>
@@ -559,6 +576,71 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   </div>
   <div id="characterLogList" class="character-log-list"><div class="character-log-entry " onclick="openCharacterLogEntry(0)"><div class="entry-main"><div class="entry-name">Ninja #1: independent / civilian settlement Senju Clan Jōnin</div><div class="entry-meta">9/22/2026, 2:31:32 PM · 15-year-old Shinobi · Land of Lightning</div></div><div class="entry-number">›</div></div></div>
   <div id="characterLogDetail" class="character-log-detail" style="display: none;"></div>
+</section>
+
+<section class="card full" id="ninjaCataloguePage" style="display:none">
+  <div class="log-page-head">
+    <div><h2>Ninja Catalogue</h2><p class="small">Ninjas saved here remain stored in this browser until you delete them or clear this browser's site data.</p></div>
+    <div class="step-actions"><button onclick="showGeneratorView()">Back to Generator</button></div>
+  </div>
+
+  <div class="catalogue-note">Create a ninja directly here, or import one from the Character Log. Nothing in this section requires a generated ninja first. Saved Catalogue entries remain in this browser until you delete them or clear browser site data.</div>
+
+  <div class="log-detail-card">
+    <h3>Create Ninja Directly</h3>
+    <div class="catalogue-manual-grid">
+      <div><label class="small">Catalogue Name</label><input id="manualCatalogueName" type="text" placeholder="Ninja name"></div>
+      <div><label class="small">Age</label><input id="manualCatalogueAge" type="number" min="0" max="200" placeholder="Age"></div>
+      <div><label class="small">Type / Status</label><select id="manualCatalogueType"><option value="">Select...</option><option>Shinobi</option><option>Samurai</option><option>Mercenary</option><option>Missing-nin</option><option>Civilian</option></select></div>
+      <div><label class="small">Rank</label><select id="manualCatalogueRank"><option value="">Select...</option><option>Academy Student</option><option>Genin</option><option>Chūnin</option><option>Jōnin</option><option>Special Jōnin</option><option>ANBU</option><option>Kage</option><option>Samurai</option><option>Other</option></select></div>
+      <div><label class="small">Land</label><input id="manualCatalogueLand" type="text" placeholder="Land of Fire, etc."></div>
+      <div><label class="small">Village / Settlement</label><input id="manualCatalogueVillage" type="text" placeholder="Konohagakure, etc."></div>
+      <div><label class="small">Clan</label><input id="manualCatalogueClan" type="text" placeholder="Clan or Clanless"></div>
+      <div><label class="small">Combat Specialization</label><input id="manualCatalogueCombat" type="text" placeholder="Combat specialization"></div>
+      <div><label class="small">Chakra Natures</label><input id="manualCatalogueNatures" type="text" placeholder="Fire, Wind, Lightning"></div>
+      <div><label class="small">Kekkei Genkai</label><input id="manualCatalogueKG" type="text" placeholder="None or specific ability"></div>
+      <div><label class="small">Dōjutsu</label><input id="manualCatalogueDojutsu" type="text" placeholder="None or specific dōjutsu"></div>
+      <div><label class="small">Weapon</label><input id="manualCatalogueWeapon" type="text" placeholder="Weapon or None"></div>
+      <div><label class="small">Jutsu 1</label><input id="manualCatalogueJutsu1" type="text" placeholder="Jutsu name"></div>
+      <div><label class="small">Jutsu 2</label><input id="manualCatalogueJutsu2" type="text" placeholder="Jutsu name"></div>
+      <div><label class="small">Ultimate Jutsu</label><input id="manualCatalogueUltimate" type="text" placeholder="Ultimate jutsu"></div>
+      <div><label class="small">Moral Alignment</label><input id="manualCatalogueMoral" type="text" placeholder="Alignment"></div>
+      <div><label class="small">Motivation</label><input id="manualCatalogueMotivation" type="text" placeholder="Motivation"></div>
+      <div><label class="small">Current Goal</label><input id="manualCatalogueGoal" type="text" placeholder="Current goal"></div>
+      <div class="full"><label class="small">Lineage & Abilities / Notes</label><textarea id="manualCatalogueNotes" placeholder="Lineage, abilities, personality, history, or any other information you want to preserve."></textarea></div>
+    </div>
+    <div class="catalogue-actions"><button onclick="createManualCatalogueNinja()">Add Ninja to Catalogue</button><button class="secondary" onclick="clearManualCatalogueForm()">Clear Form</button></div>
+  </div>
+
+  <div class="log-detail-card" style="margin-top:14px">
+    <h3>Import Existing Generated Ninja</h3>
+    <div class="catalogue-toolbar">
+      <div><label class="small">Source Ninja</label><select id="catalogueSourceSelect"><option value="">Select a ninja from the Character Log</option></select></div>
+      <div><label class="small">Catalogue Name</label><input id="catalogueNameInput" type="text" placeholder="Optional permanent name"></div>
+      <button onclick="addSelectedNinjaToCatalogue()">Save to Catalogue</button>
+    </div>
+  </div>
+
+  <div class="catalogue-toolbar" style="grid-template-columns:1fr auto">
+    <div><label class="small">Saved Ninja</label><select id="catalogueSelect" onchange="openCatalogueEntry(this.value)"><option value="">Select a saved ninja</option></select></div>
+    <button class="secondary" onclick="deleteSelectedCatalogueNinja()">Delete Selected Ninja</button>
+  </div>
+
+  <div id="catalogueEditor" style="display:none">
+    <div class="log-detail-card">
+      <h3 id="catalogueSelectedName">Ninja Catalogue Entry</h3>
+      <div class="catalogue-actions">
+        <button onclick="saveCatalogueStats()">Save D100 Stats</button>
+        <button class="secondary" onclick="renameCatalogueEntry()">Rename Ninja</button>
+        <button class="secondary" onclick="loadCatalogueIntoDevelopment()">Load into Development</button>
+      </div>
+      <h3 style="margin-top:18px">D100 / Individual Stats</h3>
+      <p class="small">Set each individual stat from 1–100. These values are stored with this catalogue entry and persist across refreshes and future visits on this browser.</p>
+      <div id="catalogueStatGrid" class="catalogue-stat-grid"></div>
+    </div>
+    <div id="catalogueCharacterDetail" class="character-log-detail" style="display:block;margin-top:14px"></div>
+  </div>
+  <div id="catalogueEmpty" class="log-empty">No ninjas have been saved to the catalogue yet.</div>
 </section>
 
 <div class="grid" id="generatorContent" style="display: grid;">
@@ -6268,7 +6350,9 @@ function devNinjaName(c){return c?.name||c?.fullName||characterDisplayName(c||{}
 function devGetCurrent(){return lastCharacter||null}
 function devSourceOptions(){
   const sel=document.getElementById('devNinjaSource');if(!sel)return;const prev=sel.value;
-  let html='<option value="current">Current Generated Ninja</option><option value="manual">Manual / Existing Ninja</option>';
+  let html='<option value="manual">Manual / Existing Ninja</option>';
+  ninjaCatalogue.forEach((c,i)=>html+=`<option value="catalogue:${i}">★ Catalogue — ${devEsc(catalogueEntryName(c))}</option>`);
+  html+='<option value="current">Current Generated Ninja</option>';
   characterLog.forEach((c,i)=>html+=`<option value="log:${i}">Character Log — ${devEsc(characterDisplayName(c))}</option>`);
   sel.innerHTML=html;if([...sel.options].some(o=>o.value===prev))sel.value=prev;
 }
@@ -6334,7 +6418,10 @@ function renderDevelopmentAbilityFields(){
 function devSetText(id,val){const el=document.getElementById(id);if(el)el.value=Array.isArray(val)?val.map(x=>typeof x==='object'?(x.name||x.technique||''):x).join(', '):String(val??'')}
 function loadDevelopmentNinja(){
   const sel=document.getElementById('devNinjaSource');if(!sel)return;let c;
-  if(sel.value==='current')c=devGetCurrent();else if(sel.value.startsWith('log:'))c=characterLog[Number(sel.value.slice(4))];
+  if(sel.value==='current')c=devGetCurrent();
+  else if(sel.value.startsWith('catalogue:'))c=ninjaCatalogue[Number(sel.value.slice(10))];
+  else if(sel.value.startsWith('log:'))c=characterLog[Number(sel.value.slice(4))];
+  if(c) c=normaliseCatalogueNinja(c);
   devState.ninja=c?JSON.parse(JSON.stringify(c)):{name:'Existing Ninja',stats:{},natures:[],jutsu:[]};
   devState.history=Array.isArray(devState.ninja.developmentHistory)?devState.ninja.developmentHistory.slice():[];
   devRenderStats();renderDevelopmentAbilityFields();
@@ -6840,7 +6927,11 @@ function fightSourceOptions(){
     const sel = document.getElementById('fightSource' + side);
     if(!sel) continue;
     const prev = sel.value;
-    let html = '<option value="manual">Manual / Existing Ninja</option><option value="current">Current Generated Ninja</option>';
+    let html = '<option value="manual">Manual / Existing Ninja</option>';
+    (ninjaCatalogue || []).forEach((c,i)=>{
+      html += `<option value="catalogue:${i}">★ Catalogue — ${fightEsc(catalogueEntryName(c))}</option>`;
+    });
+    html += '<option value="current">Current Generated Ninja</option>';
     (characterLog || []).forEach((c,i)=>{
       html += `<option value="log:${i}">Log — ${fightEsc(fightDisplayName(c))}</option>`;
     });
@@ -7021,7 +7112,9 @@ function loadFightFighter(side){
   if(!sel) return;
   let c = null;
   if(sel.value === 'current') c = lastCharacter;
+  else if(sel.value.startsWith('catalogue:')) c = ninjaCatalogue[Number(sel.value.slice(10))];
   else if(sel.value.startsWith('log:')) c = characterLog[Number(sel.value.slice(4))];
+  if(c) c = normaliseCatalogueNinja(c);
 
   if(c){
     document.getElementById('fightName' + side).value = fightDisplayName(c);
@@ -8548,6 +8641,142 @@ renderCharacterLog();
 const _finishInteractiveWithLog=finishInteractive;
 finishInteractive=function(){_finishInteractiveWithLog();if(lastCharacter)addCharacterToLog(lastCharacter);try{devSourceOptions();if(document.getElementById('devNinjaSource')?.value==='current')loadDevelopmentNinja()}catch(e){console.warn('Development refresh',e)}};
 
+
+
+/* ===================== PERSISTENT NINJA CATALOGUE ===================== */
+function normaliseCatalogueNinja(source){
+  if(!source) return null;
+  const c=JSON.parse(JSON.stringify(source));
+  c.name=c.name||c.catalogueName||c.fullName||'Ninja';
+  c.fullName=c.fullName||c.name;
+  c.stats=Object.assign({},c.stats||{});
+  const list=v=>Array.isArray(v)?v.map(x=>typeof x==='object'?(x.name||x.technique||''):String(x)).filter(Boolean):devSplit(v||'');
+  c.natures=list(c.natures||c.natureNames||c.chakraNatures);
+  c.jutsu=list(c.jutsu);
+  if(c.specialtyJutsu && c.specialtyJutsu.name) c.jutsu.unshift(c.specialtyJutsu.name);
+  if(c.signatureTechnique && c.signatureTechnique.name && c.signatureTechnique.name!=='None') c.jutsu.push(c.signatureTechnique.name);
+  if(c.specialty && c.specialty!=='None') c.jutsu.push(c.specialty);
+  if(c.signature && c.signature!=='None') c.jutsu.push(c.signature);
+  if(c.ultimateJutsu && typeof c.ultimateJutsu==='string' && c.ultimateJutsu!=='None') c.ultimateJutsu=c.ultimateJutsu;
+  if(c.ultimateJutsu && typeof c.ultimateJutsu==='object' && c.ultimateJutsu.name) c.ultimateJutsu=c.ultimateJutsu.name;
+  c.bloodline=c.bloodline||c.kekkeiGenkai||c.kekkei||'';
+  c.kekkeiGenkai=c.kekkeiGenkai||c.bloodline||'';
+  c.dojutsu=c.dojutsu||c.dōjutsu||'';
+  c.weapon=c.weapon||c.weapons||'';
+  c.summonType=c.summonType||c.summoning||'';
+  c.primary=c.primary||c.combatSpecialization||c.combat||'';
+  c.rank=c.rank||c.level||'';
+  c.type=c.type||c.status||'';
+  c.jinchuriki=c.jinchuriki||'No';
+  c.beast=c.beast||c.tailedBeast||'';
+  c.catalogueName=c.catalogueName||c.name;
+  return c;
+}
+
+const NINJA_CATALOGUE_KEY="ninjaGeneratorCatalogue_v1";
+let ninjaCatalogue=loadNinjaCatalogue(),selectedCatalogueIndex=null;
+function loadNinjaCatalogue(){try{const x=JSON.parse(localStorage.getItem(NINJA_CATALOGUE_KEY)||"[]");return Array.isArray(x)?x:[]}catch(e){return[]}}
+function saveNinjaCatalogue(){try{localStorage.setItem(NINJA_CATALOGUE_KEY,JSON.stringify(ninjaCatalogue));return true}catch(e){console.warn("Ninja Catalogue could not be saved",e);return false}}
+function catalogueEntryName(c){return c.catalogueName||characterDisplayName(c)||"Unnamed Ninja"}
+function populateCatalogueSourceSelect(){
+  const el=document.getElementById("catalogueSourceSelect"); if(!el)return;
+  const current=el.value;
+  const items=characterLog.map((c,i)=>({value:String(i),label:`Ninja #${characterLog.length-i}: ${characterDisplayName(c)}`}));
+  if(lastCharacter&&!characterLog.some(c=>c.logId&&lastCharacter.logId&&c.logId===lastCharacter.logId)){items.unshift({value:"current",label:`Current Generated Ninja: ${characterDisplayName(lastCharacter)}`})}
+  el.innerHTML='<option value="">Select a ninja from the Character Log</option>'+items.map(x=>`<option value="${esc(x.value)}">${esc(x.label)}</option>`).join("");
+  if(items.some(x=>x.value===current))el.value=current;
+}
+function populateCatalogueSelect(){
+  const el=document.getElementById("catalogueSelect"); if(!el)return;
+  el.innerHTML='<option value="">Select a saved ninja</option>'+ninjaCatalogue.map((c,i)=>`<option value="${i}">${esc(catalogueEntryName(c))}</option>`).join("");
+  try{devSourceOptions();fightSourceOptions();}catch(e){}
+  if(selectedCatalogueIndex!==null&&ninjaCatalogue[selectedCatalogueIndex])el.value=String(selectedCatalogueIndex);
+}
+function manualCatalogueValue(id){return (document.getElementById(id)?.value||"").trim()}
+function createManualCatalogueNinja(){
+  const name=manualCatalogueValue("manualCatalogueName");
+  if(!name){alert("Please enter a Catalogue Name.");return}
+  const splitList=v=>v?v.split(",").map(x=>x.trim()).filter(Boolean):[];
+  const c={
+    catalogueName:name, catalogueId:Date.now()+"_"+Math.random().toString(36).slice(2,9), cataloguedAt:new Date().toISOString(),
+    age:manualCatalogueValue("manualCatalogueAge")||"", type:manualCatalogueValue("manualCatalogueType")||"Ninja", rank:manualCatalogueValue("manualCatalogueRank")||"",
+    land:manualCatalogueValue("manualCatalogueLand")||"", village:manualCatalogueValue("manualCatalogueVillage")||"", clan:manualCatalogueValue("manualCatalogueClan")||"",
+    primary:manualCatalogueValue("manualCatalogueCombat")||"", natures:splitList(manualCatalogueValue("manualCatalogueNatures")),
+    kekkeiGenkai:manualCatalogueValue("manualCatalogueKG")||"", dojutsu:manualCatalogueValue("manualCatalogueDojutsu")||"", weapon:manualCatalogueValue("manualCatalogueWeapon")||"",
+    specialty:manualCatalogueValue("manualCatalogueJutsu1")||"", signature:manualCatalogueValue("manualCatalogueJutsu2")||"", ultimateJutsu:manualCatalogueValue("manualCatalogueUltimate")||"",
+    moral:manualCatalogueValue("manualCatalogueMoral")||"", motivation:manualCatalogueValue("manualCatalogueMotivation")||"", currentGoal:manualCatalogueValue("manualCatalogueGoal")||"",
+    notes:manualCatalogueValue("manualCatalogueNotes")||"", stats:{}
+  };
+  STAT_NAMES.forEach(([key])=>c.stats[key]=1);
+  ninjaCatalogue.unshift(c); selectedCatalogueIndex=0; saveNinjaCatalogue(); populateCatalogueSelect();
+  const sel=document.getElementById("catalogueSelect");if(sel)sel.value="0"; renderCatalogueEntry(); clearManualCatalogueForm();
+}
+function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueCombat","manualCatalogueNatures","manualCatalogueKG","manualCatalogueDojutsu","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes"].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""});["manualCatalogueType","manualCatalogueRank"].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""})}
+
+function addSelectedNinjaToCatalogue(){
+  const source=document.getElementById("catalogueSourceSelect")?.value;
+  let sourceNinja=null;
+  if(source==="current")sourceNinja=lastCharacter;
+  else if(source!==""&&characterLog[Number(source)])sourceNinja=characterLog[Number(source)];
+  if(!sourceNinja){alert("Please select a ninja to save to the Catalogue.");return}
+  const input=document.getElementById("catalogueNameInput");
+  const name=(input?.value||"").trim()||characterDisplayName(sourceNinja)||"Unnamed Ninja";
+  const saved=JSON.parse(JSON.stringify(sourceNinja));
+  saved.catalogueId=Date.now()+"_"+Math.random().toString(36).slice(2,9);
+  saved.catalogueName=name;
+  saved.cataloguedAt=new Date().toISOString();
+  saved.stats=Object.assign({},saved.stats||{});
+  ninjaCatalogue.unshift(saved);
+  selectedCatalogueIndex=0;
+  saveNinjaCatalogue();
+  populateCatalogueSelect();
+  const sel=document.getElementById("catalogueSelect");if(sel)sel.value="0";
+  if(input)input.value="";
+  renderCatalogueEntry();
+}
+function openCatalogueEntry(index){selectedCatalogueIndex=index===""?null:Number(index);renderCatalogueEntry()}
+function renderCatalogueEntry(){
+  const editor=document.getElementById("catalogueEditor"),empty=document.getElementById("catalogueEmpty"),nameEl=document.getElementById("catalogueSelectedName"),grid=document.getElementById("catalogueStatGrid"),detail=document.getElementById("catalogueCharacterDetail");
+  if(!editor||!empty||!grid||!detail)return;
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex]){editor.style.display="none";empty.style.display=ninjaCatalogue.length?"none":"block";return}
+  const c=ninjaCatalogue[selectedCatalogueIndex]; editor.style.display="block";empty.style.display="none";
+  if(nameEl)nameEl.textContent=catalogueEntryName(c);
+  grid.innerHTML=STAT_NAMES.map(([key,label])=>{const value=Math.max(1,Math.min(100,Number(c.stats?.[key]??1)));return `<div class="catalogue-stat-card"><label>${esc(label)}</label><select id="catalogueStat_${esc(key)}">${Array.from({length:100},(_,i)=>{const v=i+1;return `<option value="${v}"${v===value?" selected":""}>${v}</option>`}).join("")}</select></div>`}).join("");
+  detail.innerHTML=characterDetailHTML(c);
+}
+function saveCatalogueStats(){
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex])return;
+  const c=ninjaCatalogue[selectedCatalogueIndex]; c.stats=c.stats||{};
+  STAT_NAMES.forEach(([key])=>{const el=document.getElementById("catalogueStat_"+key);if(el)c.stats[key]=Math.max(1,Math.min(100,Number(el.value)||1))});
+  c.catalogueUpdatedAt=new Date().toISOString(); saveNinjaCatalogue(); renderCatalogueEntry();
+}
+function renameCatalogueEntry(){
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex])return;
+  const c=ninjaCatalogue[selectedCatalogueIndex]; const next=prompt("Enter the new catalogue name:",catalogueEntryName(c));
+  if(next===null)return; const name=next.trim(); if(!name)return; c.catalogueName=name; c.catalogueUpdatedAt=new Date().toISOString(); saveNinjaCatalogue(); populateCatalogueSelect(); renderCatalogueEntry();
+}
+function deleteSelectedCatalogueNinja(){
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex])return;
+  const c=ninjaCatalogue[selectedCatalogueIndex]; if(!confirm(`Delete ${catalogueEntryName(c)} from the Ninja Catalogue?`))return;
+  ninjaCatalogue.splice(selectedCatalogueIndex,1); selectedCatalogueIndex=null; saveNinjaCatalogue(); populateCatalogueSelect(); renderCatalogueEntry();
+}
+function loadCatalogueIntoDevelopment(){
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex])return;
+  const c=ninjaCatalogue[selectedCatalogueIndex];
+  try{const devSel=document.getElementById('devNinjaSource'); if(devSel){devSourceOptions();devSel.value='catalogue:'+selectedCatalogueIndex;} if(typeof loadDevelopmentNinja==='function'){loadDevelopmentNinja();showGeneratorView();document.getElementById('ninjaDevelopmentPanel')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('devWheelPanel')?.scrollIntoView({behavior:'smooth',block:'start'})}else alert('Development loading is not available yet.')}catch(e){console.warn(e);alert('This ninja could not be loaded into Development.')}
+}
+function showCatalogueView(){
+  document.getElementById("generatorContent").style.display="none";
+  document.getElementById("characterLogPage").style.display="none";
+  document.getElementById("ninjaCataloguePage").style.display="block";
+  populateCatalogueSourceSelect();populateCatalogueSelect();renderCatalogueEntry();
+  document.getElementById("ninjaCataloguePage")?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+const _showLogViewWithCatalogue=showLogView;
+showLogView=function(){document.getElementById("ninjaCataloguePage").style.display="none";_showLogViewWithCatalogue()};
+const _showGeneratorViewWithCatalogue=showGeneratorView;
+showGeneratorView=function(){document.getElementById("ninjaCataloguePage").style.display="none";_showGeneratorViewWithCatalogue()};
+populateCatalogueSourceSelect();populateCatalogueSelect();try{devSourceOptions();fightSourceOptions();}catch(e){}renderCatalogueEntry();
 </script>
 
 
