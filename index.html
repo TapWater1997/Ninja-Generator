@@ -42,6 +42,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .catalogue-manual-grid textarea{min-height:78px;resize:vertical}.catalogue-checkbox-group{display:flex;flex-wrap:wrap;gap:10px;min-height:40px;align-items:center;padding:8px 10px;background:#111722;border:1px solid var(--line);border-radius:8px}.catalogue-checkbox-group label{display:flex;align-items:center;gap:6px;color:var(--text);font-size:14px;cursor:pointer}.catalogue-checkbox-group input{width:auto;accent-color:var(--accent);margin:0}.catalogue-nature-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.catalogue-manual-grid select{min-width:0}@media(max-width:800px){.catalogue-nature-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:800px){.catalogue-toolbar{grid-template-columns:1fr}.catalogue-stat-grid{grid-template-columns:repeat(2,1fr)}.catalogue-manual-grid{grid-template-columns:1fr}.catalogue-manual-grid .full{grid-column:auto}}
 
+
+.catalogue-stats-editor{grid-column:1/-1;margin-top:8px;padding:14px;border:1px solid var(--line);border-radius:10px;background:#0f151f}
+.catalogue-section-title{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:12px;flex-wrap:wrap}
+.catalogue-section-title h4{margin:0;font-size:17px}
+.catalogue-stat-input-grid{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:10px}
+.catalogue-stat-input{display:flex;flex-direction:column;gap:5px}
+.catalogue-stat-input input{width:100%;box-sizing:border-box}
+@media(max-width:800px){.catalogue-stat-input-grid{grid-template-columns:repeat(2,minmax(130px,1fr))}}
+@media(max-width:500px){.catalogue-stat-input-grid{grid-template-columns:1fr}}
 </style>
 
 <style>
@@ -817,6 +826,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div><label class="small">Moral Alignment</label><select id="manualCatalogueMoral"><option value="">Select...</option><option value="Criminal">Criminal</option><option value="Good">Good</option><option value="Heroic">Heroic</option><option value="Neutral">Neutral</option><option value="Self-serving">Self-serving</option><option value="Unpredictable">Unpredictable</option><option value="Villainous">Villainous</option></select></div>
       <div><label class="small">Motivation</label><select id="manualCatalogueMotivation"><option value="">Select...</option><option value="Become immortal">Become immortal</option><option value="Become Kage">Become Kage</option><option value="Become legendary">Become legendary</option><option value="Become stronger">Become stronger</option><option value="Change the shinobi system">Change the shinobi system</option><option value="Discover forbidden knowledge">Discover forbidden knowledge</option><option value="Freedom">Freedom</option><option value="Knowledge">Knowledge</option><option value="Love">Love</option><option value="Master a rare technique">Master a rare technique</option><option value="Master Senjutsu">Master Senjutsu</option><option value="Master their bloodline">Master their bloodline</option><option value="Master their dōjutsu">Master their dōjutsu</option><option value="Peace">Peace</option><option value="Protect family">Protect family</option><option value="Protect village">Protect village</option><option value="Prove themselves">Prove themselves</option><option value="Recognition">Recognition</option><option value="Redemption">Redemption</option><option value="Revenge">Revenge</option><option value="Serve their clan">Serve their clan</option><option value="Survival">Survival</option><option value="Wealth">Wealth</option></select></div>
       <div><label class="small">Current Goal</label><select id="manualCatalogueGoal"><option value="">Select...</option><option value="Achieve peace">Achieve peace</option><option value="Become a legendary shinobi">Become a legendary shinobi</option><option value="Become ANBU">Become ANBU</option><option value="Become Chūnin">Become Chūnin</option><option value="Become Genin">Become Genin</option><option value="Become immortal">Become immortal</option><option value="Become Jōnin">Become Jōnin</option><option value="Become Kage">Become Kage</option><option value="Become stronger">Become stronger</option><option value="Change the shinobi system">Change the shinobi system</option><option value="Discover forbidden knowledge">Discover forbidden knowledge</option><option value="Gain freedom">Gain freedom</option><option value="Gain recognition">Gain recognition</option><option value="Gain wealth">Gain wealth</option><option value="Master a dōjutsu">Master a dōjutsu</option><option value="Master a Kekkei Genkai">Master a Kekkei Genkai</option><option value="Master a particular technique">Master a particular technique</option><option value="Master Senjutsu">Master Senjutsu</option><option value="Protect family">Protect family</option><option value="Protect the village">Protect the village</option></select></div>
+      <div class="full catalogue-stats-editor"><div class="catalogue-section-title"><h4>D100 Stats</h4><span class="small">Set each individual stat from 1–100 for this ninja. These values are saved with the Catalogue entry.</span></div><div id="manualCatalogueStatGrid" class="catalogue-stat-input-grid"></div></div>
       <div class="full"><label class="small">Lineage &amp; Abilities / Notes</label><textarea id="manualCatalogueNotes" placeholder="Lineage, abilities, personality, history, or any other information you want to preserve."></textarea></div>
     </div>
     <div class="catalogue-actions"><button onclick="createManualCatalogueNinja()">Add Ninja to Catalogue</button><button class="secondary" onclick="clearManualCatalogueForm()">Clear Form</button></div>
@@ -8955,68 +8965,73 @@ function fillCatalogueSelect(id,values,selected=''){const el=document.getElement
 function populateManualCatalogueOptions(){
   const d=(typeof DATA!=='undefined'&&DATA)||{};
   const asNames=arr=>manualCatalogueOptionsFromData(arr);
-  const catalogueFieldVals=(field,fallback=[])=>catalogueUnique([...(fallback||[]),...ninjaCatalogue.flatMap(c=>[c?.[field]]),...characterLog.flatMap(c=>[c?.[field]])]);
-  const landVals=[...asNames(d.lands),...asNames(d.minorLands)];
-  const villageVals=Object.values(d.villages||{}).flat().map(x=>x?.name||x);
-  const typeVals=['Shinobi','Samurai','Mercenary','Missing-nin','Civilian'];
-  const rankVals=['Academy Student','Genin','Chūnin','Tokubetsu Jōnin','Jōnin','Special Jōnin','ANBU','Kage','Samurai',
-    ...(d.missingRanks||[]).map(x=>x?.name||x)];
-  const clanVals=asNames(d.clans);
-  const combatVals=asNames(d.primaryCombat);
-  const natureVals=asNames(d.natures);
-  const kgVals=asNames(d.bloodlines);
-  const dojVals=asNames(d.dojutsu);
-  const weaponVals=asNames(d.weapons);
-  const moralVals=asNames(d.moral);
-  const motivationVals=asNames(d.motivation);
-  const goalVals=asNames(typeof GOAL_POOL!=='undefined'?GOAL_POOL:[]);
+  const savedValues=field=>[...ninjaCatalogue.flatMap(c=>[c?.[field]]),...characterLog.flatMap(c=>[c?.[field]])];
+  const vals=(fallback,field)=>catalogueUnique([...(fallback||[]),...savedValues(field)]);
+  const dataObjectValues=obj=>Object.values(obj||{}).flat().map(x=>x?.name||x?.label||x).filter(Boolean);
+  const landVals=vals([...asNames(d.lands),...asNames(d.minorLands)],'land');
+  const villageVals=vals(dataObjectValues(d.villages),'village');
+  const typeVals=vals(['Shinobi','Samurai','Mercenary','Missing-nin','Civilian'],'type');
+  const rankVals=vals([...asNames(d.ranks),...asNames(d.missingRanks),'Samurai'],'rank');
+  const clanVals=vals(asNames(d.clans),'clan');
+  const combatVals=vals(asNames(d.primaryCombat),'primary');
+  const natureVals=vals(asNames(d.natures),'natures');
+  const kgVals=vals(asNames(d.bloodlines),'kekkeiGenkai');
+  const dojVals=vals(asNames(d.dojutsu),'dojutsu');
+  const weaponVals=vals(asNames(d.weapons),'weapon');
+  const moralVals=vals(asNames(d.moral),'moral');
+  const motivationVals=vals(asNames(d.motivation),'motivation');
+  const goalVals=vals(typeof GOAL_POOL!=='undefined'?GOAL_POOL:[],'currentGoal');
   const clanHidenVals=asNames((d.clans||[]).map(x=>x?.hiden).filter(Boolean));
-  const dojutsuEyesVals=catalogueFieldVals('dojutsuEyes',['None','One eye','Both']);
-  const dojutsuStageVals=catalogueFieldVals('dojutsuStage',['None','1-tomoe Sharingan','2-tomoe Sharingan','3-tomoe Sharingan','Mangekyō Sharingan','Eternal Mangekyō Sharingan','Rinnegan']);
-  const susanooVals=catalogueFieldVals('susanooAccess',['None','No','Yes']);
-  const occupationVals=catalogueFieldVals('occupation',['None',...asNames(d.civilianOccupations),'Shinobi occupation','Civilian occupation']);
-  const minorLandVals=catalogueFieldVals('minorLand',['None',...asNames(d.minorLands)]);
-  const ageBandVals=catalogueFieldVals('ageBand',['Child','Pre-teen','Teenager','Young Adult','Adult','Middle-aged','Elder']);
   const clanBloodlineVals=asNames((d.clans||[]).map(x=>x?.bloodline).filter(Boolean));
-  const bloodlineVals=catalogueFieldVals('bloodline',['None',...kgVals,...clanBloodlineVals]);
-  const hidenVals=catalogueFieldVals('hiden',['None',...clanHidenVals]);
-  const senjutsuVals=catalogueFieldVals('senjutsu',['None','No','Yes','Sage Training Potential','Sage Mode','Advanced Sage Mode','Six Paths Sage Mode']);
-  const sageTypeVals=catalogueFieldVals('sageType',['None',...asNames(d.sageTypes)]);
-  const jinchurikiVals=['No','Yes'];
-  const beastVals=catalogueFieldVals('beast',['None',...asNames(d.beasts)]);
-  const relationshipVals=catalogueFieldVals('relationship',['None',...asNames(d.relationships)]);
-  const summoningVals=['No','Yes'];
-  const summonTypeVals=catalogueFieldVals('summonType',['None',...asNames(d.summonTypes)]);
-  const legendaryVals=catalogueFieldVals('legendary',['None',...asNames(d.legendaryHeritage)]);
-  const legendaryTargetVals=catalogueFieldVals('legendaryTarget',['None',...asNames(d.legendaryTargets)]);
-  const sixPathsVals=catalogueFieldVals('sixPaths',['None',...asNames(d.sixPaths)]);
-  const sixPathsLevelVals=catalogueFieldVals('sixPathsLevel',['None',...asNames(d.sixPathsLevels)]);
-  const otsutsukiVals=catalogueFieldVals('otsutsuki',['None',...asNames(d.otsutsuki)]);
-  const otsutsukiMemberVals=catalogueFieldVals('otsutsukiMember',['None',...asNames(d.otsutsukiMembers)]);
-  const otsutsukiLevelVals=catalogueFieldVals('otsutsukiLevel',['None',...asNames(d.otsutsukiLevels)]);
-  const spaceTimeVals=catalogueFieldVals('spaceTime',['None','No','Yes','Skipped']);
-  const gatesVals=catalogueFieldVals('eightGates',['None','No','Yes']);
-  const gatesLevelVals=catalogueFieldVals('eightGatesLevel',['None','1','2','3','4','5','6','7','8']);
-  const forbiddenVals=catalogueFieldVals('forbidden',['None',...asNames(d.forbidden)]);
-  const forbiddenTechniqueVals=catalogueFieldVals('forbiddenTechnique',['None',...asNames(d.forbiddenTechniques)]);
-  const exceptionalVals=catalogueFieldVals('exceptional',['None',...asNames(d.exceptional)]);
-  const heritageVals=catalogueFieldVals('heritage',['None','Ōtsutsuki','Six Paths','Hashirama cells']);
-  fillCatalogueSelect('manualCatalogueAge',Array.from({length:101},(_,i)=>String(i)));
-  fillCatalogueSelect('manualCatalogueType',typeVals); fillCatalogueSelect('manualCatalogueRank',rankVals);
+  const ageVals=Array.from({length:201},(_,i)=>String(i));
+  const ageBandVals=vals(['Child','Pre-teen','Teenager','Young Adult','Adult','Middle-aged','Elder'],'ageBand');
+  const occupationVals=vals(['None',...asNames(d.civilianOccupations),'Shinobi occupation','Civilian occupation'],'occupation');
+  const minorLandVals=vals(['None',...asNames(d.minorLands)],'minorLand');
+  const bloodlineVals=vals(['None',...kgVals,...clanBloodlineVals],'bloodline');
+  const hidenVals=vals(['None',...clanHidenVals],'hiden');
+  const dojutsuEyesVals=vals(['None','One eye','Both'],'dojutsuEyes');
+  const dojutsuStageVals=vals(['None','1-tomoe Sharingan','2-tomoe Sharingan','3-tomoe Sharingan','Mangekyō Sharingan','Eternal Mangekyō Sharingan','Rinnegan'],'dojutsuStage');
+  const susanooVals=vals(['None','No','Yes'],'susanooAccess');
+  const senjutsuVals=vals(['None','No','Yes','Sage Training Potential','Sage Mode','Advanced Sage Mode','Six Paths Sage Mode'],'senjutsu');
+  const sageTypeVals=vals(['None',...asNames(d.sageTypes)],'sageType');
+  const beastVals=vals(['None',...asNames(d.beasts)],'beast');
+  const relationshipVals=vals(['None',...asNames(d.relationships)],'relationship');
+  const summonTypeVals=vals(['None',...asNames(d.summonTypes)],'summonType');
+  const legendaryVals=vals(['None',...asNames(d.legendaryHeritage)],'legendary');
+  const legendaryTargetVals=vals(['None',...asNames(d.legendaryTargets)],'legendaryTarget');
+  const sixPathsVals=vals(['None',...asNames(d.sixPaths)],'sixPaths');
+  const sixPathsLevelVals=vals(['None',...asNames(d.sixPathsLevels)],'sixPathsLevel');
+  const otsutsukiVals=vals(['None',...asNames(d.otsutsuki)],'otsutsuki');
+  const otsutsukiMemberVals=vals(['None',...asNames(d.otsutsukiMembers)],'otsutsukiMember');
+  const otsutsukiLevelVals=vals(['None',...asNames(d.otsutsukiLevels)],'otsutsukiLevel');
+  const spaceTimeVals=vals(['None','No','Yes','Skipped'],'spaceTime');
+  const gatesVals=vals(['None','No','Yes'],'eightGates');
+  const gatesLevelVals=vals(['None','1','2','3','4','5','6','7','8'],'eightGatesLevel');
+  const forbiddenVals=vals(['None',...asNames(d.forbidden)],'forbidden');
+  const forbiddenTechniqueVals=vals(['None',...asNames(d.forbiddenTechniques)],'forbiddenTechnique');
+  const heritageVals=vals(['None','Ōtsutsuki','Six Paths','Hashirama cells'],'heritage');
+  const exceptionalVals=vals(['None',...asNames(d.exceptional)],'exceptional');
+  const js=catalogueJutsuCatalogue();
+  fillCatalogueSelect('manualCatalogueAge',ageVals); fillCatalogueSelect('manualCatalogueType',typeVals); fillCatalogueSelect('manualCatalogueRank',rankVals);
   fillCatalogueSelect('manualCatalogueLand',landVals); fillCatalogueSelect('manualCatalogueVillage',villageVals); fillCatalogueSelect('manualCatalogueClan',clanVals);
-  fillCatalogueSelect('manualCatalogueOccupation',occupationVals); fillCatalogueSelect('manualCatalogueMinorLand',minorLandVals); fillCatalogueSelect('manualCatalogueAgeBand',ageBandVals);
-  fillCatalogueSelect('manualCatalogueCombat',combatVals);
+  fillCatalogueSelect('manualCatalogueOccupation',occupationVals); fillCatalogueSelect('manualCatalogueMinorLand',minorLandVals); fillCatalogueSelect('manualCatalogueAgeBand',ageBandVals); fillCatalogueSelect('manualCatalogueCombat',combatVals);
   for(let i=1;i<=5;i++)fillCatalogueSelect('manualCatalogueNature'+i,natureVals);
   fillCatalogueSelect('manualCatalogueKG',['None',...kgVals]); fillCatalogueSelect('manualCatalogueBloodline',bloodlineVals); fillCatalogueSelect('manualCatalogueHiden',hidenVals);
   fillCatalogueSelect('manualCatalogueDojutsu',['None',...dojVals]); fillCatalogueSelect('manualCatalogueDojutsuEyes',dojutsuEyesVals); fillCatalogueSelect('manualCatalogueDojutsuStage',dojutsuStageVals); fillCatalogueSelect('manualCatalogueSusanoo',susanooVals); fillCatalogueSelect('manualCatalogueWeapon',weaponVals);
-  const js=catalogueJutsuCatalogue(); fillCatalogueSelect('manualCatalogueJutsu1',js); fillCatalogueSelect('manualCatalogueJutsu2',js); fillCatalogueSelect('manualCatalogueUltimate',js);
+  fillCatalogueSelect('manualCatalogueJutsu1',js); fillCatalogueSelect('manualCatalogueJutsu2',js); fillCatalogueSelect('manualCatalogueUltimate',js);
   fillCatalogueSelect('manualCatalogueSenjutsu',senjutsuVals); fillCatalogueSelect('manualCatalogueSageType',sageTypeVals); fillCatalogueSelect('manualCatalogueBeast',beastVals); fillCatalogueSelect('manualCatalogueRelationship',relationshipVals);
-  fillCatalogueSelect('manualCatalogueSummonType',summonTypeVals); fillCatalogueSelect('manualCatalogueLegendary',legendaryVals); fillCatalogueSelect('manualCatalogueLegendaryTarget',legendaryTargetVals);
-  fillCatalogueSelect('manualCatalogueSixPaths',sixPathsVals); fillCatalogueSelect('manualCatalogueSixPathsLevel',sixPathsLevelVals); fillCatalogueSelect('manualCatalogueOtsutsuki',otsutsukiVals); fillCatalogueSelect('manualCatalogueOtsutsukiMember',otsutsukiMemberVals); fillCatalogueSelect('manualCatalogueOtsutsukiLevel',otsutsukiLevelVals);
-  fillCatalogueSelect('manualCatalogueSpaceTime',spaceTimeVals); fillCatalogueSelect('manualCatalogueEightGates',gatesVals); fillCatalogueSelect('manualCatalogueEightGatesLevel',gatesLevelVals); fillCatalogueSelect('manualCatalogueForbidden',forbiddenVals); fillCatalogueSelect('manualCatalogueForbiddenTechnique',forbiddenTechniqueVals); fillCatalogueSelect('manualCatalogueHeritage',heritageVals); fillCatalogueSelect('manualCatalogueExceptional',exceptionalVals);
+  fillCatalogueSelect('manualCatalogueSummonType',summonTypeVals); fillCatalogueSelect('manualCatalogueLegendary',legendaryVals); fillCatalogueSelect('manualCatalogueLegendaryTarget',legendaryTargetVals); fillCatalogueSelect('manualCatalogueSixPaths',sixPathsVals); fillCatalogueSelect('manualCatalogueSixPathsLevel',sixPathsLevelVals);
+  fillCatalogueSelect('manualCatalogueOtsutsuki',otsutsukiVals); fillCatalogueSelect('manualCatalogueOtsutsukiMember',otsutsukiMemberVals); fillCatalogueSelect('manualCatalogueOtsutsukiLevel',otsutsukiLevelVals); fillCatalogueSelect('manualCatalogueSpaceTime',spaceTimeVals);
+  fillCatalogueSelect('manualCatalogueEightGates',gatesVals); fillCatalogueSelect('manualCatalogueEightGatesLevel',gatesLevelVals); fillCatalogueSelect('manualCatalogueForbidden',forbiddenVals); fillCatalogueSelect('manualCatalogueForbiddenTechnique',forbiddenTechniqueVals); fillCatalogueSelect('manualCatalogueHeritage',heritageVals); fillCatalogueSelect('manualCatalogueExceptional',exceptionalVals);
   fillCatalogueSelect('manualCatalogueMoral',moralVals); fillCatalogueSelect('manualCatalogueMotivation',motivationVals); fillCatalogueSelect('manualCatalogueGoal',goalVals);
-  syncManualBinaryGroup('manualCatalogueJinchuriki',''); syncManualBinaryGroup('manualCatalogueSummoning','');
+  syncManualBinaryGroup('manualCatalogueJinchuriki',''); syncManualBinaryGroup('manualCatalogueSummoning',''); renderManualCatalogueStatInputs();
 }
+function renderManualCatalogueStatInputs(values){
+  const grid=document.getElementById('manualCatalogueStatGrid'); if(!grid||typeof STAT_NAMES==='undefined')return;
+  const source=values||{};
+  grid.innerHTML=STAT_NAMES.map(([key,label])=>{const n=Number(source[key]);const v=Number.isFinite(n)?Math.max(1,Math.min(100,n)):50;return `<div class="catalogue-stat-input"><label class="small" for="manualCatalogueStat_${esc(key)}">${esc(label)}</label><input id="manualCatalogueStat_${esc(key)}" type="number" min="1" max="100" step="1" value="${v}"></div>`}).join('');
+}
+
 function createManualCatalogueNinja(){
   const name=manualCatalogueValue("manualCatalogueName");
   if(!name){alert("Please enter a Catalogue Name.");return}
@@ -9036,11 +9051,11 @@ function createManualCatalogueNinja(){
     heritage:manualCatalogueValue("manualCatalogueHeritage")||"", exceptional:manualCatalogueValue("manualCatalogueExceptional")||"", moral:manualCatalogueValue("manualCatalogueMoral")||"", motivation:manualCatalogueValue("manualCatalogueMotivation")||"", currentGoal:manualCatalogueValue("manualCatalogueGoal")||"",
     notes:manualCatalogueValue("manualCatalogueNotes")||"", stats:{}
   };
-  STAT_NAMES.forEach(([key])=>c.stats[key]=1);
+  STAT_NAMES.forEach(([key])=>{const el=document.getElementById('manualCatalogueStat_'+key);c.stats[key]=Math.max(1,Math.min(100,Number(el?.value)||50));});
   ninjaCatalogue.unshift(c); selectedCatalogueIndex=0; saveNinjaCatalogue(); populateCatalogueSelect();
   const sel=document.getElementById("catalogueSelect");if(sel)sel.value="0"; renderCatalogueEntry(); clearManualCatalogueForm();
 }
-function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueAgeBand","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning","");}
+function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueAgeBand","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning",""); renderManualCatalogueStatInputs();}
 
 function addSelectedNinjaToCatalogue(){
   const source=document.getElementById("catalogueSourceSelect")?.value;
@@ -9099,6 +9114,7 @@ function showCatalogueView(){
   document.getElementById("characterLogPage").style.display="none";
   document.getElementById("ninjaCataloguePage").style.display="block";
   populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogueOptions();renderCatalogueEntry();
+  requestAnimationFrame(()=>{try{populateManualCatalogueOptions();}catch(e){console.warn("Catalogue option refresh failed",e)}});
   document.getElementById("ninjaCataloguePage")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
 const _showLogViewWithCatalogue=showLogView;
