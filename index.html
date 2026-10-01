@@ -577,7 +577,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 #orbBattlePanel .orb-ability-box b{color:var(--orb-muted)}
 #orbBattlePanel .orb-ability-box span{text-align:right;overflow-wrap:anywhere}
 #orbBattlePanel .orb-hint{margin:10px 0 0;color:var(--orb-muted);font-size:11px;line-height:1.45}
-#orbBattlePanel .orb-stage-wrap{min-width:0}
+#orbBattlePanel .orb-stage-wrap{min-width:0;display:flex;flex-direction:column;align-items:center}
+#orbBattlePanel .orb-stage-wrap .orb-canvas-wrap{width:min(100%,700px);max-width:700px;margin:0 auto}
 #orbBattlePanel .orb-stage-actions{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;align-items:center}
 #orbBattlePanel .orb-stage-actions button{min-height:42px;font-size:15px;font-weight:800}
 #orbBattlePanel .orb-hud{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
@@ -599,6 +600,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 #orbBattlePanel canvas{width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--orb-line);background:radial-gradient(circle at 50% 45%,#152033 0%,#0a0f18 70%);touch-action:none}
 #orbBattlePanel .orb-banner{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);padding:14px 22px;border-radius:14px;background:rgba(8,12,20,.9);border:2px solid var(--orb-accent);font-weight:900;font-size:clamp(18px,4vw,28px);text-align:center;pointer-events:none;opacity:0;transition:opacity .25s ease;max-width:90%}
 #orbBattlePanel .orb-banner.show{opacity:1}
+#orbBattlePanel .orb-jutsu-name{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-weight:900;font-size:clamp(18px,4vw,28px);text-align:center;pointer-events:none;opacity:0;color:#fff;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 4px #000;max-width:90%;z-index:4;transition:opacity .18s ease}
+#orbBattlePanel .orb-jutsu-name.show{opacity:1}
 #orbBattlePanel .orb-log{margin-top:10px;max-height:150px;overflow:auto;font-size:12px;color:var(--orb-muted);line-height:1.4}
 #orbBattlePanel .orb-log div{padding:3px 0;border-bottom:1px solid rgba(36,48,68,.45)}
 @media(max-width:900px){#orbBattlePanel .orb-layout{grid-template-columns:1fr}}
@@ -632,6 +635,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   }
   /* Stage first so Fight + arena appear before the long roster panel */
   #orbBattlePanel .orb-stage-wrap{
+    width:100%;
+    align-items:stretch;
     order:-1;
     width:100%;
     min-width:0;
@@ -4771,8 +4776,35 @@ function getStrictGeneratedJutsuPool(c, kind, excludeNames){
 
   const kgPool=source.filter(t=>techniqueMatchesCharacterKg(t,c||{}));
   if(kgPool.length) return kgPool;
+
   const dojutsuPool=source.filter(t=>techniqueMatchesCharacterDojutsu(t,c||{}));
   if(dojutsuPool.length) return dojutsuPool;
+
+  /*
+   * Puppet weapons are a weapon-linked specialty, but their named puppet
+   * techniques are also represented in WEAPON_EXCLUSIVE_TECHNIQUES rather
+   * than always carrying a catalog requiredKekkeiGenkai field. The final
+   * strict generator used to skip that pool entirely, so a ninja could have
+   * Puppet Master forced onto them while Jutsu 1 / Jutsu 2 fell through to
+   * ordinary nature techniques.
+   *
+   * Keep the global hierarchy intact: true KG first, dōjutsu second, then
+   * puppet-tool techniques, and only then ordinary chakra-nature techniques.
+   * This applies only to Jutsu 1 / Jutsu 2; the Ultimate Jutsu catalogue has
+   * its own separate pool and must not inherit the Jutsu 1 / Jutsu 2 puppet
+   * additions. Exclusions are respected so Jutsu 2 will not repeat Jutsu 1
+   * when another puppet technique is available.
+   */
+  if(kind!=='ultimate' && characterHasPuppetTool(c||{})) {
+    const puppetSource = getWeaponExclusiveTechniquePool(c||{}) || [];
+    /* getWeaponExclusiveTechniquePool() is already gated to the matching
+       weapon set, so do not re-filter by the technique name here. Several
+       valid puppet techniques (for example Black Secret Technique: Machine
+       One Shot) do not literally contain the word "puppet" in their title. */
+    const puppetPool = clean(puppetSource);
+    if(puppetPool.length) return puppetPool;
+  }
+
   const naturePool=source.filter(t=>techniqueMatchesCharacterNature(t,c||{}));
   if(naturePool.length) return naturePool;
   return [];
@@ -9138,7 +9170,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 
         <div class="orb-canvas-wrap">
           <canvas id="orbArena" width="1040" height="1027"></canvas>
-          <div class="orb-banner" id="orbBanner">Ninja wins!</div>
+          <div class="orb-banner" id="orbBanner">Ninja wins!</div><div class="orb-jutsu-name" id="orbJutsuName"></div>
         </div>
         <div class="orb-log" id="orbLog"><div>Ninja defeats Ninja.</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Fight: Ninja vs Ninja</div></div>
       </section>
@@ -9321,7 +9353,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(/kusarigama/.test(t))return'scythe';
     if(cat==='seven swords')return'sword';
     if(/shuriken|fuma/.test(t))return'shuriken';
-    if(/kunai|knife|dagger/.test(t)||cat==='kunai'||cat==='thrown')return'kunai';
+    if(/small dagger|dagger/.test(t))return'dagger';
+    if(/kunai|knife/.test(t)||cat==='kunai'||cat==='thrown')return'kunai';
     if(/bow|arrow|ray bow/.test(t))return'bow';
     if(/crossbow/.test(t))return'crossbow';
     if(/blowpipe/.test(t))return'blowpipe';
@@ -9342,8 +9375,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(/fists|unarmed|none/.test(t))return'fists';
     return'custom';
   }
-  function weaponLength(type){return({samehada:51,kubikiribocho:60,hiramekarei:53,kabutowari:52,kiba:44,nuibari:63,shibuki:51,gunbai:45,bashosen:44,kusanagi:45,sword:42,kunai:29,shuriken:34,fan:39,staff:49,spear:55,scythe:53,bow:47,hammer:45,chain:58,puppet:50,fists:19,crossbow:44,blowpipe:35,flamethrower:38,watershooter:39,launcher:36,senbon:31,whip:55,wire:58,customRanged:42,custom:38}[type]||38)}
-  function weaponSpinSpeed(type){return({samehada:.11,kubikiribocho:.08,hiramekarei:.10,kabutowari:.09,kiba:.16,nuibari:.13,shibuki:.12,gunbai:.14,bashosen:.15,kusanagi:.15,sword:.14,kunai:.22,shuriken:.2,fan:.18,staff:.11,spear:.12,scythe:.13,bow:.1,hammer:.09,chain:.17,puppet:.12,fists:.26,crossbow:.11,blowpipe:.13,flamethrower:.09,watershooter:.12,launcher:.18,senbon:.2,whip:.16,wire:.18,customRanged:.14,custom:.15}[type]||.15)}
+  function weaponLength(type){return({dagger:31,samehada:51,kubikiribocho:60,hiramekarei:53,kabutowari:52,kiba:44,nuibari:63,shibuki:51,gunbai:45,bashosen:44,kusanagi:45,sword:42,kunai:29,shuriken:34,fan:39,staff:49,spear:55,scythe:53,bow:47,hammer:45,chain:58,puppet:50,fists:19,crossbow:44,blowpipe:35,flamethrower:38,watershooter:39,launcher:36,senbon:31,whip:55,wire:58,customRanged:42,custom:38}[type]||38)}
+  function weaponSpinSpeed(type){return({dagger:.22,samehada:.11,kubikiribocho:.08,hiramekarei:.10,kabutowari:.09,kiba:.16,nuibari:.13,shibuki:.12,gunbai:.14,bashosen:.15,kusanagi:.15,sword:.14,kunai:.22,shuriken:.2,fan:.18,staff:.11,spear:.12,scythe:.13,bow:.1,hammer:.09,chain:.17,puppet:.12,fists:.26,crossbow:.11,blowpipe:.13,flamethrower:.09,watershooter:.12,launcher:.18,senbon:.2,whip:.16,wire:.18,customRanged:.14,custom:.15}[type]||.15)}
 
   // Existing Generator weapon metadata is the source of truth for ranged equipment.
   // Consumables/Treasures have already been removed by filterOrbWeapons().
@@ -9403,16 +9436,17 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function makeFighter(side,ninja){
     const d=derived(ninja),isA=side==='A',angle=isA?Math.PI:0,dist=120,spinDir=isA?1:-1;
     const hasConsumable=!!ninja.hasConsumable;
-    const rawWeapon=ninja.weapon||'None'; const rawRec=orbWeaponRecord(rawWeapon); const rawCat=String(rawRec?.category||'').toLowerCase(); const unarmedByTool=hasConsumable||rawCat.includes('armor')||rawCat==='treasure'||rawCat==='misc.'||rawCat==='flower'||rawCat==='dojutsu'; const weapon=unarmedByTool?'None':rawWeapon,wk=unarmedByTool?'fists':weaponKind(weapon),tech=techniqueData(ninja);
+    const rawWeapon=ninja.weapon||'None'; const rawRec=orbWeaponRecord(rawWeapon); const rawCat=String(rawRec?.category||'').toLowerCase(); const noPhysicalWeapon=!String(rawWeapon||'').trim()||String(rawWeapon).trim().toLowerCase()==='none'; const armorWeapon=rawCat.includes('armor'); const toolUnarmed=armorWeapon||rawCat==='treasure'||rawCat==='misc.'||rawCat==='flower'||rawCat==='dojutsu'; const puppetUser=isPuppetUser(ninja); const consumableOnly=hasConsumable; const fallbackDagger=noPhysicalWeapon||armorWeapon; const weapon=puppetUser||consumableOnly||fallbackDagger?'Small Dagger':(toolUnarmed?'None':rawWeapon),wk=puppetUser||consumableOnly||fallbackDagger?'dagger':(toolUnarmed?'fists':weaponKind(weapon)),tech=techniqueData(ninja);
     const consumable=consumableName(ninja),cp=consumableProfile(consumable);
+    const attackProfile={weapon,weaponType:wk,combatMode:weaponCombatMode({weapon})};
     return {
       side,name:cleanName(ninja.name||ninja.catalogueName||'Ninja '+side),color:isA?'#e74c3c':'#3498db',
       ninja,stats:ninja.stats,weapon,weaponType:wk,jutsu1:tech.j1,jutsu2:tech.j2,ult:tech.ult,
       maxHp:d.hp,hp:d.hp,dmg:d.dmg,speed:d.speed,range:d.range,evade:d.evade,
-      r:22,x:CX+Math.cos(angle)*dist,y:CY+Math.sin(angle)*dist,vx:0,vy:0,
-      weaponAngle:isA?0:Math.PI,weaponSpin:weaponSpinSpeed(wk)*spinDir,weaponReach:weaponLength(wk),
-      atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,
-      combatMode:weaponCombatMode({weapon}), rangedCooldown:0, rangedPulse:0,
+      r:22,x:CX+Math.cos(angle)*dist,y:CY+Math.sin(angle)*dist,vx:0,vy:0,lastSafeX:CX+Math.cos(angle)*dist,lastSafeY:CY+Math.sin(angle)*dist,
+      weaponAngle:isA?0:Math.PI,prevWeaponAngle:isA?0:Math.PI,weaponSpin:weaponSpinSpeed(wk)*spinDir,weaponReach:weaponLength(wk),
+      weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,
+      combatMode:weaponCombatMode({weapon}), /* Every fighter has either a ranged profile or a tangible melee weapon. */ rangedCooldown:0, rangedPulse:0,
       j1Meter:0,j2Meter:0,ultMeter:0,j1Active:0,j2Active:0,ultActive:0,
       j1Prep:0,j2Prep:0,ultPrep:0,abilityFlash:0,abilityName:'',abilityKind:'',
       cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,
@@ -9468,6 +9502,10 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function showBanner(text,ms=1500){
     const b=el('orbBanner');if(!b)return;b.textContent=text;b.classList.add('show');
     clearTimeout(showBanner._t);showBanner._t=setTimeout(()=>b.classList.remove('show'),ms);
+  }
+  function showJutsuName(text,ms=900){
+    const b=el('orbJutsuName');if(!b)return;b.textContent=text;b.classList.add('show');
+    clearTimeout(showJutsuName._t);showJutsuName._t=setTimeout(()=>b.classList.remove('show'),ms);
   }
 
   function updateHud(){
@@ -9580,11 +9618,12 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 
   function spawnRangedProjectile(f,name,kind,slot){
     const foe=f.side==='A'?fighters[1]:fighters[0];
-    if(!foe||!foe.alive)return;
-    const ang=Math.atan2(foe.y-f.y,foe.x-f.x);
+    const target=weaponAttackTarget(f,foe);
+    if(!target||!target.alive)return;
+    const ang=Math.atan2(target.y-f.y,target.x-f.x);
     const speed=slot==='ult'?4.8:4.1;
     const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015);
-    projectiles.push({f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false});
+    projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false});
   }
 
 
@@ -9607,8 +9646,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const p={
       id:'puppet_'+Date.now()+'_'+Math.random().toString(36).slice(2),parent:f,side:f.side,name:`${f.name}'s Puppet`,kind:puppetKindForFighter(f),
       alive:true,hp,maxHp:hp,r:19,x:f.x+Math.cos(ang)*42,y:f.y+Math.sin(ang)*42,vx:0,vy:0,
-      weapon:f.weapon,weaponType:f.weaponType,weaponReach:Math.max(18,f.weaponReach*.9),weaponAngle:ang,weaponSpin:(f.side==='A'?1:-1)*weaponSpinSpeed(f.weaponType)*.8,
-      damage:Math.max(5,f.dmg*.62),dmg:Math.max(5,f.dmg*.62),speed:f.speed,ninja:f.ninja,color:'#a8dcff',cooldown:0,hitFlash:0,poof:0,age:0,attackFlash:0
+      weapon:'Small Dagger',weaponType:'dagger',weaponReach:Math.max(12,weaponLength('dagger')*.82),weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(f.side==='A'?1:-1)*weaponSpinSpeed('dagger')*.8,
+      damage:Math.max(5,f.dmg*.62),dmg:Math.max(5,f.dmg*.62),speed:f.speed,ninja:f.ninja,color:'#a8dcff',cooldown:0,weaponClashCooldown:0,weaponHitCooldown:0,invuln:0,shield:0,hitFlash:0,poof:0,age:0,attackFlash:0
     };
     f.puppet=p;f.puppetRespawnFlash=28;
     spawnCloneSmoke(p.x,p.y,'#a8dcff');
@@ -9618,16 +9657,29 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   }
   function puppetTarget(p){
     const foes=fighters.filter(f=>f.side!==p.side&&f.alive);
+    const puppetOwner=foes.find(f=>hasActivePuppet(f));
+    if(puppetOwner&&puppetOwner.puppet&&puppetOwner.puppet.alive)return puppetOwner.puppet;
     return foes[0]||null;
   }
   function ensurePuppetForTechnique(f,name){
-    if(!isPuppetTechnique(name)||!f.isPuppetUser)return null;
+    /* Puppet Masters channel every generated jutsu through their puppet. If
+       the puppet was defeated, the next ready jutsu redeploys it first. */
+    if(!f||!f.isPuppetUser)return null;
     if(!f.puppet||!f.puppet.alive)spawnPuppet(f,true);
     return f.puppet&&f.puppet.alive?f.puppet:null;
   }
+  function awardDamageMeters(attacker,dmg){
+    const owner=attacker?.parent||attacker;
+    if(!owner||!owner.ninja)return;
+    const cc=stat(owner.ninja,'chakraControl'),cq=stat(owner.ninja,'chakraQuantity');
+    owner.j1Meter=clamp((owner.j1Meter||0)+10+dmg*.55+cc*.025,0,100);
+    owner.j2Meter=clamp((owner.j2Meter||0)+8+dmg*.45+cc*.018,0,100);
+    owner.ultMeter=clamp((owner.ultMeter||0)+5+dmg*.28+cq*.012,0,100);
+  }
+
   function damagePuppet(p,dmg,source){
     if(!p||!p.alive)return;
-    p.hp-=Math.max(0,dmg);p.hitFlash=10;
+    p.hp-=Math.max(0,dmg);p.hitFlash=10;p.invuln=10;p.weaponHitCooldown=4;
     spawnParticles(p.x,p.y,source?.color||'#a8dcff',7,3,16);floatText(p.x,p.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
     if(p.hp<=0){
       p.hp=0;p.alive=false;p.poof=30;spawnCloneSmoke(p.x,p.y,'#9edcff');
@@ -9639,8 +9691,22 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       const p=f.puppet;
       if(!p)continue;
       if(!p.alive){p.poof-=dt;continue;}
-      p.age+=dt;if(p.cooldown>0)p.cooldown-=dt;if(p.hitFlash>0)p.hitFlash-=dt;if(p.attackFlash>0)p.attackFlash-=dt;
+      p.age+=dt;if(p.cooldown>0)p.cooldown-=dt;if(p.weaponClashCooldown>0)p.weaponClashCooldown-=dt;if(p.weaponHitCooldown>0)p.weaponHitCooldown-=dt;if(p.invuln>0)p.invuln-=dt;if(p.shield>0)p.shield-=dt;if(p.hitFlash>0)p.hitFlash-=dt;if(p.attackFlash>0)p.attackFlash-=dt;
+      /* Puppets are physically tethered to their master. The chakra thread is
+         cosmetic but unbreakable: the puppet can never drift arbitrarily far
+         from its caster or acquire an unstable velocity. */
+      const tetherMax=190;
+      const pdx=f.x-p.x,pdy=f.y-p.y,pdist=Math.hypot(pdx,pdy);
+      if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isFinite(p.vx)||!Number.isFinite(p.vy)){
+        p.x=f.x;p.y=f.y;p.vx=0;p.vy=0;
+      }
+      if(pdist>tetherMax){
+        const tx=pdx/(pdist||1),ty=pdy/(pdist||1);
+        p.x=f.x-tx*tetherMax;p.y=f.y-ty*tetherMax;
+        p.vx*=.25;p.vy*=.25;
+      }
       const foe=puppetTarget(p);if(!foe)continue;
+      p.prevWeaponAngle=p.weaponAngle;
       const dx=foe.x-p.x,dy=foe.y-p.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
       const ideal=p.r+foe.r+p.weaponReach*.62;
       let ax=0,ay=0;
@@ -9648,16 +9714,45 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       p.vx+=ax*.105*dt;p.vy+=ay*.105*dt;p.vx*=.94;p.vy*=.94;
       const sp=len(p.vx,p.vy),maxSp=1.25*parentSpeed(f);if(sp>maxSp){p.vx=p.vx/sp*maxSp;p.vy=p.vy/sp*maxSp}
       p.x+=p.vx*dt;p.y+=p.vy*dt;applyCloneBounds(p);
+      /* The puppet's dagger must visibly rotate continuously. Do not aim-correct the
+         angle after applying spin; that correction previously cancelled the rotation
+         and left the puppet visually frozen. The moving tip itself is the attack arc. */
       p.weaponAngle+=p.weaponSpin*dt;
-      const diff=Math.atan2(dy,dx)-p.weaponAngle;p.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.08*dt;
-      if(d<=ideal+12&&p.cooldown<=0){
+      /* The puppet's dagger is a real rotating weapon. It can strike the
+         target on either the current tip position or anywhere along the swept
+         path since the previous frame. This prevents tunnelling at high spin
+         rates while keeping the orb itself as the hard body boundary. */
+      const tip=tipAt(p,p.weaponAngle);
+      const prevTip=tipAt(p,p.prevWeaponAngle);
+      const contactRadius=orbContactRadius(foe)+weaponContactRadius(p);
+      const contactDist=Math.min(
+        Math.hypot(tip.x-foe.x,tip.y-foe.y),
+        Math.hypot(prevTip.x-foe.x,prevTip.y-foe.y),
+        distPointSeg(foe.x,foe.y,prevTip.x,prevTip.y,tip.x,tip.y)
+      );
+      if(d<=ideal+28&&contactDist<=contactRadius&&p.cooldown<=0&&p.weaponHitCooldown<=0&&foe.invuln<=0){
         p.attackFlash=10;p.cooldown=30+Math.random()*12;
-        let dmg=p.damage*(.78+Math.random()*.25);if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
-        foe.hp-=dmg;foe.hitFlash=8;foe.invuln=12;
-        const [kx,ky]=norm(foe.x-p.x);foe.vx+=kx*(4+dmg*.12);foe.vy+=ky*(4+dmg*.12);
-        spawnParticles(foe.x,foe.y,'#a8dcff',7,3,18);floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
-        if(foe.hp<=0){foe.hp=0;foe.alive=false;running=false;winner=f;showBanner(`${f.name} wins!`,2400);log(`${f.name}'s puppet defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
+        let dmg=p.damage*(.78+Math.random()*.25);
+        if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
+        /* Puppet targets can be either fighters or another puppet. */
+        if(foe.parent){
+          damagePuppet(foe,dmg,p);
+          awardDamageMeters(p,dmg);
+        }else{
+          foe.hp-=dmg;foe.hitFlash=8;foe.invuln=12;
+          awardDamageMeters(p,dmg);
+          const [kx,ky]=norm(foe.x-p.x);foe.vx+=kx*(4+dmg*.12);foe.vy+=ky*(4+dmg*.12);
+          if(foe.hp<=0){
+            foe.hp=0;foe.alive=false;running=false;winner=f.parent;
+            showBanner(`${f.parent.name} wins!`,2400);log(`${f.parent.name}'s puppet defeats ${foe.name}.`);
+            el('orbFightBtn').disabled=false;
+          }
+        }
+        reverseWeaponSpin(p,'hit');
+        spawnParticles(foe.x,foe.y,'#a8dcff',7,3,18);
+        floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
       }
+
     }
   }
 
@@ -9713,6 +9808,10 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function cloneTarget(c){
     const foes=fighters.filter(f=>f.side!==c.side&&f.alive);
     if(!foes.length)return null;
+    const puppetOwner=foes.find(f=>hasActivePuppet(f));
+    if(puppetOwner&&puppetOwner.puppet&&puppetOwner.puppet.alive)return puppetOwner.puppet;
+    const enemyClones=clones.filter(x=>x.alive&&x.side!==c.side);
+    if(enemyClones.length)return enemyClones[0];
     return foes[0];
   }
   function cloneAttack(c,foe){
@@ -9723,6 +9822,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     let dmg=c.damage*(.82+Math.random()*.3);
     const evasion=stat(foe.ninja,'speed')*.003+stat(foe.ninja,'stealth')*.0015+stat(foe.ninja,'battleIQ')*.001;
     if(Math.random()<Math.min(.22,evasion*.1)){spawnParticles(foe.x,foe.y,'#d9e9ff',5,2.5,16);return;}
+    if(foe.parent&&foe.id&&String(foe.id).startsWith('puppet_')){damagePuppet(foe,dmg,c.parent);return;}
+    if(foe.parent){damageClone(foe,dmg,c.parent);return;}
     if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);return;}
     foe.hp-=dmg;foe.hitFlash=9;foe.invuln=12;
     const [nx,ny]=norm(foe.x-c.x,foe.y-c.y);foe.vx+=nx*(5+dmg*.16);foe.vy+=ny*(5+dmg*.16);
@@ -9778,18 +9879,18 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const active=slot==='j1'?'j1Active':slot==='j2'?'j2Active':'ultActive';
     const name=slot==='j1'?f.jutsu1:slot==='j2'?f.jutsu2:f.ult;
     if(!name||name==='None'||f[meter]<100||f[active]>0)return false;
-    const puppetSource=isPuppetTechnique(name)&&f.isPuppetUser?ensurePuppetForTechnique(f,name):null;
-    if(isPuppetTechnique(name)&&f.isPuppetUser&&!puppetSource)return false;
+    const puppetSource=f.isPuppetUser?ensurePuppetForTechnique(f,name):null;
+    if(f.isPuppetUser&&!puppetSource)return false;
     f[meter]=0;f[active]=slot==='ult'?62:48;f.abilityFlash=34;f.abilityName=name;f.abilityKind=techniqueKind(name);f.lastAbility=slot;
     const source=puppetSource||f;
     const ranged=isRangedTechnique(name);
     effect(f.abilityKind,source,{life:slot==='ult'?92:50,slot,name,ranged});
     if(ranged) spawnRangedProjectile(source,name,f.abilityKind,slot);
     spawnParticles(source.x,source.y,puppetSource?'#a8dcff':f.color,slot==='ult'?32:18,slot==='ult'?7:4,30);
-    floatText(source.x,source.y-source.r-24,name,puppetSource?'#a8dcff':f.color);
+    /* The centered jutsu-name overlay is the single jutsu announcement. */
     log(puppetSource?`${f.name}'s puppet uses ${name}`:`${f.name} uses ${name}`);
-    showBanner(puppetSource?`${f.name}'s Puppet: ${name}`:`${f.name}: ${name}`,900);
-    if(isCloneTechnique(name)) spawnClones(f,name,slot);
+    showJutsuName(puppetSource?`${f.name}'s Puppet: ${name}`:`${f.name}: ${name}`,900);
+    if(isCloneTechnique(name)) spawnClones(source,name,slot);
     if(isGenjutsuTechnique(name)){
       const foe=f.side==='A'?fighters[1]:fighters[0];
       if(foe&&foe.alive){
@@ -9799,7 +9900,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
         }else{
           const stun=slot==='ult'?38:30;
           foe.genjutsuStun=Math.max(foe.genjutsuStun||0,stun);
-          foe.genjutsuSource=f;
+          foe.genjutsuSource=source;
           foe.genjutsuFlash=stun;
           foe.vx*=.15;foe.vy*=.15;
           floatText(foe.x,foe.y-35,'GENJUTSU', '#d9b6ff');
@@ -9807,7 +9908,13 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
         }
       }
     }
-    if(isDefensiveTechnique(name)){ f.shield=Math.max(f.shield,slot==='ult'?58:42); f.defenseName=name; floatText(f.x,f.y-f.r-28,'DEFENSE', '#a8edff'); log(`${f.name} raises a temporary defensive barrier with ${name}.`); }
+    if(isDefensiveTechnique(name)){
+      const defender=source||f;
+      defender.shield=Math.max(defender.shield||0,slot==='ult'?58:42);
+      defender.defenseName=name;
+      floatText(defender.x,defender.y-defender.r-28,'DEFENSE', '#a8edff');
+      log(`${f.name}${puppetSource?"'s puppet":""} raises a temporary defensive barrier with ${name}.`);
+    }
     return true;
   }
 
@@ -9854,8 +9961,40 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     return false;
   }
 
+  /* Weapon/orb collision geometry. The old hitbox treated the entire weapon
+     shaft as a damaging segment, which allowed a visible blade to penetrate
+     deep into an orb before contact registered. Weapon damage now comes from
+     the striking end of the weapon, with a small weapon-specific radius. */
+  /* Physical weapon geometry: the damaging point is the forward-most striking
+     end of the rendered weapon. Each profile gets a small end-cap radius so
+     thin blades, needles and blunt weapons all have a tangible contact surface. */
+  function weaponContactRadius(f){
+    const t=String(f?.weaponType||'').toLowerCase();
+    return ({
+      dagger:6,samehada:12,kubikiribocho:13,hiramekarei:14,kabutowari:13,kiba:8,nuibari:5,
+      shibuki:13,gunbai:15,bashosen:14,kusanagi:7,sword:8,kunai:6,shuriken:9,
+      fan:14,staff:9,spear:8,scythe:12,hammer:14,chain:7,puppet:12,fists:10,
+      crossbow:7,blowpipe:6,flamethrower:9,watershooter:9,launcher:9,senbon:5,
+      whip:7,wire:5,customRanged:7,custom:9
+    }[t]||8);
+  }
+  function weaponStrikeExtension(f){
+    const t=String(f?.weaponType||'').toLowerCase();
+    return ({
+      dagger:10,samehada:20,kubikiribocho:20,hiramekarei:20,kabutowari:22,kiba:8,nuibari:17,
+      shibuki:18,gunbai:24,bashosen:24,kusanagi:18,sword:15,kunai:11,shuriken:16,
+      fan:24,staff:10,spear:15,scythe:20,hammer:18,chain:10,puppet:18,fists:4,
+      crossbow:12,blowpipe:10,flamethrower:12,watershooter:13,launcher:12,senbon:8,
+      whip:12,wire:10,customRanged:10,custom:12
+    }[t]||12);
+  }
+  function orbContactRadius(o){return Math.max(1,Number(o?.r)||22)}
+  function tipAt(o,angle,extra=0){
+    const r=Math.max(1,Number(o?.r)||22),reach=Math.max(0,Number(o?.weaponReach)||0)+extra+weaponStrikeExtension(o);
+    return{x:o.x+Math.cos(angle)*(r+reach),y:o.y+Math.sin(angle)*(r+reach)};
+  }
   function weaponTip(f){
-    const reach=f.weaponReach+f.atkPulse+(f.ultActive>0&&techniqueKind(f.ult)==='taijutsu'?12:0);
+    const reach=f.weaponReach+f.atkPulse+(f.ultActive>0&&techniqueKind(f.ult)==='taijutsu'?12:0)+weaponStrikeExtension(f);
     return{x:f.x+Math.cos(f.weaponAngle)*(f.r+reach),y:f.y+Math.sin(f.weaponAngle)*(f.r+reach),reach};
   }
   function weaponBase(f){return{x:f.x+Math.cos(f.weaponAngle)*(f.r*.35),y:f.y+Math.sin(f.weaponAngle)*(f.r*.35)}}
@@ -9866,7 +10005,9 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 
   function rangedWeaponAttack(a,b,dt){
     if(a.combatMode!=='ranged'||!a.alive||!b.alive||a.rangedCooldown>0)return false;
-    const dx=b.x-a.x,dy=b.y-a.y,d=len(dx,dy);
+    const target=weaponAttackTarget(a,b);
+    if(!target||!target.alive)return false;
+    const dx=target.x-a.x,dy=target.y-a.y,d=len(dx,dy);
     if(d<70)return false;
     const angle=Math.atan2(dy,dx),ang=angle+(Math.random()-.5)*.08;
     const name=a.weapon||'Ranged Weapon';
@@ -9876,13 +10017,84 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     return true;
   }
 
+  function reverseWeaponSpin(f,reason='clash'){
+    if(!f)return;
+    const base=Math.max(.1,Math.abs(Number(f.weaponSpin)||weaponSpinSpeed(f.weaponType)||.15));
+    f.weaponSpin=-Math.sign(f.weaponSpin || (f.side==='A'?1:-1))*base;
+    f.weaponAngle+=Math.PI*.18;
+    f.weaponHitCooldown=3;
+    if(reason==='clash')f.weaponClashCooldown=5;
+  }
+
+  function stabilizeFighter(f){
+    if(!f)return;
+    const maxBase=Math.max(1.5,Math.abs(Number(f.speed)||1)*2.0);
+    if(!Number.isFinite(f.x)||!Number.isFinite(f.y)||!Number.isFinite(f.vx)||!Number.isFinite(f.vy)||!Number.isFinite(f.weaponAngle)){
+      const safeX=Number.isFinite(f.lastSafeX)?f.lastSafeX:(CX+(f.side==='A'?-120:120));
+      const safeY=Number.isFinite(f.lastSafeY)?f.lastSafeY:CY;
+      f.x=safeX;f.y=safeY;f.vx=0;f.vy=0;
+      if(!Number.isFinite(f.weaponAngle))f.weaponAngle=f.side==='A'?0:Math.PI;
+      log(`${f.name}'s movement was stabilized without resetting combat position.`);
+    }
+    const sp=Math.hypot(f.vx,f.vy);
+    if(!Number.isFinite(sp)){f.vx=0;f.vy=0;}
+    else if(sp>maxBase){f.vx=f.vx/sp*maxBase;f.vy=f.vy/sp*maxBase;}
+    /* Prevent repeated knockback/body-contact frames from producing the
+       high-frequency "spasm" state seen in long fights. */
+    f.vx*=.985;f.vy*=.985;
+    applyBounds(f);
+    if(Number.isFinite(f.x)&&Number.isFinite(f.y)){
+      f.lastSafeX=f.x;f.lastSafeY=f.y;
+    }
+  }
+
+  function segmentDistance(a1,a2,b1,b2){
+    const ccw=(A,B,C)=>(C.y-A.y)*(B.x-A.x)>(B.y-A.y)*(C.x-A.x);
+    const intersect=ccw(a1,b1,b2)!==ccw(a2,b1,b2)&&ccw(a1,a2,b1)!==ccw(a1,a2,b2);
+    if(intersect)return 0;
+    return Math.min(distPointSeg(a1.x,a1.y,b1.x,b1.y,b2.x,b2.y),distPointSeg(a2.x,a2.y,b1.x,b1.y,b2.x,b2.y),distPointSeg(b1.x,b1.y,a1.x,a1.y,a2.x,a2.y),distPointSeg(b2.x,b2.y,a1.x,a1.y,a2.x,a2.y));
+  }
+
+  function weaponClashCheck(a,b){
+    if(!a||!b||!a.alive||!b.alive||hasActivePuppet(a)||hasActivePuppet(b)||a.combatMode==='ranged'||b.combatMode==='ranged')return false;
+    if((a.weaponClashCooldown||0)>0||(b.weaponClashCooldown||0)>0)return false;
+    const aw=weaponBase(a),at=weaponTip(a),bw=weaponBase(b),bt=weaponTip(b);
+    if(segmentDistance(aw,at,bw,bt)>4.5)return false;
+    reverseWeaponSpin(a,'clash');reverseWeaponSpin(b,'clash');
+    a.weaponClashCooldown=7;b.weaponClashCooldown=7;a.atkPulse=8;b.atkPulse=8;
+    /* A weapon collision consumes this contact frame. The blades/handles are
+       tangible objects: crossing weapons may clash, but that collision itself
+       can never damage either orb. */
+    a.weaponClashedThisFrame=true;b.weaponClashedThisFrame=true;
+    spawnParticles((at.x+bt.x)/2,(at.y+bt.y)/2,'#eaf8ff',10,3,18);
+    floatText((at.x+bt.x)/2,(at.y+bt.y)/2-12,'CLASH','#d9f5ff');
+    log(`${a.name} and ${b.name}'s weapons clash.`);
+    return true;
+  }
+
+  function weaponTipContact(attacker,target,extra=0){
+    const current=weaponTip(attacker);
+    const prevAngle=Number.isFinite(attacker.prevWeaponAngle)?attacker.prevWeaponAngle:attacker.weaponAngle;
+    const previous=tipAt(attacker,prevAngle,attacker.atkPulse);
+    const radius=orbContactRadius(target)+weaponContactRadius(attacker)+extra;
+    return Math.min(
+      Math.hypot(current.x-target.x,current.y-target.y),
+      Math.hypot(previous.x-target.x,previous.y-target.y),
+      distPointSeg(target.x,target.y,previous.x,previous.y,current.x,current.y)
+    )<=radius;
+  }
+
   function weaponHitCheck(a,b){
-    if(a.combatMode==='ranged')return false;
+    if(a.combatMode==='ranged'||hasActivePuppet(a))return false;
     if(!a.alive||!b.alive||b.invuln>0)return false;
-    const base=weaponBase(a),tip=weaponTip(a);
-    if(distPointSeg(b.x,b.y,base.x,base.y,tip.x,tip.y)>b.r+4)return false;
-    const toX=b.x-a.x,toY=b.y-a.y,align=(toX*Math.cos(a.weaponAngle)+toY*Math.sin(a.weaponAngle))/len(toX,toY);
-    if(align<-.18 && a.atkPulse<4)return false;
+    if(a.weaponClashedThisFrame||a.weaponHitCooldown>0)return false;
+    /* Only the striking end of the weapon can damage an orb. The swept tip
+       path catches fast rotations without allowing the shaft to pass through
+       the target before impact. */
+    if(!weaponTipContact(a,b))return false;
+    /* Contact geometry is authoritative. The swept tip check already proves
+       the striking end crossed the orb, so an angle gate cannot erase a valid
+       hit at the exact moment the weapon reverses. */
     let dmg=a.dmg*(.82+Math.random()*.36);
     if(a.j1Active>0)dmg*=1.18;
     if(a.j2Active>0)dmg*=1.26;
@@ -9893,40 +10105,58 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const evasion=consumableStat(b,'speed')*.004 + consumableStat(b,'stealth')*.0018 + consumableStat(b,'battleIQ')*.0012;
     if(Math.random()<Math.min(.28,evasion*.12))return false;
     b.hp-=dmg;b.hitFlash=14;b.invuln=22;
-    a.j1Meter=clamp(a.j1Meter+10+dmg*.55+stat(a.ninja,'chakraControl')*.025,0,100);
-    a.j2Meter=clamp(a.j2Meter+8+dmg*.45+stat(a.ninja,'chakraControl')*.018,0,100);
-    a.ultMeter=clamp(a.ultMeter+5+dmg*.28+stat(a.ninja,'chakraQuantity')*.012,0,100);
+    awardDamageMeters(a,dmg);
     a.stamina=clamp(a.stamina-0.6,0,100);b.stamina=clamp(b.stamina-1.1,0,100);
     a.atkPulse=18;
-    const [nx,ny]=norm(b.x-a.x,b.y-a.y),knock=14+dmg*.48;
-    b.vx+=nx*knock;b.vy+=ny*knock*.95;a.vx-=nx*knock*.78;a.vy-=ny*knock*.78;
+    reverseWeaponSpin(a,'hit');
+    const [nx,ny]=norm(b.x-a.x,b.y-a.y),knock=Math.min(7,5+dmg*.08);
+    b.vx+=nx*knock;b.vy+=ny*knock*.75;a.vx-=nx*knock*.42;a.vy-=ny*knock*.42;
     spawnParticles(b.x,b.y,a.color,10,4,24);floatText(b.x,b.y-25,`-${dmg.toFixed(1)}`,'#ffb3b3');
     if(b.hp<=0){b.hp=0;b.alive=false;running=false;winner=a;showBanner(`${a.name} wins!`,2400);log(`${a.name} defeats ${b.name}.`);el('orbFightBtn').disabled=false}
     return true;
   }
 
+  function weaponClashPuppetCheck(a){
+    if(!a||!a.alive||hasActivePuppet(a)||a.combatMode==='ranged')return false;
+    const aw=weaponBase(a),at=weaponTip(a);
+    for(const owner of fighters){
+      const p=owner&&owner.puppet;
+      if(!p||!p.alive||p.side===a.side||(p.weaponClashCooldown||0)>0)continue;
+      const bw={x:p.x+Math.cos(p.weaponAngle)*(p.r*.35),y:p.y+Math.sin(p.weaponAngle)*(p.r*.35)};
+      const bt={x:p.x+Math.cos(p.weaponAngle)*(p.r+p.weaponReach),y:p.y+Math.sin(p.weaponAngle)*(p.r+p.weaponReach)};
+      if(segmentDistance(aw,at,bw,bt)>4.5)continue;
+      reverseWeaponSpin(a,'clash');
+      p.weaponSpin=-Math.sign(p.weaponSpin|| (p.side==='A'?1:-1))*Math.max(.1,Math.abs(Number(p.weaponSpin)||.15));
+      p.weaponAngle+=Math.PI*.18;p.weaponClashCooldown=7;
+      a.weaponClashedThisFrame=true;
+      spawnParticles((at.x+bt.x)/2,(at.y+bt.y)/2,'#eaf8ff',9,3,18);
+      floatText((at.x+bt.x)/2,(at.y+bt.y)/2-12,'CLASH','#d9f5ff');
+      log(`${a.name}'s weapon clashes with ${p.name}.`);
+      return true;
+    }
+    return false;
+  }
+
   function weaponHitPuppetCheck(a){
-    if(a.combatMode==='ranged'||!a.alive)return false;
-    const base=weaponBase(a),tip=weaponTip(a);
+    if(a.combatMode==='ranged'||!a.alive||hasActivePuppet(a))return false;
     const targets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side!==a.side);
     for(const p of targets){
-      if(distPointSeg(p.x,p.y,base.x,base.y,tip.x,tip.y)>p.r+4)continue;
+      if(p.invuln>0||a.weaponHitCooldown>0||!weaponTipContact(a,p))continue;
       let dmg=a.dmg*(.42+Math.random()*.22);dmg*=.72+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
-      damagePuppet(p,dmg,a);a.atkPulse=14;return true;
+      damagePuppet(p,dmg,a);a.atkPulse=14;reverseWeaponSpin(a,'hit');return true;
     }
     return false;
   }
 
   function weaponHitCloneCheck(a){
     if(a.combatMode==='ranged'||!a.alive)return false;
-    const base=weaponBase(a),tip=weaponTip(a);
     const targets=clones.filter(c=>c.alive&&c.side!==a.side);
     for(const c of targets){
-      if(distPointSeg(c.x,c.y,base.x,base.y,tip.x,tip.y)>c.r+4)continue;
-      const toX=c.x-a.x,toY=c.y-a.y,align=(toX*Math.cos(a.weaponAngle)+toY*Math.sin(a.weaponAngle))/Math.max(1,len(toX,toY));
-      if(align<-.18&&a.atkPulse<4)continue;
+      if(a.weaponHitCooldown>0||!weaponTipContact(a,c))continue;
+      /* Swept tip contact is sufficient; do not reject a valid collision
+         merely because the weapon has just reversed direction. */
       let dmg=a.dmg*(.42+Math.random()*.22);dmg*=.72+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
-      damageClone(c,dmg,a);a.atkPulse=14;return true;
+      damageClone(c,dmg,a);a.atkPulse=14;reverseWeaponSpin(a,'hit');return true;
     }
     return false;
   }
@@ -9939,6 +10169,19 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     else if(f.x>maxX){f.x=maxX;f.vx=-Math.abs(f.vx)*.35;}
     if(f.y<minY){f.y=minY;f.vy=Math.abs(f.vy)*.35;}
     else if(f.y>maxY){f.y=maxY;f.vy=-Math.abs(f.vy)*.35;}
+  }
+
+  function hasActivePuppet(f){
+    return !!(f&&f.puppet&&f.puppet.alive);
+  }
+  function combatTargetFor(f,foe){
+    if(foe&&foe.alive&&hasActivePuppet(foe))return foe.puppet;
+    return foe;
+  }
+  function weaponAttackTarget(f,foe){
+    /* A fighter facing a Puppet Master attacks the active puppet first.
+       Once the puppet is gone, the caster becomes the normal target again. */
+    return combatTargetFor(f,foe);
   }
 
   function updateFighter(f,foe,dt){
@@ -9956,17 +10199,44 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(f.hitFlash>0)f.hitFlash-=dt;
     if(f.invuln>0)f.invuln-=dt;
     if(f.atkPulse>0)f.atkPulse-=dt;
+    if(f.weaponClashCooldown>0)f.weaponClashCooldown-=dt;
+    if(f.weaponHitCooldown>0)f.weaponHitCooldown-=dt;
     for(const k of ['j1Active','j2Active','ultActive','abilityFlash'])if(f[k]>0)f[k]-=dt;
     if(f.shield>0)f.shield-=dt;
     if(f.cooldown>0)f.cooldown-=dt;
     if(f.j1Prep>0||f.j2Prep>0||f.ultPrep>0)prepareAbility(f,dt);
     maybeActivate(f);
 
+    /* An active puppet is the Puppet Master's frontline combat body. The
+       master stops personally swinging the weapon while the puppet is alive. */
+    const target= combatTargetFor(f,foe);
+    const puppetActive=hasActivePuppet(f);
+    f.prevWeaponAngle=f.weaponAngle;
+    /* Puppet Masters do not attack with their dagger, but the dagger remains
+       visibly animated so the Puppet Master's orb still has the same active
+       spinning presentation as other fighters. Attack/collision checks below
+       remain suppressed while the puppet is alive. */
     f.weaponAngle+=f.weaponSpin*dt*(f.ultActive>0?1.6:1);
-    const dx=foe.x-f.x,dy=foe.y-f.y,dist=len(dx,dy),[nx,ny]=norm(dx,dy);
-    const ideal=f.combatMode==='ranged'?Math.max(120,f.r+foe.r+f.weaponReach*1.25):f.r+foe.r+f.weaponReach*.55;
+    const dx=target.x-f.x,dy=target.y-f.y,dist=len(dx,dy),[nx,ny]=norm(dx,dy);
+    const ideal=f.combatMode==='ranged'?Math.max(120,f.r+target.r+f.weaponReach*1.25):f.r+target.r+f.weaponReach*.55;
     let ax=0,ay=0,acc=1,maxMul=1;
-    if(f.ultPrep>0||f.j1Prep>0||f.j2Prep>0){ax=-nx;ay=-ny;acc=1.8;maxMul=1.6}
+    if(f.ultPrep>0||f.j1Prep>0||f.j2Prep>0){
+      /*
+       * Preparation used to force a retreat regardless of distance. When both
+       * fighters entered a preparation state, they could therefore accelerate
+       * away from one another and appear to "run away" from the fight.
+       * Preparation now uses the same distance-aware positioning as normal
+       * combat: close distance if too far away, create space only if too close,
+       * otherwise circle the opponent.
+       */
+      acc=1.8;maxMul=1.6;
+      if(dist>ideal+18){ax=nx;ay=ny}
+      else if(dist<ideal-12){ax=-nx;ay=-ny}
+      else{
+        const side=f.side==='A'?1:-1;
+        ax=-ny*side;ay=nx*side;
+      }
+    }
     else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){ax=nx;ay=ny;acc=2.0;maxMul=1.9}
     else if(dist>ideal+18){ax=nx;ay=ny}
     else if(dist<ideal-12){ax=-nx;ay=-ny}
@@ -9976,11 +10246,13 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     f.vx*=.955;f.vy*=.955;
     const sp=len(f.vx,f.vy),maxSp=1.75*f.speed*maxMul;
     if(sp>maxSp){f.vx=f.vx/sp*maxSp;f.vy=f.vy/sp*maxSp}
-    f.x+=f.vx*dt;f.y+=f.vy*dt;applyBounds(f);
-    let diff=Math.atan2(dy,dx)-f.weaponAngle;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
-    f.weaponAngle+=diff*.012*dt;
-    if(Math.abs(f.weaponSpin)<.1)f.weaponSpin=(f.side==='A'?1:-1)*.1;
-    if(f.combatMode==='ranged' && dist>=90 && f.rangedCooldown<=0) rangedWeaponAttack(f,foe,dt);
+    f.x+=f.vx*dt;f.y+=f.vy*dt;stabilizeFighter(f);
+    if(!puppetActive){
+      let diff=Math.atan2(dy,dx)-f.weaponAngle;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+      f.weaponAngle+=diff*.012*dt;
+      if(Math.abs(f.weaponSpin)<.1)f.weaponSpin=(f.side==='A'?1:-1)*.1;
+      if(f.combatMode==='ranged' && dist>=90 && f.rangedCooldown<=0) rangedWeaponAttack(f,foe,dt);
+    }
   }
 
   function updateProjectiles(dt){
@@ -9990,7 +10262,11 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       const liveClones=clones.filter(c=>c.alive&&c.side===enemySide);
       const livePuppets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side===enemySide);
       const fighterTarget=enemySide==='A'?fighters[0]:fighters[1];
-      const target=(livePuppets.length&&Math.random()<.28)?livePuppets[Math.floor(Math.random()*livePuppets.length)] : (liveClones.length && Math.random()<.62 ? liveClones[Math.floor(Math.random()*liveClones.length)] : fighterTarget);
+      /* Active puppets are the frontline target. Ranged/jutsu projectiles
+         should not randomly bypass the puppet and hit its master first. */
+      const target=livePuppets.length
+        ? livePuppets[0]
+        : (liveClones.length && Math.random()<.62 ? liveClones[Math.floor(Math.random()*liveClones.length)] : fighterTarget);
       if(!target||!target.alive||target.invuln>0)continue;
       if(Math.hypot(target.x-p.x,target.y-p.y)<=target.r+p.r){
         let dmg=p.damage;if(target.shield>0){spawnParticles(target.x,target.y,'#9eeeff',7,3,16);p.life=0;continue;}
@@ -10003,16 +10279,17 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
           continue;
         }
         target.hp-=dmg;target.hitFlash=14;target.invuln=24;
-        p.f.j1Meter=clamp(p.f.j1Meter+9+dmg*.42+stat(p.f.ninja,'chakraControl')*.02,0,100);
-        p.f.j2Meter=clamp(p.f.j2Meter+7+dmg*.34+stat(p.f.ninja,'chakraControl')*.015,0,100);
-        p.f.ultMeter=clamp(p.f.ultMeter+4+dmg*.2+stat(p.f.ninja,'chakraQuantity')*.01,0,100);
+        if(p.weapon) reverseWeaponSpin(p.f,'hit');
+        const owner=p.casterOwner||p.f;
+        awardDamageMeters(owner,dmg);
         const pl=Math.max(1,len(p.vx,p.vy));target.vx+=(p.vx/pl)*(8+dmg*.25);target.vy+=(p.vy/pl)*(8+dmg*.25);
         spawnParticles(target.x,target.y,p.f.color,p.weapon?9:14,p.weapon?3.5:5,24);floatText(target.x,target.y-25,`-${dmg.toFixed(1)}`,p.weapon?'#ffe09a':'#ffb3b3');p.life=0;
-        if(target.hp<=0){target.hp=0;target.alive=false;running=false;winner=p.f;showBanner(`${p.f.name} wins!`,2400);log(`${p.f.name} defeats ${target.name}.`);el('orbFightBtn').disabled=false}
+        if(target.hp<=0){target.hp=0;target.alive=false;running=false;winner=owner;showBanner(`${owner.name} wins!`,2400);log(`${owner.name} defeats ${target.name}.`);el('orbFightBtn').disabled=false}
       }
       if(p.x<CX-ARENA_R-40||p.x>CX+ARENA_R+40||p.y<CY-ARENA_R-40||p.y>CY+ARENA_R+40)p.life=0;
     }
     projectiles=projectiles.filter(p=>p.life>0);
+    for(const f of fighters)stabilizeFighter(f);
   }
 
   function drawProjectiles(){
@@ -10104,6 +10381,11 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       case 'puppet':
         line(2.5,'#c5ccd6');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle=f.color;ctx.fillRect(-16,-11,32,22);ctx.strokeStyle='#e3e7ed';ctx.strokeRect(-16,-11,32,22);ctx.fillStyle='#121927';ctx.fillRect(-8,-4,4,4);ctx.fillRect(4,-4,4,4);ctx.restore();break;
       case 'staff': line(5,f.color);break;
+      case 'dagger':
+        line(3.5,stroke);
+        tipShape([[13,0],[-7,-4],[-2,0],[-7,4]]);
+        ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.strokeStyle='#9aa6b6';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-8,-4);ctx.lineTo(-8,4);ctx.stroke();ctx.restore();
+        break;
       case 'kunai': line(2.5,stroke);tipShape([[11,0],[-7,-5],[-3,0],[-7,5]]);break;
       case 'sword': line(4,stroke);tipShape([[15,0],[-8,-4],[-5,0],[-8,4]]);break;
       case 'crossbow':
@@ -10552,12 +10834,13 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   }
 
   function drawPuppetStrings(f){
-    const p=f.puppet;if(!p||(!p.alive&&p.poof<=0))return;
-    const a1={x:f.x-7,y:f.y-8},a2={x:f.x+7,y:f.y-8};
-    const t1={x:p.x-5,y:p.y-4},t2={x:p.x+5,y:p.y-4};
-    ctx.save();ctx.globalAlpha=p.alive?.82:.28;ctx.strokeStyle='#8fdcff';ctx.shadowColor='#73cfff';ctx.shadowBlur=5;ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(a1.x,a1.y);ctx.lineTo(t1.x,t1.y);ctx.stroke();
-    ctx.beginPath();ctx.moveTo(a2.x,a2.y);ctx.lineTo(t2.x,t2.y);ctx.stroke();ctx.shadowBlur=0;ctx.restore();
+    const p=f.puppet;
+    /* The chakra-thread link is unbreakable and exists only while the puppet
+       itself is alive. Once defeated, the line disappears immediately. */
+    if(!p||!p.alive||!f.alive)return;
+    ctx.save();ctx.globalAlpha=.88;ctx.strokeStyle='#72cfff';ctx.shadowColor='#55c8ff';ctx.shadowBlur=4;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+    ctx.shadowBlur=0;ctx.restore();
   }
   function drawPuppet(p){
     if(!p||(!p.alive&&p.poof<=0))return;
@@ -10569,6 +10852,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       ctx.restore();return;
     }
     ctx.beginPath();ctx.arc(p.x,p.y,p.r+pulse,0,Math.PI*2);ctx.fillStyle='#58758e';ctx.fill();
+    if(p.shield>0){ctx.save();ctx.globalAlpha=.78;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12+Math.sin(p.age*.25)*2,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=3;ctx.shadowBlur=12;ctx.shadowColor='#54dfff';ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
     ctx.strokeStyle=ring;ctx.lineWidth=3;ctx.stroke();
     ctx.beginPath();ctx.arc(p.x,p.y,p.r+6+Math.sin(p.age*.18)*2,0,Math.PI*2);ctx.strokeStyle='rgba(143,220,255,.35)';ctx.lineWidth=2;ctx.stroke();
     if(p.kind==='red'){ctx.strokeStyle='#e87979';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.stroke()}
@@ -10674,17 +10958,30 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       updateHud();return;
     }
     const [a,b]=fighters;
+    for(const f of fighters)f.weaponClashedThisFrame=false;
     for(const f of fighters){
       const foe=f.side==='A'?b:a;
+      const target=weaponAttackTarget(f,foe);
       updateFighter(f,foe,dt);
-      if(f.alive){weaponHitCheck(f,foe);weaponHitPuppetCheck(f);weaponHitCloneCheck(f);}
+      if(f.alive){
+        if(f.side==='A'&&!hasActivePuppet(a)&&!hasActivePuppet(b)) weaponClashCheck(a,b);
+        if(!hasActivePuppet(f)) weaponClashPuppetCheck(f);
+        if(!f.weaponClashedThisFrame&&!hasActivePuppet(f)){
+          /* Damage the same target the fighter is actually approaching. */
+          if(target===foe) weaponHitCheck(f,foe);
+          else if(target&&target.alive) weaponHitPuppetCheck(f);
+          weaponHitCloneCheck(f);
+        }
+        stabilizeFighter(f);
+      }
     }
     // body collision
     const dx=b.x-a.x,dy=b.y-a.y,d=len(dx,dy);
     if(d<a.r+b.r){
       const[nx,ny]=norm(dx,dy),push=(a.r+b.r-d)/2;
       a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;
-      a.vx-=nx*.35;a.vy-=ny*.35;b.vx+=nx*.35;b.vy+=ny*.35;
+      a.vx-=nx*.18;a.vy-=ny*.18;b.vx+=nx*.18;b.vy+=ny*.18;
+      stabilizeFighter(a);stabilizeFighter(b);
     }
     updateHud();
   }
@@ -10707,11 +11004,23 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const banner=el('orbBanner');if(banner)banner.classList.remove('show');
   }
 
+  /* Combat diagnostics: confirms every generated fighter has a physical or
+     ranged attack profile before a fight starts. Kept internal so the UI remains unchanged. */
+  function ensureAttackProfile(f){
+    if(!f)return false;
+    const wt=String(f.weaponType||'').toLowerCase();
+    if(wt==='dagger'||wt==='fists'||weaponLength(wt)>0)return true;
+    f.weapon='Small Dagger';f.weaponType='dagger';f.weaponReach=weaponLength('dagger');f.combatMode='melee';
+    return true;
+  }
+
   function orbStartFight(){
     const na=currentNinja('A'),nb=currentNinja('B');
     if(!na||!nb){alert('Load a Ninja Generator character for both fighters first.');return}
     fighters=[makeFighter('A',na),makeFighter('B',nb)];
     clones=[];particles=[];floating=[];effects=[];projectiles=[];winner=null;running=true;lastTs=0;
+    /* Puppet Masters deploy their puppet before the opening movement begins. */
+    for(const f of fighters){ if(f.isPuppetUser) spawnPuppet(f,true); }
     el('orbFightBtn').disabled=true;
     showBanner('Fight!',900);log(`Fight: ${fighters[0].name} vs ${fighters[1].name}`);
     const a=fighters[0],b=fighters[1],dx=b.x-a.x,dy=b.y-a.y,L=len(dx,dy);
