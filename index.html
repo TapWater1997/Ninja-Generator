@@ -400,6 +400,139 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
    aspect-ratio:1 / 1;
  }
 }
+
+/* ===================== FIGHT WHEEL SYSTEM ===================== */
+.fight-panel{margin-top:24px}
+.fight-shell{display:grid;gap:18px}
+.fight-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.fight-card{background:#0d121b;border:1px solid var(--line);border-radius:14px;padding:16px}
+.fight-card h3{margin:0 0 8px;font-size:18px}
+.fight-card h4{margin:14px 0 7px;font-size:14px}
+.fight-card p{color:var(--muted);line-height:1.45}
+.fight-load-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.fight-load-row>div{flex:1;min-width:140px}
+.fight-field{margin-bottom:8px}
+.fight-field label{display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:4px}
+.fight-field input,.fight-field select,.fight-field textarea{width:100%;padding:9px;background:#111722;color:var(--text);border:1px solid var(--line);border-radius:8px;font:inherit}
+.fight-field textarea{min-height:64px;resize:vertical}
+.fight-vs{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;margin:4px 0}
+.fight-vs b{font-size:22px;color:var(--accent)}
+.fight-wheel-shell{background:#000;border-radius:14px;padding:12px 12px 20px}
+.fight-wheel-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-end;flex-wrap:wrap;padding:0 6px}
+.fight-wheel-stage{display:grid;justify-items:center;gap:22px;margin:34px 0 42px}
+.fight-wheel-title{font-size:clamp(20px,4vw,28px);font-weight:900;margin:0;text-align:center;color:#fff}
+.fight-wheel-wrap{position:relative;width:min(72vw,390px);height:min(72vw,390px);aspect-ratio:1/1}
+.fight-wheel{position:absolute;inset:0;border-radius:50%;transform:rotate(0deg);transition:transform 3.2s cubic-bezier(.08,.7,.12,1);overflow:visible}
+.fight-wheel.spinning{filter:brightness(1.06)}
+.fight-wheel svg{width:100%;height:100%;display:block;filter:drop-shadow(0 10px 22px rgba(0,0,0,.4))}
+.fight-pointer{width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:36px solid #f5f7fb;position:absolute;top:-6px;left:50%;transform:translateX(-50%);z-index:10;filter:drop-shadow(0 3px 3px rgba(0,0,0,.55));pointer-events:none}
+.fight-pointer:after{content:"";position:absolute;left:-6px;top:-36px;width:12px;height:12px;border-radius:50%;background:#f5f7fb;box-shadow:0 0 0 2px #1a2030}
+.fight-spin-button{position:absolute;z-index:12;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#3d4f6a,#152032);border:4px solid #f0f4fa;color:#fff;font-weight:900;font-size:14px;letter-spacing:.08em;cursor:pointer;box-shadow:0 3px 12px rgba(0,0,0,.55);font-family:inherit}
+.fight-spin-button:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.05)}
+.fight-spin-button:disabled{opacity:.45;cursor:not-allowed}
+.fight-overlay{position:absolute;z-index:15;inset:0;border-radius:50%;display:grid;place-items:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity .22s ease,visibility .22s ease}
+.fight-overlay.show{opacity:1;visibility:visible}
+.fight-overlay:before{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(8,11,17,.8)}
+.fight-result-card{position:relative;max-width:78%;padding:16px 20px;border-radius:14px;background:linear-gradient(180deg,#222c3d,#121925);border:2px solid var(--accent);box-shadow:0 12px 35px rgba(0,0,0,.55);text-align:center}
+.fight-result-card small{display:block;color:var(--muted);font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.fight-result-card strong{display:block;font-size:clamp(16px,3vw,26px);line-height:1.15}
+.fight-log-list{display:grid;gap:8px}
+.fight-log-item{background:#111721;border:1px solid var(--line);border-radius:10px;padding:10px}
+.fight-log-item b{display:block}
+.fight-log-item span{color:var(--muted);font-size:12px}
+.fight-beat{background:#111721;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:8px}
+.fight-beat span{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.fight-beat strong{font-size:16px}
+.fight-stat-impact-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.fight-stat-impact{background:#111721;border:1px solid var(--line);border-radius:10px;padding:12px}
+.fight-stat-impact h4{margin:0 0 8px;font-size:14px}
+.fight-stat-row{display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.fight-stat-row:last-child{border-bottom:0}
+.fight-stat-row span{color:var(--muted)}
+.fight-stat-row b{font-size:13px}
+.fight-combat-state{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.fight-combat-chip{background:#111721;border:1px solid var(--line);border-radius:9px;padding:8px;text-align:center}
+.fight-combat-chip small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+.fight-combat-chip b{font-size:14px}
+@media(max-width:720px){.fight-stat-impact-grid{grid-template-columns:1fr}.fight-combat-state{grid-template-columns:1fr 1fr}}
+.fight-status{color:var(--muted);font-size:13px;min-height:20px;text-align:center}
+.fight-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.fight-fav{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;margin-top:8px}
+.fight-fav input{width:auto;accent-color:var(--accent)}
+@media(max-width:720px){
+ .fight-input-grid{grid-template-columns:1fr}
+ .fight-panel{border-radius:0;background:#000;border:0;padding:0}
+ .fight-wheel-shell{background:#000;border:0;border-radius:0;padding:16px 10px 0;box-shadow:none}
+ .fight-wheel-head{padding:0 6px}
+ /* Mobile fight wheel: match the generation/development wheel presentation.
+    The oversized black stage deliberately creates enough vertical separation that
+    the wheel can be isolated in the phone viewport while scrolling. */
+ .fight-wheel-stage{
+   display:grid;
+   justify-items:center;
+   align-content:center;
+   text-align:center;
+   gap:clamp(120px,28vh,240px);
+   margin:32vh 0 40vh;
+   padding:0;
+   min-height:calc(100svh - 8vh);
+   box-sizing:border-box;
+   background:#000;
+ }
+ .fight-wheel-title{
+   display:block;
+   font-size:clamp(18px,5.8vw,24px);
+   font-weight:900;
+   margin:0 0 16px;
+   padding:0 12px;
+   color:#fff;
+   text-shadow:0 2px 12px rgba(0,0,0,.55);
+   max-width:min(94vw,430px);
+ }
+ /* The hint is intentionally removed from the mobile viewport so the wheel
+    remains the visual focus, matching the other wheel interfaces. */
+ .fight-wheel-stage .fight-status{
+   display:none;
+ }
+ .fight-wheel-wrap{
+   margin:auto;
+   width:min(94vw,430px);
+   height:min(94vw,430px);
+   min-width:min(94vw,430px);
+   min-height:min(94vw,430px);
+   max-width:min(94vw,430px);
+   max-height:min(94vw,430px);
+   aspect-ratio:1 / 1;
+   flex-shrink:0;
+   contain:layout size;
+ }
+ .fight-wheel{
+   width:100%;
+   height:100%;
+   min-width:100%;
+   min-height:100%;
+   max-width:100%;
+   max-height:100%;
+ }
+ .fight-spin-button{width:74px;height:74px;font-size:13px}
+}
+@media(max-width:420px){
+ .fight-wheel-shell{padding-left:6px;padding-right:6px}
+ .fight-wheel-stage{
+   margin-top:30vh;
+   margin-bottom:38vh;
+   gap:clamp(110px,26vh,220px);
+   min-height:calc(100svh - 6vh);
+ }
+ .fight-wheel-title{font-size:clamp(17px,6vw,22px);margin-bottom:14px}
+ .fight-wheel-wrap{
+   width:94vw;height:94vw;
+   min-width:94vw;min-height:94vw;
+   max-width:94vw;max-height:94vw;
+   aspect-ratio:1 / 1;
+ }
+}
+
 </style>
 </head>
 <body>
@@ -447,7 +580,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
         <div style="flex:1;min-width:200px">
           <label class="small" for="debugWheelSelect" style="display:block;margin-bottom:4px;color:var(--muted)">Admin — jump to a specific wheel (auto-fills prior steps)</label>
-          <select id="debugWheelSelect"><option value="land">Land (land)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="eightGates">Eight Gates Access (eightGates)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="nature3">Chakra Nature 4 (nature3)</option><option value="nature4">Chakra Nature 5 (nature4)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Primary Combat Specialization (primary)</option><option value="secondary">Secondary Combat Specialization (secondary)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiMember">Ōtsutsuki Relative (otsutsukiMember)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="specialty_jutsu">Jutsu 1 (specialty_jutsu)</option><option value="signature">Jutsu 2 (signature)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
+          <select id="debugWheelSelect"><option value="land">Land (land)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="eightGates">Eight Gates Access (eightGates)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="nature3">Chakra Nature 4 (nature3)</option><option value="nature4">Chakra Nature 5 (nature4)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Combat Specialization (primary)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiMember">Ōtsutsuki Relative (otsutsukiMember)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="specialty_jutsu">Jutsu 1 (specialty_jutsu)</option><option value="signature">Jutsu 2 (signature)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
         </div>
         <button type="button" class="secondary" onclick="debugJumpToWheel()">Open this wheel</button>
         <button type="button" class="secondary" onclick="debugRespinCurrent()">Re-spin current</button>
@@ -458,7 +591,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
           <div style="flex:1;min-width:160px">
             <label class="small" for="forceWheelSelect" style="display:block;margin-bottom:4px">Wheel</label>
-            <select id="forceWheelSelect" onchange="populateForceValueOptions()"><option value="land">Land (land)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="eightGates">Eight Gates Access (eightGates)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="nature3">Chakra Nature 4 (nature3)</option><option value="nature4">Chakra Nature 5 (nature4)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Primary Combat Specialization (primary)</option><option value="secondary">Secondary Combat Specialization (secondary)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiMember">Ōtsutsuki Relative (otsutsukiMember)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="specialty_jutsu">Jutsu 1 (specialty_jutsu)</option><option value="signature">Jutsu 2 (signature)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
+            <select id="forceWheelSelect" onchange="populateForceValueOptions()"><option value="land">Land (land)</option><option value="village">Village / Settlement (village)</option><option value="type">Character Type / Occupation (type)</option><option value="occupation">Civilian Occupation (occupation)</option><option value="rank">Rank / Former Rank (rank)</option><option value="age">Age (age)</option><option value="clan">Clan (clan)</option><option value="weapon">Weapon / Tool (weapon)</option><option value="eightGates">Eight Gates Access (eightGates)</option><option value="natureCount">Number of Chakra Natures (natureCount)</option><option value="nature0">Chakra Nature 1 (nature0)</option><option value="nature1">Chakra Nature 2 (nature1)</option><option value="nature2">Chakra Nature 3 (nature2)</option><option value="nature3">Chakra Nature 4 (nature3)</option><option value="nature4">Chakra Nature 5 (nature4)</option><option value="bloodline">Bloodline / Kekkei Genkai (bloodline)</option><option value="dojutsu">Dōjutsu (dojutsu)</option><option value="dojutsuEyes">Dōjutsu Eyes (dojutsuEyes)</option><option value="dojutsuStage">Sharingan Stage (dojutsuStage)</option><option value="senjutsu">Senjutsu (senjutsu)</option><option value="sageType">Sage Type (sageType)</option><option value="jinchuriki">Jinchūriki (jinchuriki)</option><option value="beast">Tailed Beast (beast)</option><option value="relationship">Tailed Beast Relationship (relationship)</option><option value="summoning">Summoning (summoning)</option><option value="summonType">Summoning Contract (summonType)</option><option value="primary">Combat Specialization (primary)</option><option value="exceptional">Exceptional Trait (exceptional)</option><option value="legendary">Legendary Heritage (legendary)</option><option value="legendaryTarget">Legendary Relative (legendaryTarget)</option><option value="sixPaths">Six Paths Connection (sixPaths)</option><option value="sixPathsLevel">Six Paths Heritage Depth (sixPathsLevel)</option><option value="otsutsuki">Ōtsutsuki Heritage (otsutsuki)</option><option value="otsutsukiMember">Ōtsutsuki Relative (otsutsukiMember)</option><option value="otsutsukiLevel">Ōtsutsuki Heritage Depth (otsutsukiLevel)</option><option value="spaceTime">Space-Time Ninjutsu (spaceTime)</option><option value="specialty_jutsu">Jutsu 1 (specialty_jutsu)</option><option value="signature">Jutsu 2 (signature)</option><option value="moral">Moral Alignment (moral)</option><option value="motivation">Motivation (motivation)</option><option value="currentGoal">Current Goal (currentGoal)</option></select>
           </div>
           <div style="flex:1;min-width:160px">
             <label class="small" for="forceValueSelect" style="display:block;margin-bottom:4px">Predetermined result</label>
@@ -592,6 +725,147 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       </div>
     </section>
 
+
+    <section class="card full fight-panel" id="ninjaFightPanel">
+      <div class="fight-shell">
+        <div>
+          <h2>Fight Wheel (Tournament)</h2>
+          <p class="small">Load or enter two ninjas with stats and abilities (same style as Development). Spin a 9-step fight sequence ending in Aftermath. Power is calculated from D100 stats and weights the Finish wheel.</p>
+        </div>
+
+        <div class="fight-input-grid">
+          <div class="fight-card" id="fightCardA">
+            <h3>Ninja A</h3>
+            <div class="fight-load-row">
+              <div><label class="small" for="fightSourceA">Ninja source</label>
+                <select id="fightSourceA" onchange="loadFightFighter('A')"></select>
+              </div>
+              <button type="button" class="secondary" onclick="loadFightFighter('A')">Load</button>
+              <button type="button" class="secondary" onclick="resetFightFighter('A')">Reset</button>
+            </div>
+            <div class="fight-field"><label>Name / Display</label><input type="text" id="fightNameA" placeholder="Ninja A" oninput="updateFightVsLabel()"></div>
+            <div class="fight-field"><label>Rank</label>
+              <select id="fightRankA">
+                <option value="">—</option>
+                <option>Academy Student</option><option>Genin</option><option>Chūnin</option>
+                <option>Tokubetsu Jōnin</option><option>Jōnin</option><option>ANBU</option>
+                <option>Kage</option><option>Missing-nin</option><option>Samurai</option>
+                <option>Mercenary</option><option>Independent / unranked</option>
+              </select>
+            </div>
+            <div class="fight-field"><label>Primary combat</label>
+              <select id="fightPrimaryA"></select>
+            </div>
+            <h4>D100 Stats <span class="small" id="fightPowerLabelA">(Power: —)</span></h4>
+            <div id="fightStatsGridA" class="dev-stats-grid"></div>
+            <h4>Abilities</h4>
+            <div class="dev-ability-grid">
+              <div class="dev-select-group"><label class="small">Chakra Natures</label><div id="fightNaturesA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','natures')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Dōjutsu</label><div id="fightDojutsuA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','dojutsu')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Kekkei Genkai</label><div id="fightKekkeiA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','kekkei')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Known Jutsu</label><div id="fightJutsuA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','jutsu')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Weapons / Tools</label><div id="fightWeaponsA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','weapons')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Summoning</label><div id="fightSummoningA" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('A','summoning')">+ Add</button></div>
+            </div>
+            <div class="fight-field"><label>Jinchūriki</label>
+              <select id="fightJinchurikiA" onchange="document.getElementById('fightBeastWrapA').style.display=this.value==='Yes'?'block':'none'">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+            <div class="fight-field" id="fightBeastWrapA" style="display:none"><label>Tailed Beast</label>
+              <input type="text" id="fightBeastA" placeholder="e.g. Nine-Tails">
+            </div>
+            <label class="fight-fav"><input type="checkbox" id="fightFavA"> Mark as favorite (higher win weight)</label>
+          </div>
+
+          <div class="fight-card" id="fightCardB">
+            <h3>Ninja B</h3>
+            <div class="fight-load-row">
+              <div><label class="small" for="fightSourceB">Ninja source</label>
+                <select id="fightSourceB" onchange="loadFightFighter('B')"></select>
+              </div>
+              <button type="button" class="secondary" onclick="loadFightFighter('B')">Load</button>
+              <button type="button" class="secondary" onclick="resetFightFighter('B')">Reset</button>
+            </div>
+            <div class="fight-field"><label>Name / Display</label><input type="text" id="fightNameB" placeholder="Ninja B" oninput="updateFightVsLabel()"></div>
+            <div class="fight-field"><label>Rank</label>
+              <select id="fightRankB">
+                <option value="">—</option>
+                <option>Academy Student</option><option>Genin</option><option>Chūnin</option>
+                <option>Tokubetsu Jōnin</option><option>Jōnin</option><option>ANBU</option>
+                <option>Kage</option><option>Missing-nin</option><option>Samurai</option>
+                <option>Mercenary</option><option>Independent / unranked</option>
+              </select>
+            </div>
+            <div class="fight-field"><label>Primary combat</label>
+              <select id="fightPrimaryB"></select>
+            </div>
+            <h4>D100 Stats <span class="small" id="fightPowerLabelB">(Power: —)</span></h4>
+            <div id="fightStatsGridB" class="dev-stats-grid"></div>
+            <h4>Abilities</h4>
+            <div class="dev-ability-grid">
+              <div class="dev-select-group"><label class="small">Chakra Natures</label><div id="fightNaturesB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','natures')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Dōjutsu</label><div id="fightDojutsuB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','dojutsu')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Kekkei Genkai</label><div id="fightKekkeiB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','kekkei')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Known Jutsu</label><div id="fightJutsuB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','jutsu')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Weapons / Tools</label><div id="fightWeaponsB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','weapons')">+ Add</button></div>
+              <div class="dev-select-group"><label class="small">Summoning</label><div id="fightSummoningB" class="dev-repeat-fields"></div><button type="button" class="secondary dev-add-button" onclick="addFightAbilityField('B','summoning')">+ Add</button></div>
+            </div>
+            <div class="fight-field"><label>Jinchūriki</label>
+              <select id="fightJinchurikiB" onchange="document.getElementById('fightBeastWrapB').style.display=this.value==='Yes'?'block':'none'">
+                <option value="No">No</option>
+                <option value="Yes">Yes</option>
+              </select>
+            </div>
+            <div class="fight-field" id="fightBeastWrapB" style="display:none"><label>Tailed Beast</label>
+              <input type="text" id="fightBeastB" placeholder="e.g. Nine-Tails">
+            </div>
+            <label class="fight-fav"><input type="checkbox" id="fightFavB"> Mark as favorite (higher win weight)</label>
+          </div>
+        </div>
+
+        <div class="fight-vs"><b id="fightVsLabel">A  vs  B</b></div>
+
+        <div class="fight-wheel-shell">
+          <div class="fight-wheel-head">
+            <div>
+              <h3 style="margin:0">Fight Sequence Wheel</h3>
+              <div id="fightWheelProgress" class="small">Step 1 of 9 — Opening Exchange</div>
+            </div>
+            <label class="spin-preferences"><input type="checkbox" id="fightSkipAnimation"> Skip wheel animations and roll instantly</label>
+          </div>
+          <div id="fightWheelStage" class="fight-wheel-stage">
+            <h3 id="fightWheelTitle" class="fight-wheel-title">Opening Exchange</h3>
+            <div class="fight-wheel-wrap">
+              <div class="fight-pointer"></div>
+              <div class="fight-wheel" id="fightFortuneWheel"><svg id="fightWheelSvg" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"></svg></div>
+              <button type="button" class="fight-spin-button" id="fightSpinButton" onclick="spinFightWheel()">SPIN</button>
+              <div class="fight-overlay" id="fightWheelOverlay"><div class="fight-result-card"><small>Fight Result</small><strong id="fightWheelResultValue">—</strong></div></div>
+            </div>
+            <div id="fightWheelHint" class="fight-status">Load both ninjas, then start the fight and spin.</div>
+          </div>
+          <div class="fight-actions">
+            <button type="button" onclick="startFightSequence()">Start / Reset Fight</button>
+            <button type="button" class="secondary" onclick="skipFightStep()">Skip to next step</button>
+            <button type="button" class="secondary" onclick="copyFightSummary()">Copy fight summary</button>
+          </div>
+        </div>
+
+        <div class="fight-card">
+          <h3>Fight Breakdown</h3>
+          <div id="fightBreakdown"><div class="small">No fight resolved yet.</div></div>
+          <h4 style="margin-top:16px">Updated Stats After Fight</h4>
+          <div id="fightUpdatedStats" class="fight-stat-impact-grid"><div class="small">No fight-driven stat changes yet.</div></div>
+          <div id="fightNarrative" class="result" style="margin-top:12px"></div>
+        </div>
+
+        <div class="fight-card">
+          <h3>Fight Log</h3>
+          <div id="fightLog" class="fight-log-list"><div class="small">No tournament fights recorded this session.</div></div>
+        </div>
+      </div>
+    </section>
 
 
   </div>
@@ -1096,6 +1370,275 @@ const DATA = {
   ]
 };
 
+
+/* ===================== WHEEL STAT MODIFIERS =====================
+   Contextual wheel modifiers use the same -10 to +10 design scale as the
+   clan/bloodline system. They are intentionally modest because a character
+   can receive many contextual modifiers before final stats are capped at 100.
+   Jutsu 1 / Jutsu 2 / Ultimate Jutsu are explicitly excluded. */
+function wheelMod(stat, delta, reason=''){
+  return {stat, delta:Math.max(-10,Math.min(10,Number(delta)||0)), reason};
+}
+function generationWheelModifier(key, value, c){
+  const v=String(value||'');
+  const low=v.toLowerCase();
+  const one=(stat,d,reason)=>wheelMod(stat,d,reason);
+  const multi=(arr)=>arr.filter(x=>x && x.delta);
+  switch(key){
+    case 'land':
+      if(/fire/.test(low)) return one('ninjutsu',1,'Fire Country affinity');
+      if(/wind/.test(low)) return one('speed',1,'Wind Country mobility');
+      if(/water/.test(low)) return one('chakraControl',1,'Water Country adaptability');
+      if(/earth/.test(low)) return one('durability',1,'Earth Country resilience');
+      if(/lightning/.test(low)) return multi([one('speed',1,'Lightning Country mobility'),one('battleIQ',1,'Lightning Country combat culture')]);
+      if(/iron/.test(low)) return one('weaponSkill',2,'Land of Iron samurai culture');
+      return one('stamina',1,'Minor-country survival experience');
+    case 'minorLand':
+      if(/grass/.test(low)) return one('stealth',1,'Grass-country fieldcraft');
+      if(/rain/.test(low)) return one('sensory',1,'Rain-country awareness');
+      if(/sound/.test(low)) return one('genjutsu',1,'Sound-country illusion/sonic exposure');
+      if(/river|hot water/.test(low)) return one('stamina',1,'Travel and endurance environment');
+      if(/frost|snow|stone|mountain/.test(low)) return one('durability',1,'Harsh terrain resilience');
+      if(/bird|sky/.test(low)) return one('speed',1,'Aerial/mobility environment');
+      if(/bear/.test(low)) return one('strength',1,'Rugged environment');
+      if(/demon|ancestor/.test(low)) return one('willpower',1,'Supernatural/isolated environment');
+      if(/tea|rice/.test(low)) return one('intelligence',1,'Civilian/trade environment');
+      if(/wave|whirlpool/.test(low)) return one('chakraControl',1,'Water/travel environment');
+      if(/sound|howling/.test(low)) return one('sensory',1,'Sound/tracking environment');
+      if(/tsuchigumo/.test(low)) return one('battleIQ',1,'Barrier/trap-oriented tradition');
+      return one('stealth',1,'Minor-country fieldcraft');
+    case 'village':
+      if(/konoha|motoyoshi|yumegakure/.test(low)) return one('intelligence',1,'Leaf-region training/education');
+      if(/sunagakure/.test(low)) return multi([one('sensory',1,'Desert awareness'),one('stealth',1,'Desert concealment')]);
+      if(/kirigakure/.test(low)) return multi([one('stealth',1,'Mist-field tactics'),one('sensory',1,'Mist awareness')]);
+      if(/uzushio/.test(low)) return one('chakraControl',1,'Uzumaki sealing tradition');
+      if(/iwagakure/.test(low)) return one('durability',1,'Stone-country resilience');
+      if(/kumogakure/.test(low)) return one('speed',1,'Lightning-country combat tradition');
+      if(/iron/.test(low)) return one('weaponSkill',1,'Samurai territory');
+      if(/independent|small|minor/.test(low)) return one('stealth',1,'Independent fieldcraft');
+      return one('battleIQ',1,'Local combat experience');
+    case 'type':
+      if(/shinobi/.test(low)) return one('battleIQ',1,'Shinobi combat training');
+      if(/samurai/.test(low)) return multi([one('weaponSkill',2,'Samurai weapon training'),one('willpower',1,'Samurai discipline')]);
+      if(/missing-nin/.test(low)) return multi([one('stealth',2,'Rogue survival experience'),one('willpower',1,'Rogue resilience')]);
+      if(/mercenary/.test(low)) return multi([one('weaponSkill',1,'Professional combat work'),one('battleIQ',1,'Practical combat experience')]);
+      if(/civilian/.test(low)) return one('intelligence',1,'Non-combat specialization');
+      return one('willpower',1,'Independent experience');
+    case 'occupation':
+      if(/doctor|healer/.test(low)) return multi([one('intelligence',1,'Medical knowledge'),one('chakraControl',1,'Fine-control practice')]);
+      if(/blacksmith|craftsman/.test(low)) return multi([one('weaponSkill',1,'Crafting/weapon familiarity'),one('intelligence',1,'Technical skill')]);
+      if(/farmer|fisher|laborer/.test(low)) return multi([one('stamina',1,'Physical labor'),one('strength',1,'Physical labor')]);
+      if(/merchant|shopkeeper|administrator|noble/.test(low)) return one('intelligence',1,'Trade/administrative experience');
+      if(/scholar|teacher/.test(low)) return one('intelligence',2,'Academic/teaching experience');
+      if(/performer|innkeeper|religious/.test(low)) return one('willpower',1,'Social/community experience');
+      return one('intelligence',1,'Civilian specialization');
+    case 'rank':
+      if(/academy/.test(low)) return multi([one('intelligence',-1,'Limited field experience'),one('battleIQ',-1,'Limited combat experience')]);
+      if(/genin/.test(low)) return one('battleIQ',1,'Entry-level field experience');
+      if(/chūnin|chunin/.test(low)) return multi([one('battleIQ',2,'Team-leadership experience'),one('intelligence',1,'Mission experience')]);
+      if(/tokubetsu/.test(low)) return multi([one('battleIQ',2,'Specialist field experience'),one('intelligence',1,'Specialist training')]);
+      if(/jōnin|jonin/.test(low)) return multi([one('battleIQ',3,'Elite field experience'),one('intelligence',2,'Elite training')]);
+      if(/anbu/.test(low)) return multi([one('stealth',3,'ANBU covert training'),one('battleIQ',2,'Elite mission experience')]);
+      if(/kage/.test(low)) return multi([one('battleIQ',4,'Kage-level leadership/combat experience'),one('intelligence',3,'Kage-level strategic experience')]);
+      if(/former genin|low-threat/.test(low)) return one('stealth',1,'Rogue field experience');
+      if(/former chūnin|former chunin|moderate/.test(low)) return multi([one('battleIQ',2,'Experienced rogue combatant'),one('stealth',1,'Rogue fieldcraft')]);
+      if(/former jōnin|former jonin|high-threat/.test(low)) return multi([one('battleIQ',3,'Elite rogue combatant'),one('stealth',2,'Elite rogue fieldcraft')]);
+      if(/former anbu|elite/.test(low)) return multi([one('stealth',3,'Former covert-operations training'),one('battleIQ',2,'Elite combat experience')]);
+      if(/kage-level|exceptional/.test(low)) return multi([one('battleIQ',4,'Exceptional former rank'),one('willpower',2,'Extreme survival experience')]);
+      return one('stealth',1,'Uncertain rogue history');
+    case 'age':
+      if(/6–11|6-11|12–13|12-13/.test(low)) return one('intelligence',-1,'Limited life/field experience');
+      if(/14–17|14-17/.test(low)) return one('speed',1,'Youthful physical development');
+      if(/18–24|18-24/.test(low)) return multi([one('speed',1,'Physical prime'),one('stamina',1,'Physical prime')]);
+      if(/25–34|25-34/.test(low)) return multi([one('battleIQ',1,'Accumulated experience'),one('stamina',1,'Mature conditioning')]);
+      if(/35–49|35-49/.test(low)) return multi([one('battleIQ',2,'Long experience'),one('speed',-1,'Age-related physical decline')]);
+      if(/50\+|50\b/.test(low)) return multi([one('intelligence',2,'Long life experience'),one('battleIQ',2,'Long combat experience'),one('speed',-2,'Age-related physical decline')]);
+      return one('intelligence',1,'Life experience');
+    case 'natureCount':
+      if(String(value)==='0') return one('chakraControl',-1,'No elemental nature specialization');
+      if(String(value)==='1') return one('chakraControl',1,'Focused elemental specialization');
+      if(String(value)==='2') return one('ninjutsu',1,'Broader elemental versatility');
+      if(String(value)==='3') return multi([one('ninjutsu',1,'Broad elemental versatility'),one('chakraQuantity',1,'Greater chakra demand/capacity')]);
+      if(Number(value)>=4) return multi([one('ninjutsu',2,'Exceptional elemental versatility'),one('chakraControl',1,'Advanced nature handling')]);
+      return one('ninjutsu',1,'Elemental versatility');
+    case 'nature0': case 'nature1': case 'nature2': case 'nature3': case 'nature4':
+      if(/fire/.test(low)) return one('ninjutsu',1,'Fire nature practice');
+      if(/wind/.test(low)) return one('speed',1,'Wind nature mobility');
+      if(/lightning/.test(low)) return one('speed',1,'Lightning nature speed');
+      if(/earth/.test(low)) return one('durability',1,'Earth nature resilience');
+      if(/water/.test(low)) return one('chakraControl',1,'Water nature control');
+      if(/yin/.test(low)) return one('genjutsu',1,'Yin nature affinity');
+      if(/yang/.test(low)) return one('stamina',1,'Yang nature vitality');
+      return one('ninjutsu',1,'Chakra nature practice');
+    case 'eightGates':
+      if(/none/.test(low)) return one('taijutsu',-1,'No Eight Gates specialization');
+      return null;
+    case 'susanooAccess':
+      if(low==='yes') return multi([one('ninjutsu',2,'Susanoo access'),one('durability',1,'Susanoo chakra burden conditioning')]);
+      return one('battleIQ',-1,'No Susanoo specialization');
+    case 'exceptional':
+      if(/none/.test(low)) return one('willpower',1,'Normal physiology without a singular exceptional trait');
+      return null;
+    case 'senjutsu':
+      if(/none/.test(low)) return one('chakraControl',-1,'No senjutsu specialization');
+      if(/training potential/.test(low)) return one('chakraControl',1,'Sage training foundation');
+      if(/sage mode/.test(low) && !/advanced|six paths/.test(low)) return multi([one('chakraControl',2,'Sage Mode control'),one('sensory',2,'Sage Mode perception')]);
+      if(/advanced/.test(low)) return multi([one('chakraControl',3,'Advanced Sage Mode control'),one('sensory',3,'Advanced senjutsu perception')]);
+      if(/six paths/.test(low)) return multi([one('ninjutsu',3,'Six Paths senjutsu'),one('sensory',3,'Six Paths perception')]);
+      return one('chakraControl',1,'Senjutsu practice');
+    case 'jinchuriki':
+      if(low==='yes') return multi([one('chakraQuantity',2,'Jinchūriki chakra access'),one('stamina',1,'Tailed-beast vitality')]);
+      return one('willpower',-1,'No tailed-beast chakra access');
+    case 'summoning':
+      if(low==='yes') return one('chakraControl',1,'Summoning chakra control');
+      return one('battleIQ',-1,'No summoning specialization');
+    case 'dojutsu':
+      if(/none/.test(low)) return one('sensory',-1,'No dōjutsu specialization');
+      return one('sensory',1,'Dōjutsu awareness');
+    case 'bloodline': case 'kekkei_genkai':
+      if(/none/.test(low)) return one('ninjutsu',-1,'No special bloodline pathway');
+      return one('ninjutsu',1,'Kekkei-genkai practice');
+    case 'clan':
+      if(/none/.test(low)) return one('willpower',1,'Independent lineage');
+      return null;
+    case 'sageType':
+      if(/toad/.test(low)) return multi([one('sensory',2,'Toad senjutsu perception'),one('chakraControl',1,'Toad senjutsu discipline')]);
+      if(/snake/.test(low)) return multi([one('chakraControl',2,'Snake senjutsu control'),one('battleIQ',1,'Snake combat adaptation')]);
+      if(/slug/.test(low)) return multi([one('durability',2,'Slug healing/medical tradition'),one('stamina',1,'Slug vitality')]);
+      if(/jūgo|jugo/.test(low)) return multi([one('chakraQuantity',2,'Natural-energy physiology'),one('durability',1,'Natural-energy physiology')]);
+      if(/six paths/.test(low)) return multi([one('ninjutsu',3,'Six Paths senjutsu'),one('sensory',2,'Six Paths perception')]);
+      return one('chakraControl',1,'Senjutsu training');
+    case 'beast':
+      if(/shukaku/.test(low)) return multi([one('durability',2,'Shukaku sand defenses'),one('ninjutsu',1,'Magnet/sand power')]);
+      if(/matatabi/.test(low)) return multi([one('speed',2,'Matatabi mobility'),one('ninjutsu',1,'Blue flame power')]);
+      if(/isobu/.test(low)) return one('durability',2,'Isobu shell/coral resilience');
+      if(/son gokū/.test(low)) return multi([one('strength',2,'Son Gokū physical power'),one('ninjutsu',1,'Lava affinity')]);
+      if(/kokuō/.test(low)) return multi([one('strength',2,'Kokuō physical power'),one('stamina',1,'Boil Release endurance')]);
+      if(/saiken/.test(low)) return multi([one('durability',2,'Saiken resilience'),one('stamina',1,'Acid/body vitality')]);
+      if(/chōmei|chomei/.test(low)) return multi([one('speed',2,'Chōmei flight/mobility'),one('sensory',1,'Aerial awareness')]);
+      if(/gyūki|gyuki/.test(low)) return multi([one('strength',2,'Gyūki physical power'),one('stamina',2,'Gyūki endurance')]);
+      if(/kurama/.test(low)) return multi([one('chakraQuantity',3,'Kurama chakra reserves'),one('willpower',1,'Kurama partnership demands')]);
+      if(/ten-tails/.test(low)) return multi([one('chakraQuantity',4,'Ten-Tails chakra scale'),one('durability',2,'Ten-Tails resilience')]);
+      return one('chakraQuantity',1,'Tailed-beast chakra');
+    case 'relationship':
+      if(/does not understand|fear/.test(low)) return one('willpower',-1,'Poor host-beast synchronization');
+      if(/resentment/.test(low)) return multi([one('willpower',-1,'Host-beast conflict'),one('chakraControl',-1,'Poor chakra cooperation')]);
+      if(/neutral/.test(low)) return one('chakraControl',1,'Stable coexistence');
+      if(/cooperation/.test(low)) return multi([one('chakraControl',2,'Cooperative chakra use'),one('stamina',1,'Shared endurance')]);
+      if(/synchronization/.test(low)) return multi([one('chakraControl',3,'High host-beast synchronization'),one('chakraQuantity',1,'Efficient beast chakra use')]);
+      if(/exceptional/.test(low)) return multi([one('chakraControl',4,'Exceptional host-beast synchronization'),one('willpower',2,'Strong partnership')]);
+      return one('chakraControl',1,'Host-beast stability');
+    case 'summonType':
+      if(/toad/.test(low)) return multi([one('battleIQ',1,'Toad combat partnership'),one('sensory',1,'Toad sensing tradition')]);
+      if(/snake/.test(low)) return multi([one('stealth',1,'Snake ambush tradition'),one('battleIQ',1,'Snake combat adaptation')]);
+      if(/slug/.test(low)) return multi([one('durability',1,'Slug healing support'),one('chakraControl',1,'Medical chakra precision')]);
+      if(/monkey/.test(low)) return one('taijutsu',1,'Monkey combat partnership');
+      if(/dog|hound/.test(low)) return one('sensory',2,'Tracking partnership');
+      if(/hawk|bird/.test(low)) return one('sensory',1,'Aerial reconnaissance');
+      if(/turtle/.test(low)) return one('durability',1,'Defensive partnership');
+      if(/insect/.test(low)) return one('sensory',1,'Insect reconnaissance');
+      return one('battleIQ',1,'Summoning combat experience');
+    case 'primary':
+      if(/ninjutsu/.test(low)) return one('ninjutsu',2,'Ninjutsu specialization');
+      if(/taijutsu/.test(low)) return one('taijutsu',2,'Taijutsu specialization');
+      if(/genjutsu/.test(low)) return one('genjutsu',2,'Genjutsu specialization');
+      if(/kenjutsu|weapon specialist/.test(low)) return one('weaponSkill',2,'Weapon specialization');
+      if(/dōjutsu|dojutsu/.test(low)) return one('sensory',2,'Dōjutsu combat specialization');
+      if(/medical/.test(low)) return multi([one('intelligence',1,'Medical specialization'),one('chakraControl',1,'Medical chakra control')]);
+      if(/fūinjutsu|fuinjutsu/.test(low)) return multi([one('chakraControl',2,'Sealing specialization'),one('intelligence',1,'Sealing theory')]);
+      if(/puppetry/.test(low)) return multi([one('intelligence',2,'Puppetry control'),one('weaponSkill',1,'Puppet handling')]);
+      if(/sensor/.test(low)) return one('sensory',3,'Sensor specialization');
+      if(/barrier/.test(low)) return multi([one('chakraControl',2,'Barrier control'),one('intelligence',1,'Barrier theory')]);
+      if(/balanced/.test(low)) return multi([one('battleIQ',1,'Balanced combat training'),one('chakraControl',1,'Balanced chakra practice')]);
+      return one('battleIQ',1,'Combat specialization');
+    case 'legendary':
+      if(low==='yes') return multi([one('battleIQ',2,'Legendary lineage'),one('willpower',1,'Legacy pressure')]);
+      return one('willpower',-1,'No inherited legendary legacy');
+    case 'legendaryTarget':
+      if(/senju|uzumaki/.test(low)) return one('chakraQuantity',1,'Life-force lineage influence');
+      if(/uchiha/.test(low)) return one('battleIQ',1,'Uchiha lineage influence');
+      if(/hyūga|hyuga/.test(low)) return one('sensory',1,'Hyūga lineage influence');
+      if(/kaguya/.test(low)) return one('durability',1,'Kaguya lineage influence');
+      if(/ōtsutsuki|otsutsuki/.test(low)) return one('ninjutsu',2,'Ōtsutsuki lineage influence');
+      return one('intelligence',1,'Legendary lineage influence');
+    case 'sixPaths':
+      if(low==='yes') return multi([one('ninjutsu',3,'Six Paths connection'),one('sensory',2,'Six Paths perception')]);
+      return one('willpower',-1,'No Six Paths connection');
+    case 'sixPathsLevel':
+      if(/distant/.test(low)) return one('ninjutsu',1,'Distant Six Paths heritage');
+      if(/significant/.test(low)) return multi([one('ninjutsu',2,'Significant Six Paths heritage'),one('sensory',1,'Six Paths perception')]);
+      if(/direct/.test(low)) return multi([one('ninjutsu',3,'Direct Six Paths heritage'),one('sensory',2,'Six Paths perception')]);
+      return one('ninjutsu',1,'Six Paths heritage');
+    case 'otsutsuki':
+      if(low==='yes') return multi([one('chakraQuantity',3,'Ōtsutsuki chakra heritage'),one('ninjutsu',2,'Ōtsutsuki technique heritage')]);
+      return one('willpower',-1,'No Ōtsutsuki heritage');
+    case 'otsutsukiMember':
+      if(/kaguya|hagoromo|hamura/.test(low)) return multi([one('chakraQuantity',2,'Ancient Ōtsutsuki lineage'),one('ninjutsu',1,'Ancient chakra heritage')]);
+      if(/momoshiki|kinshiki|isshiki|shibai/.test(low)) return multi([one('ninjutsu',2,'High-level Ōtsutsuki lineage'),one('chakraQuantity',1,'Ōtsutsuki chakra heritage')]);
+      return one('ninjutsu',1,'Ōtsutsuki lineage');
+    case 'otsutsukiLevel':
+      if(/distant/.test(low)) return one('ninjutsu',1,'Distant Ōtsutsuki heritage');
+      if(/significant/.test(low)) return multi([one('ninjutsu',2,'Significant Ōtsutsuki heritage'),one('chakraQuantity',1,'Ōtsutsuki chakra reserves')]);
+      if(/direct/.test(low)) return multi([one('ninjutsu',3,'Direct Ōtsutsuki heritage'),one('chakraQuantity',2,'Direct Ōtsutsuki chakra heritage')]);
+      return one('ninjutsu',1,'Ōtsutsuki heritage');
+    case 'spaceTime':
+      if(low==='yes') return multi([one('ninjutsu',2,'Space-time specialization'),one('intelligence',1,'Complex spatial technique')]);
+      return one('battleIQ',-1,'No space-time specialization');
+    case 'dojutsuEyes':
+      if(/both/.test(low)) return multi([one('sensory',2,'Two-eye dōjutsu use'),one('chakraControl',1,'Greater dōjutsu control demand')]);
+      return one('sensory',1,'One-eye dōjutsu use');
+    case 'dojutsuStage':
+      if(/1-tomoe/.test(low)) return one('battleIQ',1,'Basic Sharingan combat insight');
+      if(/2-tomoe/.test(low)) return one('battleIQ',1,'Improved Sharingan combat insight');
+      if(/3-tomoe/.test(low)) return multi([one('battleIQ',2,'Advanced Sharingan insight'),one('sensory',1,'Advanced visual perception')]);
+      if(/mangekyō/.test(low)) return multi([one('genjutsu',2,'Mangekyō visual/genjutsu power'),one('battleIQ',2,'Advanced visual combat insight')]);
+      if(/eternal/.test(low)) return multi([one('genjutsu',3,'Eternal Mangekyō power'),one('battleIQ',3,'Exceptional visual combat insight')]);
+      if(/rinnegan/.test(low)) return multi([one('ninjutsu',3,'Rinnegan power'),one('chakraQuantity',2,'Rinnegan chakra demand')]);
+      return one('battleIQ',1,'Dōjutsu stage development');
+    case 'moral':
+      if(/heroic|good/.test(low)) return one('willpower',1,'Protective moral orientation');
+      if(/neutral/.test(low)) return one('battleIQ',1,'Pragmatic neutrality');
+      if(/self-serving|criminal|villainous/.test(low)) return one('stealth',1,'Self-preservation/underworld experience');
+      if(/unpredictable/.test(low)) return one('battleIQ',1,'Unconventional decision-making');
+      return one('willpower',1,'Personal conviction');
+    case 'motivation': case 'currentGoal':
+      if(/protect|peace|redemption|serve/.test(low)) return one('willpower',1,'Protective/social motivation');
+      if(/stronger|kage|legendary|master|rare|bloodline|dōjutsu|senjutsu|immortal/.test(low)) return one('battleIQ',1,'Power/mastery-driven motivation');
+      if(/revenge|prove|recognition/.test(low)) return one('willpower',1,'High personal drive');
+      if(/knowledge|forbidden/.test(low)) return one('intelligence',1,'Knowledge-driven motivation');
+      if(/wealth|freedom|survival/.test(low)) return one('stealth',1,'Self-preservation/resourcefulness');
+      if(/love|family/.test(low)) return one('willpower',1,'Protective personal motivation');
+      return one('intelligence',1,'Personal motivation');
+    case 'forbidden': case 'forbiddenTechnique':
+      if(low==='yes' || key==='forbiddenTechnique') return multi([one('willpower',1,'Forbidden-technique exposure'),one('battleIQ',1,'High-risk technique experience')]);
+      return one('willpower',-1,'No forbidden-technique access');
+    default: return null;
+  }
+}
+function weaponWheelModifier(value, data){
+  const low=String(value||'').toLowerCase();
+  if(!value || /^none$/i.test(value)) return wheelMod('weaponSkill',-1,'No weapon/tool specialization');
+  const cat=String(data?.category||'').toLowerCase();
+  if(/seven swords/.test(cat)) return multiWeaponMods('weaponSkill',3,'Seven Swords mastery');
+  if(/armor/.test(cat)) return wheelMod('durability',2,'Protective equipment');
+  if(/staff|flute|fan|sword/.test(cat)) return wheelMod('weaponSkill',2,'Close-combat weapon training');
+  if(/ranged|thrown|kunai/.test(cat)) return wheelMod('weaponSkill',2,'Ranged weapon training');
+  if(/puppet/.test(cat)) return multiWeaponMods('weaponSkill',1,'Puppet handling', 'intelligence',1,'Puppet control');
+  if(/tag|seal/.test(cat)) return multiWeaponMods('weaponSkill',1,'Seal-tool handling','chakraControl',1,'Seal-tool control');
+  if(/scientific/.test(cat)) return multiWeaponMods('weaponSkill',1,'Scientific tool use','intelligence',1,'Technical tool use');
+  if(/consumable/.test(cat)) return wheelMod('intelligence',1,'Tool preparation/use');
+  if(/treasure/.test(cat)) return wheelMod('willpower',1,'Rare artifact handling');
+  return wheelMod('weaponSkill',1,'Weapon/tool familiarity');
+}
+function multiWeaponMods(...args){ const out=[]; for(let i=0;i<args.length;i+=3) out.push(wheelMod(args[i],args[i+1],args[i+2])); return out; }
+function recordGenerationWheelModifier(c,key,value){
+  if(!c || /^specialty_jutsu$|^signature$|^ultimate_jutsu$/.test(String(key))) return;
+  let mods=key==='weapon' ? weaponWheelModifier(value,c.weaponData) : generationWheelModifier(key,value,c);
+  if(!Array.isArray(mods)) mods=mods?[mods]:[];
+  c._wheelMods=c._wheelMods||{};
+  for(const m of mods){ if(!m?.stat || !m.delta) continue; c._wheelMods[m.stat]=(c._wheelMods[m.stat]||0)+Math.max(-10,Math.min(10,m.delta)); }
+}
+
 const STAT_NAMES = [
   ["chakraQuantity","Chakra Quantity"],["chakraControl","Chakra Control"],["ninjutsu","Ninjutsu"],
   ["taijutsu","Taijutsu"],["genjutsu","Genjutsu"],["speed","Speed"],["strength","Strength"],
@@ -1329,7 +1872,7 @@ function isIronSamurai(c){
 }
 function rollCombat(c,exclude=[]){
   /* Land of Iron Samurai: Primary is always Kenjutsu.
-     Puppet-class tools force Primary = Puppetry (secondary still rolls normally). */
+     Puppet-class tools force Primary = Puppetry (no secondary specialization). */
   if(!exclude.length && isIronSamurai(c)){
     return {name:"Kenjutsu", weight:1};
   }
@@ -1528,8 +2071,7 @@ function generate(){
   logLine("Summoning: "+c.summoning+(c.summonType?" — "+c.summonType:"")+(c._summoningForcedBySage?" (sage-linked)":""));
 
   c.primary=rollCombat(c).name;
-  c.secondary=rollCombat(c,[c.primary]).name;
-  logLine("Combat: "+c.primary+" / "+c.secondary);
+  logLine("Combat: "+c.primary);
 
   c.moral=rollWeighted(DATA.moral).name;c.motivation=goalFor(c).name;
   c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;
@@ -1594,7 +2136,7 @@ function render(c){
     row("Legendary heritage",c.legendary+(c.legendaryTarget?" — "+c.legendaryTarget:""))+
     row("Six Paths",c.sixPaths)+row("Ōtsutsuki heritage",c.otsutsuki+(c.otsutsukiMember?" — "+c.otsutsukiMember:"")+(c.otsutsukiLevel?" ("+c.otsutsukiLevel+")":""))+
     row("Space-Time Ninjutsu",c.spaceTime);
-  document.getElementById("combat").innerHTML=row("Primary",c.primary)+row("Secondary",c.secondary)+row("Weapon",c.weapon)+
+  document.getElementById("combat").innerHTML=row("Combat Specialization",c.primary)+row("Weapon",c.weapon)+
     row("Eight Gates", (c.eightGates||"None") + (c.eightGatesTaiMod ? ` (Taijutsu +${c.eightGatesTaiMod})` : ""))+
     row("Forbidden",c.forbidden+(c.forbiddenTechnique?" — "+c.forbiddenTechnique:""));
   document.getElementById("goals").innerHTML=row("Moral alignment",c.moral)+row("Motivation",c.motivation)+row("Exceptional trait",c.exceptional);
@@ -3294,8 +3836,7 @@ function localJutsuEligible(j, c){
   if(m.requiredCombat){
     const need = String(m.requiredCombat).toLowerCase();
     const p = String(c.primary||"").toLowerCase();
-    const s = String(c.secondary||"").toLowerCase();
-    if(!(p.includes(need) || s.includes(need))) return false;
+    if(!p.includes(need)) return false;
   }
   return true;
 }
@@ -3603,12 +4144,11 @@ function ultimateMatchesActiveExclusive(j, c, set){
   if(m.requiredEightGatesMin!=null && Number(c.eightGatesLevel||0) >= Number(m.requiredEightGatesMin)) return true;
   // Weapon-linked exclusive (sand / puppet / samehada etc.)
   if(m.requiredWeapon && weaponSatisfied(m.requiredWeapon, c)) return true;
-  // Combat specialty lock (taijutsu / medical) when primary/secondary match
+  // Combat specialty lock (taijutsu / medical) when combat specialization matches
   if(m.requiredCombat){
     const need = String(m.requiredCombat).toLowerCase();
     const p = String(c.primary||"").toLowerCase();
-    const s = String(c.secondary||"").toLowerCase();
-    if(p.includes(need) || s.includes(need)) return true;
+    if(p.includes(need)) return true;
   }
   // Jinchūriki / Ōtsutsuki / Space-Time / Senjutsu / Six Paths — only when character actually has them
   if(m.requiredJinchuriki && c.jinchuriki==="Yes") return true;
@@ -4419,9 +4959,6 @@ function getWheelSegments(){
       else if(characterHasPuppetTool(c)) options=[{name:"Puppetry",weight:1}];
       else options=DATA.primaryCombat||[];
     }
-    else if(s.key==='secondary'){
-      options=(DATA.primaryCombat||[]).filter(x=>x.name!==(c.primary||""));
-    }
     else if(s.key==='forbiddenTechnique'){
       /* Full catalogue — equal weight per named kinjutsu */
       options=DATA.forbiddenTechniques||[];
@@ -4531,7 +5068,7 @@ function buildFortuneWheel(segments){
     const start=seg.startAngle;
     const end=seg.endAngle;
     const mid=(start+end)/2;
-    html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"><title>${esc(seg.name)} — ${seg.pct>=1?seg.pct.toFixed(2):seg.pct.toFixed(3)}%</title></path>`;
+    html += `<path d="${arcPath(cx,cy,r,start,end)}" fill="${color}" stroke="#0d1119" stroke-width="1.2"><title>${esc(seg.name)}</title></path>`;
     // Radial labels: text runs along the wedge (center → rim), not across it.
     // Lower threshold so denser Jutsu 1/2 pools still get short labels when possible.
     const span=end-start;
@@ -4782,8 +5319,7 @@ function baseSteps(){
     c.summoning=rollWeighted(DATA.summoning).name;
     return c.summoning;
   });
-  step('primary','Primary Combat Specialization','Land of Iron Samurai always force Primary = Kenjutsu. Puppet-class tools force Primary = Puppetry. Otherwise eligibility is conditioned on prior results.',c=>{c.primary=rollCombat(c).name;return c.primary});
-  step('secondary','Secondary Combat Specialization','The primary specialization is removed from the secondary pool.',c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary});
+  step('primary','Combat Specialization','Land of Iron Samurai always force Primary = Kenjutsu. Puppet-class tools force Primary = Puppetry. Otherwise eligibility is conditioned on prior results.',c=>{c.primary=rollCombat(c).name;return c.primary});
   step('exceptional','Exceptional Trait','Each named trait is 1%; None is 90%.',c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional});
   step('legendary','Legendary Heritage','Distant legendary lineage is kept separate from direct Ōtsutsuki heritage.',c=>{c.legendary=rollWeighted(DATA.legendaryHeritage).name;return c.legendary});
   step('sixPaths','Six Paths Connection','A rare connection roll with prerequisite-aware downstream checks.',c=>{c.sixPaths=rollWeighted(DATA.sixPaths).name;return c.sixPaths});
@@ -4960,6 +5496,7 @@ function finalizeStats(c){
   }
   const s={...c._rawStats};
   for(const src of [c.clanData,c.bloodlineData,c.dojutsuData,c.exceptionalData])if(src?.mods)addMods(s,src.mods);
+  if(c._wheelMods) addMods(s,c._wheelMods);
   if(c.jinchuriki==='Yes'){s.chakraQuantity+=15;s.stamina+=10;s.durability+=8}
   if(c.senjutsu==='Sage Mode'||c.senjutsu==='Advanced Sage Mode'||c.senjutsu==='Six Paths Sage Mode'){s.chakraControl+=5;s.ninjutsu+=8;s.sensory+=10}
   if(c.rank==='Kage'){s.battleIQ+=5;s.intelligence+=5} if(c.rank==='Jōnin'){s.battleIQ+=3}
@@ -4975,6 +5512,7 @@ function finalizeStats(c){
   for(const k in s)s[k]=Math.max(1, Math.min(100, s[k]));
   c.stats=s;
   delete c._rawStats;
+  delete c._wheelMods;
 }
 function generateInstantlyFromCurrent(){
   if(!interactive.active) return;
@@ -5182,8 +5720,7 @@ const DEBUG_WHEEL_CATALOG = [
   {key:'relationship',label:'Tailed Beast Relationship'},
   {key:'summoning',label:'Summoning'},
   {key:'summonType',label:'Summoning Contract'},
-  {key:'primary',label:'Primary Combat Specialization'},
-  {key:'secondary',label:'Secondary Combat Specialization'},
+  {key:'primary',label:'Combat Specialization'},
   {key:'exceptional',label:'Exceptional Trait'},
   {key:'legendary',label:'Legendary Heritage'},
   {key:'legendaryTarget',label:'Legendary Relative'},
@@ -5243,7 +5780,7 @@ function getForceOptionList(key){
     else if(key==='relationship') add(DATA.relationships);
     else if(key==='summoning') add(DATA.summoning);
     else if(key==='summonType') add(DATA.summonTypes);
-    else if(key==='primary'||key==='secondary') add(DATA.primaryCombat);
+    else if(key==='primary') add(DATA.primaryCombat);
     else if(key==='moral') add(DATA.moral);
     else if(key==='motivation') add(DATA.motivation);
     else if(key==='exceptional') add(DATA.exceptional);
@@ -5368,7 +5905,6 @@ function applyForcedResult(key, value, c){
     case 'summoning': c.summoning=v; return v;
     case 'summonType': c.summonType=v; c.summoning='Yes'; return v;
     case 'primary': c.primary=v; return v;
-    case 'secondary': c.secondary=v; return v;
     case 'moral': c.moral=v; return v;
     case 'motivation': c.motivation=v; return v;
     case 'exceptional': {
@@ -5401,12 +5937,15 @@ function applyForcedResult(key, value, c){
 }
 function runStepWithOptionalForce(s, c){
   /* If admin forced this wheel, apply that value; otherwise normal step fn. */
+  let display;
   if(s && s.key && DEBUG_FORCED[s.key]!=null){
-    const display=applyForcedResult(s.key, DEBUG_FORCED[s.key], c);
+    display=applyForcedResult(s.key, DEBUG_FORCED[s.key], c);
     logLine(`(forced) ${s.label}: ${display}`);
-    return display;
+  } else {
+    display=s.fn(c);
   }
-  return s.fn(c);
+  recordGenerationWheelModifier(c,s?.key,display);
+  return display;
 }
 function ensureDebugPrereqs(key,c){
   /* Minimal state so conditional wheels have something sensible to show. */
@@ -5448,7 +5987,6 @@ function ensureDebugPrereqs(key,c){
   if(key==='legendaryTarget'){ c.legendary='Yes'; }
   if(key==='sixPathsLevel'){ c.sixPaths='Yes'; }
   if(key==='otsutsukiMember'||key==='otsutsukiLevel'||key==='spaceTime'){ c.otsutsuki='Yes'; c.heritage=c.heritage||[]; if(!c.heritage.includes('Ōtsutsuki')) c.heritage.push('Ōtsutsuki'); }
-  if(key==='secondary' && !c.primary) c.primary='Ninjutsu';
 }
 function forceDebugStep(key){
   const label=(DEBUG_WHEEL_CATALOG.find(x=>x.key===key)||{}).label||key;
@@ -5484,7 +6022,6 @@ function forceDebugStep(key){
     summoning:()=>({key:'summoning',label,desc:'Debug wheel.',fn:c=>{c.summoning=rollWeighted(DATA.summoning).name;return c.summoning}}),
     summonType:()=>({key:'summonType',label,desc:'Debug wheel.',fn:c=>{c.summonType=rollWeighted(DATA.summonTypes).name;return c.summonType}}),
     primary:()=>({key:'primary',label,desc:'Debug wheel.',fn:c=>{c.primary=rollCombat(c).name;return c.primary}}),
-    secondary:()=>({key:'secondary',label,desc:'Debug wheel.',fn:c=>{c.secondary=rollCombat(c,[c.primary]).name;return c.secondary}}),
     moral:()=>({key:'moral',label,desc:'Debug wheel.',fn:c=>{c.moral=rollWeighted(DATA.moral).name;return c.moral}}),
     motivation:()=>({key:'motivation',label,desc:'Debug wheel.',fn:c=>{c.motivation=goalFor(c).name;return c.motivation}}),
     exceptional:()=>({key:'exceptional',label,desc:'Debug wheel.',fn:c=>{c.exceptionalData=rollWeighted(DATA.exceptional);c.exceptional=c.exceptionalData.name;return c.exceptional}}),
@@ -5672,11 +6209,11 @@ const DEV_CATEGORY_POOL=[
 ];
 
 const DEV_TRAINING_LEVELS=[
-  W('Level 1 — Light Training (+1 to +2)',30,{min:1,max:2}),
-  W('Level 2 — Standard Training (+2 to +4)',25,{min:2,max:4}),
-  W('Level 3 — Focused Training (+3 to +6)',20,{min:3,max:6}),
-  W('Level 4 — Intensive Training (+5 to +8)',15,{min:5,max:8}),
-  W('Level 5 — Exceptional Training (+7 to +10)',10,{min:7,max:10})
+  W('Light Training (+1 to +2)',30,{min:1,max:2}),
+  W('Standard Training (+2 to +4)',25,{min:2,max:4}),
+  W('Focused Training (+3 to +6)',20,{min:3,max:6}),
+  W('Intensive Training (+5 to +8)',15,{min:5,max:8}),
+  W('Exceptional Training (+7 to +10)',10,{min:7,max:10})
 ];
 const DEV_COMBAT_REWARD_LEVELS=DEV_TRAINING_LEVELS.map(x=>W(x.name,x.weight,{min:x.min,max:x.max}));
 const DEV_COMBAT_OUTCOMES=[
@@ -5855,16 +6392,61 @@ function devNaturePool(){
   const known=(devState.ninja?.natures||[]).map(x=>String(x).toLowerCase());
   return DEV_CHAPTER_NATURES.filter(x=>!known.some(k=>k===x.name.toLowerCase()||k.includes(x.name.toLowerCase().replace(' release',''))));
 }
+function devJutsuEligibilityCharacter(){
+  const n=devState.ninja||{};
+  const c={...n};
+  const natureList=Array.isArray(n.natures)?n.natures:devSplit(n.natures||n.natureNames||'');
+  const natureIds={fire:'fire',wind:'wind',lightning:'lightning',earth:'earth',water:'water',yin:'yin',yang:'yang','yin–yang':'yin-yang','yin-yang':'yin-yang'};
+  c.natures=natureList.map(x=>{
+    const name=typeof x==='string'?x:String(x?.name||x?.technique||'');
+    const key=name.toLowerCase().replace(/\s+release$/,'').trim();
+    return typeof x==='object' ? x : {name,id:natureIds[key]||key};
+  });
+  c.natureIds=c.natures.map(x=>String(x?.id||'')).filter(Boolean);
+  c.kekkeiGenkai=c.kekkeiGenkai||n.bloodline||'None';
+  c.kekkeiGenkaiAccess=c.kekkeiGenkai!=='None'?'Yes':(c.kekkeiGenkaiAccess||'No');
+  return c;
+}
 function devNatureJutsuPool(){
-  const n=devState.ninja||{},knownN=(n.natures||[]).map(x=>String(x).toLowerCase()),knownKG=devSplit(n.kekkeiGenkai||'').map(x=>x.toLowerCase()),knownJ=devSplit(n.jutsu||'').map(x=>x.toLowerCase());
-  const src=(typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[]);const out=[];const seen=new Set();
-  for(const j of src){const name=String(j?.name||j?.technique||'').trim();if(!name||seen.has(name.toLowerCase())||knownJ.includes(name.toLowerCase()))continue;
-    const nature=String(j.chakraNature||'').toLowerCase(),kg=String(j.requiredKekkeiGenkai||j.kekkeiGenkai||'').toLowerCase();
-    const natureMatch=!nature||knownN.some(x=>nature.includes(x.replace(' release',''))||x.includes(nature));
-    const kgMatch=!kg||knownKG.some(x=>kg.includes(x)||x.includes(kg));
-    if(natureMatch||kgMatch){out.push(W(name,1,{jutsu:j}));seen.add(name.toLowerCase())}
+  /*
+   * Development uses the SAME hard eligibility hierarchy as generated Jutsu 1 /
+   * Jutsu 2: Kekkei Genkai > Dōjutsu > chakra nature.  This is a filter, not a
+   * weighting system. A lower tier is completely removed whenever a higher
+   * tier has at least one eligible, not-yet-known technique.
+   *
+   * Every candidate also passes localJutsuEligible(), so clan, dōjutsu, KG,
+   * nature, Susanoo, sage, tailed-beast, weapon, summoning, rank, etc. gates
+   * cannot be bypassed by the Development wheel. Ultimate Jutsu are not used
+   * here because this wheel grants a regular new jutsu.
+   */
+  const n=devState.ninja||{}, c=devJutsuEligibilityCharacter();
+  const knownJ=new Set(devSplit(n.jutsu||'').map(x=>x.toLowerCase()));
+  const src=(typeof LOCAL_JUTSU_CATALOG!=='undefined'&&Array.isArray(LOCAL_JUTSU_CATALOG))?LOCAL_JUTSU_CATALOG:[];
+  const clean=src.filter(j=>{
+    const name=String(j?.name||j?.technique||'').trim();
+    if(!name||knownJ.has(name.toLowerCase())||isExcludedSpecialtyJutsu(name))return false;
+    try{return localJutsuEligible(j,c);}catch(_e){return false;}
+  });
+
+  const kgNames=devSplit(n.kekkeiGenkai||n.bloodline||'').filter(x=>x&&x!=='None');
+  const kgPool=[];
+  for(const j of clean){
+    let match=false;
+    for(const kg of kgNames){
+      const variant={...c,kekkeiGenkai:kg,bloodline:kg,bloodlineData:{name:kg},kekkeiGenkaiAccess:'Yes'};
+      try{if(techniqueMatchesCharacterKg(j,variant)){match=true;break;}}catch(_e){}
+    }
+    if(match)kgPool.push(j);
   }
-  return out.length?out:[W('No eligible new jutsu in the current local catalogue',1,{none:true})];
+  if(kgPool.length)return kgPool.map(j=>W(j.name||j.technique,1,{jutsu:j,tier:'kekkei-genkai'}));
+
+  const dojutsuPool=clean.filter(j=>{try{return techniqueMatchesCharacterDojutsu(j,c);}catch(_e){return false;}});
+  if(dojutsuPool.length)return dojutsuPool.map(j=>W(j.name||j.technique,1,{jutsu:j,tier:'dojutsu'}));
+
+  const naturePool=clean.filter(j=>{try{return techniqueMatchesCharacterNature(j,c);}catch(_e){return false;}});
+  if(naturePool.length)return naturePool.map(j=>W(j.name||j.technique,1,{jutsu:j,tier:'chakra-nature'}));
+
+  return [W('No eligible new jutsu in the current local catalogue',1,{none:true})];
 }
 function devSetbackPool(){return [W('Training Injury',3,{stat:'stamina'}),W('Jutsu Training Failure',3,{stat:'ninjutsu'}),W('Combat Injury',3,{stat:'durability'}),W('Physical Overtraining',2,{stat:'strength'}),W('Chakra Exhaustion',2,{stat:'chakraQuantity'}),W('Mental Strain',2,{stat:'willpower'}),W('Weapon Damage / Mishap',1,{stat:'weaponSkill'}),W('Sensory Fatigue',1,{stat:'sensory'})]}
 function devSetbackStatPool(){
@@ -5921,7 +6503,7 @@ function buildDevWheel(pool){
     path.setAttribute('stroke','#0d1119');
     path.setAttribute('stroke-width','1.2');
     const title=document.createElementNS('http://www.w3.org/2000/svg','title');
-    title.textContent=`${x.name} — ${x.pct>=1?x.pct.toFixed(2):x.pct.toFixed(3)}%`;
+    title.textContent=String(x.name || "");
     path.appendChild(title);
     svg.appendChild(path);
     if(span>=3.5){
@@ -5970,18 +6552,68 @@ function devCombatCheck(opponent){
   const n=devState.ninja||{},base=devCombatPower(n),difficulty=devOpponentDifficulty(opponent?.rank||''),roll=Math.floor(Math.random()*101),score=base*0.7+roll*0.3;
   const won=score>=difficulty;return{won,base:Math.round(base),roll,score:Math.round(score),difficulty};
 }
+
+function devAutomaticModifier(category,outcome){
+  const t=String(outcome||'').toLowerCase();
+  const one=(stat,delta,reason)=>({stat,delta,reason});
+  if(category==='Development Category'){
+    if(/training/.test(t)) return one('stamina',1,'Choosing training reinforces conditioning.');
+    if(/combat/.test(t)) return one('battleIQ',1,'Choosing combat reinforces practical battle judgment.');
+    if(/learn jutsu/.test(t)) return one('ninjutsu',1,'Choosing jutsu study reinforces technique practice.');
+    if(/chakra/.test(t)) return one('chakraControl',1,'Choosing chakra development reinforces chakra discipline.');
+    if(/dōjutsu/.test(t)) return one('sensory',1,'Choosing dōjutsu development reinforces perception.');
+    if(/weapon/.test(t)) return one('weaponSkill',1,'Choosing weapon development reinforces weapon familiarity.');
+    if(/summoning/.test(t)) return one('chakraControl',1,'Choosing summoning development reinforces chakra control.');
+    if(/physical/.test(t)) return one('taijutsu',1,'Choosing physical development reinforces conditioning.');
+    if(/setback/.test(t)) return one('willpower',-1,'A setback path represents an immediate developmental cost.');
+    if(/personal goal/.test(t)) return one('willpower',1,'Pursuing a personal goal reinforces resolve.');
+  }
+  if(category==='Seek Combat'){
+    if(/easy victory/.test(t)) return one('battleIQ',2,'A decisive victory reinforces combat judgment.');
+    if(/complicated victory/.test(t)) return one('battleIQ',3,'A difficult victory improves combat judgment.');
+    if(/narrow victory/.test(t)) return one('willpower',3,'A narrow victory reinforces resolve.');
+    if(/draw/.test(t)) return one('battleIQ',1,'An inconclusive fight provides tactical lessons.');
+    if(/harsh defeat/.test(t)) return one('battleIQ',1,'A harsh defeat provides hard tactical lessons.');
+    if(/overwhelming defeat/.test(t)) return one('willpower',1,'A severe defeat tests and develops resolve.');
+  }
+  if(category==='Find New Weapon') return one('weaponSkill',1,'Acquiring a new weapon expands weapon familiarity.');
+  if(category==='Contract New Summoning') return one('chakraControl',1,'A new summoning contract requires precise chakra control.');
+  if(category==='Physical Development') return one('taijutsu',1,'Physical development reinforces combat conditioning.');
+  if(category==='Chakra Development' && /nature/.test(t)) return one('chakraControl',2,'Learning a new chakra nature improves nature transformation control.');
+  if(category==='Chakra Development' && /jutsu/.test(t)) return one('ninjutsu',1,'Deepening an existing chakra technique improves ninjutsu proficiency.');
+  if(category==='Dōjutsu Development'){
+    if(/control/.test(t)) return one('chakraControl',2,'Dōjutsu control training improves precision.');
+    if(/stage/.test(t)) return one('battleIQ',2,'Dōjutsu stage advancement improves visual combat insight.');
+    if(/perception/.test(t)) return one('sensory',2,'Dōjutsu perception training improves sensory ability.');
+    if(/application/.test(t)) return one('battleIQ',1,'Developing a new dōjutsu application improves tactical use.');
+    if(/setback/.test(t)) return one('willpower',-1,'A dōjutsu training setback strains confidence.');
+    return one('sensory',1,'Dōjutsu training improves perception.');
+  }
+  if(category==='Personal Goal'){
+    if(/mentor/.test(t)) return one('intelligence',1,'Mentorship improves knowledge and technique understanding.');
+    if(/difficult mission/.test(t)) return one('battleIQ',2,'A difficult mission improves practical judgment.');
+    if(/rivalry/.test(t)) return one('willpower',1,'A rivalry strengthens competitive resolve.');
+    return one('willpower',1,'Pursuing a personal goal reinforces resolve.');
+  }
+  if(category==='Setback') return one('willpower',-1,'The setback imposes a small mental cost before its specific penalty is applied.');
+  return null;
+}
+
 function prepareDevelopmentResult(outcome){
   syncDevelopmentInputs();const n=devState.ninja,s=n.stats||{},cat=devState.category;devResetForNextStage();
   if(cat==='Training'){devState.context.trainingStat=devStatKeyByLabel(outcome);devState.context.trainingStatLabel=outcome;devScheduleWheel('trainingLevel');devSetResult('Training focus selected',`<b>Training What:</b> ${devEsc(outcome)}<br><span class="small">Now spin the five-level training wheel.</span>`);return;}
   if(cat==='Seek Combat'){
     const m=String(outcome).match(/^(Rival|Enemy) — (.+) \((.+)\)$/),opponent= m?{name:m[2],rank:m[3]}:{name:String(outcome),rank:''},relationship=m?m[1]:'Opponent';
     devState.context={...devState.context,opponent,relationship};
+    const opponentMod= /kage|legendary/i.test(opponent.rank)?{stat:'battleIQ',delta:2}:{stat:'battleIQ',delta:1};
+    const before=devClamp(n.stats[opponentMod.stat]??50); n.stats[opponentMod.stat]=devClamp(before+opponentMod.delta);
+    devState.context.opponentModifier={stat:opponentMod.stat,delta:n.stats[opponentMod.stat]-before};
     devState.wheel='combatOutcome';renderDevWheel();
     devSetResult('Opponent Selected',`<b>${devEsc(relationship)}: ${devEsc(opponent.name)}</b><br><span class="small">Now spin the Fight Outcome wheel to determine how the battle goes.</span>`);
     return;
   }
-  if(cat==='Find New Weapon'){devState.context.newWeapon=outcome;devState.wheel='weaponDecision';renderDevWheel();devSetResult('New weapon found',`<b>${devEsc(outcome)}</b><br><span class="small">Now spin the 50/50 Keep or Replace wheel.</span>`);return;}
-  if(cat==='Contract New Summoning'){devState.pending={outcome,ability:{type:'summoning',name:outcome},stat:null,delta:0,narrative:`The ninja establishes a new ${outcome} summoning contract.`};devSetResult('New Summoning Contract',`<b>${devEsc(outcome)}</b>`);document.getElementById('applyDevResultBtn').disabled=false;return;}
+  if(cat==='Find New Weapon'){devState.context.newWeapon=outcome;const before=devClamp(n.stats.weaponSkill??50);n.stats.weaponSkill=devClamp(before+1);devState.context.weaponModifier={stat:'weaponSkill',delta:n.stats.weaponSkill-before};devState.wheel='weaponDecision';renderDevWheel();devSetResult('New weapon found',`<b>${devEsc(outcome)}</b><br><span class="small">Weapon familiarity +1. Now spin the 50/50 Keep or Replace wheel.</span>`);return;}
+  if(cat==='Contract New Summoning'){devState.pending={outcome,ability:{type:'summoning',name:outcome},stat:'chakraControl',delta:1,narrative:`The ninja establishes a new ${outcome} summoning contract. Chakra Control +1 from contract training.`};devSetResult('New Summoning Contract',`<b>${devEsc(outcome)}</b>`);document.getElementById('applyDevResultBtn').disabled=false;return;}
   if(cat==='Physical Development'){devState.context.gateResult=outcome;const g=(typeof DATA!=='undefined'&&DATA.eightGates||[]).find(x=>x.name===outcome);if(!g||g.name.startsWith('None')){devState.pending={outcome,stat:null,delta:0,narrative:'The Eight Gates training produces no mastery increase.'};devSetResult('No mastery increase','<b>None</b><br><span class="small">The training produced no new Eight Gates mastery.</span>');document.getElementById('applyDevResultBtn').disabled=false;return;}const current=(typeof DATA!=='undefined'&&DATA.eightGates||[]).find(x=>x.name===n.eightGates),oldMod=current?.taiMod||Number(n.eightGatesTaiMod||0),newMod=g.taiMod||0;devState.pending={outcome,stat:'taijutsu',delta:newMod-oldMod,gate:g,narrative:`Eight Gates mastery increased to ${outcome}. Taijutsu modifier changes from +${oldMod} to +${newMod}.`};devSetResult('Eight Gates mastery increased',`<b>${devEsc(outcome)}</b><br>Taijutsu modifier: +${oldMod} → +${newMod}`);document.getElementById('applyDevResultBtn').disabled=false;return;}
   if(cat==='Chakra Development'){if(/Deepen Mastery/.test(outcome)){devState.wheel='chakraJutsu';renderDevWheel();devSetResult('Deepen Chakra Mastery','<span class="small">Choose a new jutsu compatible with the ninja’s existing chakra natures or Kekkei Genkai.</span>')}else{devState.wheel='chakraNature';renderDevWheel();devSetResult('Study a New Chakra Nature','<span class="small">Only chakra natures the ninja does not already possess are available.</span>')}return;}
   if(cat==='Setback'){devState.context.setbackType=devSetbackPool().find(x=>x.name===outcome)?.data||{};devState.context.setbackType.name=outcome;devState.wheel='setbackStat';renderDevWheel();devSetResult('Setback identified',`<b>${devEsc(outcome)}</b><br><span class="small">Now determine the affected stat.</span>`);return;}
@@ -5990,6 +6622,10 @@ function prepareDevelopmentResult(outcome){
   if(/Ninjutsu/.test(outcome))stat='ninjutsu';else if(/Taijutsu/.test(outcome))stat='taijutsu';else if(/Genjutsu/.test(outcome))stat='genjutsu';else if(/Speed/.test(outcome))stat='speed';else if(/Strength/.test(outcome))stat='strength';else if(/Durability/.test(outcome))stat='durability';else if(/Stamina/.test(outcome))stat='stamina';else if(/Chakra Control/.test(outcome))stat='chakraControl';else if(/Battle IQ/.test(outcome))stat='battleIQ';else if(/Intelligence/.test(outcome))stat='intelligence';else if(/Willpower/.test(outcome))stat='willpower';else if(/Sensory/.test(outcome))stat='sensory';else if(/Stealth/.test(outcome))stat='stealth';else if(/Weapon/.test(outcome))stat='weaponSkill';
   if(stat)delta=gain(stat);if(/Learn a New|Improve an Existing/.test(outcome))ability={type:'jutsu',name:outcome};if(/Dōjutsu/.test(outcome))ability={type:'dojutsu',name:'Dōjutsu development'};if(/Kekkei Genkai/.test(outcome))ability={type:'kekkei',name:'Kekkei Genkai development'};
   if(/Failure|Setback/.test(outcome))delta=-Math.max(1,Math.min(5,Math.round(1+(Number(s[stat||'stamina']??50))/35)));
+  if(!stat){
+    const dm=devAutomaticModifier(devState.category,outcome);
+    if(dm){stat=dm.stat;delta=dm.delta;narrative += ` ${dm.reason}`;}
+  }
   devState.pending={outcome,stat,delta,narrative,ability};devSetResult(outcome);const grid=document.getElementById('devChangeGrid');if(grid&&stat)grid.innerHTML=`<div class="dev-change"><span>${devEsc(DEV_STAT_NAMES[stat])}</span><strong>${devEsc(s[stat]??50)} → ${devEsc(devClamp((s[stat]??50)+delta))}</strong></div>`;document.getElementById('applyDevResultBtn').disabled=false;
 }
 function devPersistNinja(){
@@ -6068,6 +6704,8 @@ async function spinDevelopmentWheel(forceValue=null){
   const wheel=devState.wheel,pool=devOptionsForWheel(wheel),forced=forceValue||devForcedForWheel(wheel),result=forced||devRoll(pool);await devSpinVisual(result,pool);devShowOverlay(result);await new Promise(r=>setTimeout(r,document.getElementById('devSkipAnimation')?.checked?0:1200));devHideOverlay();
   if(wheel==='category'){
     devState.category=result;devState.outcome=null;devState.sessionRolls=Math.min(5,devState.sessionRolls+1);
+    const catMod=devAutomaticModifier('Development Category',result)||({stat:'battleIQ',delta:1,reason:'A new development path reinforces adaptability.'});
+    if(catMod){ const before=devClamp(devState.ninja.stats?.[catMod.stat]??50); devState.ninja.stats[catMod.stat]=devClamp(before+catMod.delta); devState.context.categoryModifier={stat:catMod.stat,delta:devState.ninja.stats[catMod.stat]-before,reason:catMod.reason}; }
     devState.sessionEvents.push({category:result,status:'In progress'});
     devScheduleWheel(devNextWheelForCategory());
   }
@@ -6080,6 +6718,7 @@ async function spinDevelopmentWheel(forceValue=null){
     const combatResult=outcome.result;
     devState.context.combatOutcome=outcome;
     if(combatResult==='victory'){
+      const dm=devAutomaticModifier('Seek Combat',result);if(dm){const before=devClamp(devState.ninja.stats[dm.stat]??50);devState.ninja.stats[dm.stat]=devClamp(before+dm.delta);devState.context.combatOutcomeModifier={stat:dm.stat,delta:devState.ninja.stats[dm.stat]-before};}
       devState.pending=null;
       devState.wheel='combatRewardStat';renderDevWheel();
       devSetResult('Combat Victory',`<b>${devEsc(ctx.relationship||'Opponent')}: ${devEsc(op.name)}</b><br>${devEsc(result)}<br><span class="small">Victory earned a development reward. Spin the reward-stat wheel next.</span>`);
@@ -6089,17 +6728,17 @@ async function spinDevelopmentWheel(forceValue=null){
       document.getElementById('applyDevResultBtn').disabled=false;
     }
   }
-  else if(wheel==='combatRewardStat'){devState.context.rewardStat=devStatKeyByLabel(result);devState.context.rewardStatLabel=result;devScheduleWheel('combatRewardLevel')}
+  else if(wheel==='combatRewardStat'){devState.context.rewardStat=devStatKeyByLabel(result);devState.context.rewardStatLabel=result;const rs=devState.context.rewardStat;if(rs){const before=devClamp(devState.ninja.stats[rs]??50);devState.ninja.stats[rs]=devClamp(before+1);devState.context.rewardStatModifier={stat:rs,delta:devState.ninja.stats[rs]-before};}devScheduleWheel('combatRewardLevel')}
   else if(wheel==='combatRewardLevel'){const lvl=pool.find(x=>x.name===result)||DEV_COMBAT_REWARD_LEVELS[0],stat=devState.context.rewardStat,delta=Math.floor(lvl.min+Math.random()*(lvl.max-lvl.min+1));devState.pending={outcome:`Combat Victory — ${devState.context.opponent.name}`,stat,delta,opponent:devState.context.opponent.name,relationship:devState.context.relationship,opponentRank:devState.context.opponent.rank,narrative:`${devState.context.combatOutcome?.name||'Victory'} over ${devState.context.opponent.name} (${devState.context.opponent.rank}) earned ${devState.context.rewardStatLabel} training, +${delta}.`};devSetResult('Combat Reward',`<b>${devEsc(devState.context.rewardStatLabel)}</b><br>${devEsc(lvl.name)}<br>Increase: <b>+${delta}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
   else if(wheel==='weapon'){prepareDevelopmentResult(result)}
-  else if(wheel==='weaponDecision'){devState.context.weaponDecision=devWeaponDecisionPool().find(x=>x.name===result)||{};devState.pending={outcome:`New Weapon — ${devState.context.newWeapon}`,stat:null,delta:0,narrative:''};devSetResult('Weapon Decision',devEsc(result));document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='weaponDecision'){devState.context.weaponDecision=devWeaponDecisionPool().find(x=>x.name===result)||{};devState.pending={outcome:`New Weapon — ${devState.context.newWeapon}`,stat:'weaponSkill',delta:1,narrative:`${result}. The decision adds +1 Weapon Skill from handling and integrating the new weapon.`};devSetResult('Weapon Decision',devEsc(result));document.getElementById('applyDevResultBtn').disabled=false}
   else if(wheel==='summoning'){prepareDevelopmentResult(result)}
   else if(wheel==='gates'){prepareDevelopmentResult(result)}
-  else if(wheel==='chakraChoice'){devState.context.chakraChoice=result;devScheduleWheel(/Deepen/.test(result)?'chakraJutsu':'chakraNature')}
-  else if(wheel==='chakraJutsu'){const j=(typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[]).find(x=>x.name===result);devState.pending={outcome:`Deepen Mastery — ${result}`,ability:{type:'jutsu',name:result},stat:'ninjutsu',delta:0,narrative:`The ninja learns ${result} using an existing chakra nature or Kekkei Genkai pathway.`};devSetResult('New Jutsu Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
-  else if(wheel==='chakraNature'){devState.pending={outcome:`New Chakra Nature — ${result}`,ability:{type:'nature',name:result},stat:null,delta:0,narrative:`The ninja learns ${result}, adding a new chakra nature to their repertoire.`};devSetResult('New Chakra Nature Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
-  else if(wheel==='setbackType'){const item=devSetbackPool().find(x=>x.name===result);devState.context.setbackType=item||{};devState.context.setbackType.name=result;devScheduleWheel('setbackStat')}
-  else if(wheel==='setbackStat'){const stat=devStatKeyByLabel(result);devState.context.setbackStat=stat;devScheduleWheel('setbackAmount')}
+  else if(wheel==='chakraChoice'){devState.context.chakraChoice=result;const cm=/Deepen/.test(result)?{stat:'ninjutsu',delta:1}:{stat:'chakraControl',delta:1};const before=devClamp(devState.ninja.stats[cm.stat]??50);devState.ninja.stats[cm.stat]=devClamp(before+cm.delta);devState.context.chakraChoiceModifier={stat:cm.stat,delta:devState.ninja.stats[cm.stat]-before};devScheduleWheel(/Deepen/.test(result)?'chakraJutsu':'chakraNature')}
+  else if(wheel==='chakraJutsu'){const j=(typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[]).find(x=>x.name===result);devState.pending={outcome:`Deepen Mastery — ${result}`,ability:{type:'jutsu',name:result},stat:'ninjutsu',delta:1,narrative:`The ninja learns ${result} using an existing chakra nature or Kekkei Genkai pathway.`};devSetResult('New Jutsu Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='chakraNature'){devState.pending={outcome:`New Chakra Nature — ${result}`,ability:{type:'nature',name:result},stat:'chakraControl',delta:2,narrative:`The ninja learns ${result}, adding a new chakra nature to their repertoire.`};devSetResult('New Chakra Nature Learned',`<b>${devEsc(result)}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
+  else if(wheel==='setbackType'){const item=devSetbackPool().find(x=>x.name===result);devState.context.setbackType=item||{};const before=devClamp(devState.ninja.stats.willpower??50);devState.ninja.stats.willpower=devClamp(before-1);devState.context.setbackTypeModifier={stat:'willpower',delta:devState.ninja.stats.willpower-before};devState.context.setbackType.name=result;devScheduleWheel('setbackStat')}
+  else if(wheel==='setbackStat'){const stat=devStatKeyByLabel(result);devState.context.setbackStat=stat;if(stat){const before=devClamp(devState.ninja.stats[stat]??50);devState.ninja.stats[stat]=devClamp(before+1);devState.context.setbackStatModifier={stat,delta:devState.ninja.stats[stat]-before};}devScheduleWheel('setbackAmount')}
   else if(wheel==='setbackAmount'){const amount=Math.abs(Number(String(result).replace(/[^0-9]/g,''))||1),stat=devState.context.setbackStat;devState.pending={outcome:`Setback — ${devState.context.setbackType.name}`,stat,delta:-amount,narrative:`${devState.context.setbackType.name} reduces ${DEV_STAT_NAMES[stat]} by ${amount}.`};devSetResult('Setback Applied',`<b>${devEsc(devState.context.setbackType.name)}</b><br>${devEsc(DEV_STAT_NAMES[stat])}: <b>−${amount}</b>`);document.getElementById('applyDevResultBtn').disabled=false}
   else {prepareDevelopmentResult(result)}
   devState.outcome=result;
@@ -6126,6 +6765,1485 @@ function startDevelopment(){
 }
 function initDevelopmentSystem(){devSourceOptions();const sel=document.getElementById('devNinjaSource');if(sel)sel.value='current';loadDevelopmentNinja()}
 window.addEventListener('DOMContentLoaded',()=>{try{initDevelopmentSystem()}catch(e){console.warn('Development system init',e)}});
+
+/* ===================== FIGHT WHEEL (TOURNAMENT) ===================== */
+const FIGHT_STEPS = [
+  'opening','earlyEdge','techniqueA','techniqueB','momentum',
+  'turning','climax','finish','aftermath'
+];
+const FIGHT_STEP_LABELS = {
+  opening:'Opening Exchange',
+  earlyEdge:'Early Advantage',
+  techniqueA:'Technique Spotlight — A',
+  techniqueB:'Technique Spotlight — B',
+  momentum:'Mid-Fight Momentum',
+  turning:'Turning Point',
+  climax:'Climax Exchange',
+  finish:'Finish',
+  aftermath:'Aftermath',
+  beastSteal:'Tailed Beast Steal Attempt'
+};
+const FIGHT_STEAL_ATTEMPT = 'Attempts to steal tailed beast';
+
+const FIGHT_COMBAT_OPTIONS = [
+  '','Ninjutsu','Taijutsu','Genjutsu','Kenjutsu','Dōjutsu','Medical Ninjutsu',
+  'Fūinjutsu','Puppetry','Sensor','Barrier Techniques','Weapon Specialist','Balanced'
+];
+
+let fightState = {
+  a:null, b:null,
+  stepIndex:0,
+  results:{},
+  spinning:false,
+  log:[],
+  active:false,
+  combat:null,
+  statChanges:{A:{},B:{}},
+  committed:false,
+  finalStatsApplied:false,
+  pendingFollowUp:null,
+  followUps:[]
+};
+
+function fightEsc(x){ return esc(x??''); }
+
+function fightStatKeys(){
+  return (typeof DEV_STAT_NAMES !== 'undefined' && DEV_STAT_NAMES)
+    ? Object.keys(DEV_STAT_NAMES)
+    : ['chakraQuantity','chakraControl','ninjutsu','taijutsu','genjutsu','speed','strength','durability','intelligence','battleIQ','stamina','handSeals','sensory','willpower','stealth','weaponSkill'];
+}
+
+function fightStatLabel(k){
+  if(typeof DEV_STAT_NAMES !== 'undefined' && DEV_STAT_NAMES[k]) return DEV_STAT_NAMES[k];
+  return k;
+}
+
+function fightPowerFromStats(stats){
+  const keys = fightStatKeys();
+  let sum = 0, n = 0;
+  for(const k of keys){
+    const v = Number(stats?.[k]);
+    if(!isNaN(v) && v > 0){ sum += v; n++; }
+  }
+  if(!n) return 50;
+  return Math.max(1, Math.min(100, Math.round(sum / n)));
+}
+
+function fightDisplayName(c){
+  if(!c) return 'Unknown';
+  if(c.name || c.fullName) return c.name || c.fullName;
+  try{ return characterDisplayName(c); }catch(e){ return 'Ninja'; }
+}
+
+function fightSourceOptions(){
+  for(const side of ['A','B']){
+    const sel = document.getElementById('fightSource' + side);
+    if(!sel) continue;
+    const prev = sel.value;
+    let html = '<option value="manual">Manual / Existing Ninja</option><option value="current">Current Generated Ninja</option>';
+    (characterLog || []).forEach((c,i)=>{
+      html += `<option value="log:${i}">Log — ${fightEsc(fightDisplayName(c))}</option>`;
+    });
+    sel.innerHTML = html;
+    if([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  }
+}
+
+function fightFillCombatSelects(){
+  for(const side of ['A','B']){
+    for(const which of ['Primary','Secondary']){
+      const sel = document.getElementById('fight' + which + side);
+      if(!sel) continue;
+      const prev = sel.value;
+      sel.innerHTML = FIGHT_COMBAT_OPTIONS.map(x =>
+        `<option value="${fightEsc(x)}">${fightEsc(x || '—')}</option>`
+      ).join('');
+      if(prev) sel.value = prev;
+    }
+  }
+}
+
+function fightAbilityContainer(side, kind){
+  const map = {
+    natures:'fightNatures', dojutsu:'fightDojutsu', kekkei:'fightKekkei',
+    jutsu:'fightJutsu', weapons:'fightWeapons', summoning:'fightSummoning'
+  };
+  return document.getElementById((map[kind] || '') + side);
+}
+
+function fightAbilityOptionsHtml(kind, selected){
+  // Reuse development ability catalog when available
+  let values = [{name:'None'}];
+  try{
+    if(typeof devAbilityValues === 'function') values = devAbilityValues(kind);
+  }catch(e){}
+  if(!values.length) values = [{name:'None'}];
+  return values.map(x => {
+    const name = x.name || x;
+    const sel = String(name).toLowerCase() === String(selected||'').toLowerCase() ? ' selected' : '';
+    return `<option value="${fightEsc(name)}"${sel}>${fightEsc(name)}</option>`;
+  }).join('');
+}
+
+function addFightAbilityField(side, kind, selected){
+  const el = fightAbilityContainer(side, kind);
+  if(!el) return;
+  const row = document.createElement('div');
+  row.className = 'dev-repeat-row';
+  const select = document.createElement('select');
+  select.dataset.fightAbility = kind;
+  select.dataset.fightSide = side;
+  select.innerHTML = fightAbilityOptionsHtml(kind, selected || 'None');
+  select.onchange = () => { syncFightFightersFromInputs(); };
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'secondary';
+  remove.textContent = 'Remove';
+  remove.onclick = () => { row.remove(); syncFightFightersFromInputs(); };
+  row.append(select, remove);
+  el.appendChild(row);
+}
+
+function clearFightAbilityFields(side){
+  for(const kind of ['natures','dojutsu','kekkei','jutsu','weapons','summoning']){
+    const el = fightAbilityContainer(side, kind);
+    if(el) el.innerHTML = '';
+  }
+}
+
+function renderFightAbilityFields(side, data){
+  clearFightAbilityFields(side);
+  const natures = data?.natures?.length ? data.natures : ['None'];
+  const dojutsu = data?.dojutsu ? [data.dojutsu] : ['None'];
+  const kekkei = data?.kekkei?.length ? data.kekkei : ['None'];
+  const jutsu = data?.jutsu?.length ? data.jutsu : ['None'];
+  const weapons = data?.weapons?.length ? data.weapons : ['None'];
+  const summoning = data?.summoning?.length ? data.summoning : ['None'];
+  natures.forEach(v => addFightAbilityField(side, 'natures', v));
+  dojutsu.forEach(v => addFightAbilityField(side, 'dojutsu', v));
+  kekkei.forEach(v => addFightAbilityField(side, 'kekkei', v));
+  jutsu.forEach(v => addFightAbilityField(side, 'jutsu', v));
+  weapons.forEach(v => addFightAbilityField(side, 'weapons', v));
+  summoning.forEach(v => addFightAbilityField(side, 'summoning', v));
+}
+
+function renderFightStatsGrid(side, stats){
+  const el = document.getElementById('fightStatsGrid' + side);
+  if(!el) return;
+  const st = stats || {};
+  el.innerHTML = fightStatKeys().map(k => {
+    const val = st[k] != null ? Math.max(1, Math.min(100, Number(st[k])||50)) : 50;
+    return `<div class="dev-stat-input"><label>${fightEsc(fightStatLabel(k))}</label>` +
+      `<input type="number" min="1" max="100" id="fightStat_${side}_${k}" value="${val}" ` +
+      `oninput="onFightStatInput('${side}')"></div>`;
+  }).join('');
+  onFightStatInput(side);
+}
+
+function readFightStats(side){
+  const stats = {};
+  for(const k of fightStatKeys()){
+    const el = document.getElementById('fightStat_' + side + '_' + k);
+    stats[k] = el ? Math.max(1, Math.min(100, Number(el.value)||50)) : 50;
+  }
+  return stats;
+}
+
+function onFightStatInput(side){
+  const stats = readFightStats(side);
+  const power = fightPowerFromStats(stats);
+  const label = document.getElementById('fightPowerLabel' + side);
+  if(label) label.textContent = `(Power: ${power})`;
+  syncFightFightersFromInputs();
+}
+
+function readFightAbilities(side){
+  const read = (kind) => {
+    const el = fightAbilityContainer(side, kind);
+    if(!el) return [];
+    return [...el.querySelectorAll('select')].map(s => s.value).filter(v => v && v !== 'None');
+  };
+  return {
+    natures: read('natures'),
+    dojutsu: read('dojutsu')[0] || 'None',
+    kekkei: read('kekkei'),
+    jutsu: read('jutsu'),
+    weapons: read('weapons'),
+    summoning: read('summoning')
+  };
+}
+
+function syncFightFightersFromInputs(){
+  const build = (side) => {
+    const stats = readFightStats(side);
+    const abs = readFightAbilities(side);
+    const name = (document.getElementById('fightName' + side)?.value || ('Ninja ' + side)).trim();
+    const jinch = document.getElementById('fightJinchuriki' + side)?.value || 'No';
+    const beast = (document.getElementById('fightBeast' + side)?.value || '').trim();
+    const liveCombat = fightState.active && fightState.combat?.[side];
+    const effectiveStats = liveCombat ? {...fightState.combat[side].stats} : stats;
+    return {
+      name,
+      rank: document.getElementById('fightRank' + side)?.value || '',
+      primary: document.getElementById('fightPrimary' + side)?.value || '',
+      stats: effectiveStats,
+      power: fightPowerFromStats(effectiveStats),
+      natures: abs.natures,
+      dojutsu: abs.dojutsu,
+      kekkei: abs.kekkei,
+      jutsu: abs.jutsu,
+      weapons: abs.weapons,
+      summoning: abs.summoning,
+      jinchuriki: jinch === 'Yes',
+      beast: beast,
+      favorite: !!document.getElementById('fightFav' + side)?.checked,
+      techniques: [
+        ...(abs.jutsu||[]),
+        abs.dojutsu && abs.dojutsu !== 'None' ? abs.dojutsu : null,
+        ...(abs.kekkei||[]),
+        ...(abs.weapons||[])
+      ].filter(Boolean).join(' · ')
+    };
+  };
+  fightState.a = build('A');
+  fightState.b = build('B');
+}
+
+function updateFightVsLabel(){
+  const a = document.getElementById('fightNameA')?.value || 'A';
+  const b = document.getElementById('fightNameB')?.value || 'B';
+  const el = document.getElementById('fightVsLabel');
+  if(el) el.textContent = `${a}  vs  ${b}`;
+}
+
+function loadFightFighter(side){
+  const sel = document.getElementById('fightSource' + side);
+  if(!sel) return;
+  let c = null;
+  if(sel.value === 'current') c = lastCharacter;
+  else if(sel.value.startsWith('log:')) c = characterLog[Number(sel.value.slice(4))];
+
+  if(c){
+    document.getElementById('fightName' + side).value = fightDisplayName(c);
+    const rankSel = document.getElementById('fightRank' + side);
+    const rankVal = c.rank || c.type || '';
+    if(rankSel){
+      if(![...rankSel.options].some(o => o.value === rankVal) && rankVal){
+        const opt = document.createElement('option');
+        opt.value = rankVal; opt.textContent = rankVal;
+        rankSel.appendChild(opt);
+      }
+      rankSel.value = rankVal;
+    }
+    const setCombat = (id, val) => {
+      const s = document.getElementById(id);
+      if(!s) return;
+      if(val && ![...s.options].some(o => o.value === val)){
+        const opt = document.createElement('option'); opt.value = val; opt.textContent = val; s.appendChild(opt);
+      }
+      s.value = val || '';
+    };
+    setCombat('fightPrimary' + side, c.primary || '');
+    renderFightStatsGrid(side, c.stats || {});
+    const natures = Array.isArray(c.natures) ? c.natures.map(x => x.name || x) : [];
+    const jutsu = [];
+    if(c.specialtyJutsu?.name) jutsu.push(c.specialtyJutsu.name);
+    if(c.signatureTechnique?.name && c.signatureTechnique.name !== 'None') jutsu.push(c.signatureTechnique.name);
+    if(c.ultimateJutsu?.name && c.ultimateJutsu.name !== 'None') jutsu.push(c.ultimateJutsu.name);
+    if(Array.isArray(c.jutsu)) jutsu.push(...c.jutsu.map(x => x.name || x));
+    const kekkei = [];
+    if(c.bloodline && c.bloodline !== 'None') kekkei.push(c.bloodline);
+    if(c.kekkeiGenkai && c.kekkeiGenkai !== 'None' && c.kekkeiGenkai !== c.bloodline) kekkei.push(c.kekkeiGenkai);
+    const weapons = c.weapon && c.weapon !== 'None' ? String(c.weapon).split(/[,/]/).map(x=>x.trim()).filter(Boolean) : [];
+    const summoning = [];
+    if(c.summoning === 'Yes' || c.summonType) summoning.push(c.summonType || 'Yes');
+    renderFightAbilityFields(side, {
+      natures, dojutsu: c.dojutsu || 'None', kekkei, jutsu, weapons, summoning
+    });
+    const isJ = c.jinchuriki === 'Yes' || c.jinchuriki === true || !!(c.beast && c.beast !== 'None');
+    const jSel = document.getElementById('fightJinchuriki' + side);
+    if(jSel) jSel.value = isJ ? 'Yes' : 'No';
+    const bWrap = document.getElementById('fightBeastWrap' + side);
+    if(bWrap) bWrap.style.display = isJ ? 'block' : 'none';
+    const bIn = document.getElementById('fightBeast' + side);
+    if(bIn) bIn.value = (c.beast && c.beast !== 'None') ? c.beast : '';
+  } else {
+    // manual — keep fields, ensure grids exist
+    if(!document.getElementById('fightStatsGrid' + side)?.children.length){
+      renderFightStatsGrid(side, {});
+      renderFightAbilityFields(side, {});
+    }
+  }
+  syncFightFightersFromInputs();
+  updateFightVsLabel();
+  renderFightWheel();
+}
+
+function resetFightFighter(side){
+  document.getElementById('fightSource' + side).value = 'manual';
+  document.getElementById('fightName' + side).value = 'Ninja ' + side;
+  document.getElementById('fightRank' + side).value = '';
+  document.getElementById('fightPrimary' + side).value = '';
+  document.getElementById('fightFav' + side).checked = false;
+  const jSel = document.getElementById('fightJinchuriki' + side);
+  if(jSel) jSel.value = 'No';
+  const bWrap = document.getElementById('fightBeastWrap' + side);
+  if(bWrap) bWrap.style.display = 'none';
+  const bIn = document.getElementById('fightBeast' + side);
+  if(bIn) bIn.value = '';
+  renderFightStatsGrid(side, {});
+  renderFightAbilityFields(side, {});
+  syncFightFightersFromInputs();
+  updateFightVsLabel();
+  renderFightWheel();
+}
+
+function fightCombatSide(side){
+  return fightState.combat?.[side] || null;
+}
+
+function fightEffectiveStats(side){
+  const c = fightCombatSide(side);
+  return c?.stats || (side === 'A' ? fightState.a?.stats : fightState.b?.stats) || {};
+}
+
+function fightAverageStats(stats){
+  return fightPowerFromStats(stats);
+}
+
+function fightInitCombatState(){
+  fightState.combat = {};
+  for(const side of ['A','B']){
+    const f = side === 'A' ? fightState.a : fightState.b;
+    fightState.combat[side] = {
+      stats: {...(f?.stats || {})},
+      momentum: 0,
+      chakra: 100,
+      stamina: 100,
+      injuries: 0,
+      pressure: 0,
+      jutsuUsed: [],
+      signatureUsed: [],
+      lastResult: '',
+      control: 0
+    };
+  }
+  fightState.statChanges = {A:{},B:{}};
+  fightState.initialStats = {A:{...fightState.combat.A.stats},B:{...fightState.combat.B.stats}};
+  fightState.committed = false;
+  fightState.finalStatsApplied = false;
+}
+
+function fightWinWeights(){
+  syncFightFightersFromInputs();
+  const a = fightState.a, b = fightState.b;
+  const ca = fightCombatSide('A'), cb = fightCombatSide('B');
+  let wa = fightAverageStats(ca?.stats || a?.stats) || 50;
+  let wb = fightAverageStats(cb?.stats || b?.stats) || 50;
+  if(a?.favorite && !b?.favorite) wa *= 1.25;
+  if(b?.favorite && !a?.favorite) wb *= 1.25;
+  const rankBoost = (r) => {
+    r = String(r||'').toLowerCase();
+    if(/kage|sannin/.test(r)) return 1.2;
+    if(/anbu|jōnin|jonin/.test(r)) return 1.1;
+    if(/chūnin|chunin/.test(r)) return 1.0;
+    if(/genin|academy/.test(r)) return 0.9;
+    return 1.0;
+  };
+  wa *= rankBoost(a?.rank);
+  wb *= rankBoost(b?.rank);
+  if(ca){ wa *= 1 + Math.max(-0.25, Math.min(0.25, ca.momentum / 100)); wa *= 1 - (ca.injuries * .035); wa *= .8 + (ca.chakra / 500) + (ca.stamina / 500); }
+  if(cb){ wb *= 1 + Math.max(-0.25, Math.min(0.25, cb.momentum / 100)); wb *= 1 - (cb.injuries * .035); wb *= .8 + (cb.chakra / 500) + (cb.stamina / 500); }
+  wa = Math.max(.1, wa); wb = Math.max(.1, wb);
+  const total = wa + wb || 1;
+  return { a: wa / total, b: wb / total };
+}
+
+const FIGHT_JUTSU_ROLES = {"Rasengan":"Offensive","Big Ball Rasengan":"Offensive","Rasengan Barrage":"Offensive","Wind Style: Rasenshuriken":"Offensive","Sage Art: Massive Rasengan Barrage":"Offensive","Tailed Beast Bomb":"Offensive","Tailed Beast Rasenshuriken":"Offensive","Six Paths: Massive Rasen Shuriken":"Offensive","Chidori":"Offensive","Chidori Stream":"Offensive","Chidori Current":"Offensive","Chidori Sharp Spear":"Offensive","Chidori True Spear":"Offensive","Kirin":"Offensive","Lightning Blade (Raikiri)":"Offensive","Lightning Blade: Twin Lightning":"Offensive","Kamui Lightning Blade":"Both","Fire Style: Fire Ball Jutsu":"Offensive","Fire Style: Phoenix Flower Jutsu":"Offensive","Fire Style: Dragon Flame Jutsu":"Offensive","Fire Style: Majestic Destroyer Flame":"Offensive","Amaterasu":"Offensive","Kagutsuchi / Flame Control":"Both","Inferno Style: Susanoo Flame Control":"Both","Susanoo":"Both","Perfect Susanoo":"Both","Yasaka Magatama":"Offensive","Tsukuyomi":"Offensive","Kotoamatsukami":"Offensive","Izanagi":"Both","Izanami":"Both","Shinra Tensei":"Both","Bansho Tenin":"Both","Chibaku Tensei / Planetary Devastation":"Both","Outer Path — Samsara of Heavenly Life":"Offensive","Rinnegan limbo / shadow clones":"Offensive","Amenotejikara":"Both","Eight Trigrams Sixty-Four Palms":"Offensive","Eight Trigrams Vacuum Palm":"Offensive","Eight Trigrams Palms Revolving Heaven":"Defensive","Gentle Step Twin Lion Fists":"Offensive","Gentle Fist":"Offensive","Wood Release: Deep Forest Emergence":"Offensive","Wood Release: Wood Dragon":"Offensive","Wood Release: Wood Human Technique":"Offensive","Sage Art Wood Release: True Several Thousand Hands":"Offensive","Demonic Mirroring Ice Crystals":"Defensive","Thousand Flying Water Needles of Death":"Offensive","Lava Release: Melting Apparition":"Offensive","Boil Release: Skilled Mist Technique":"Offensive","Storm Release: Laser Circus":"Offensive","Magnet Release: Gold Dust":"Offensive","Scorch Release: Extremely Steaming Murder":"Offensive","Explosion Release: Landmine Punch":"Offensive","Dust Release: Detachment of the Primitive World":"Offensive","Sand Binding Coffin":"Defensive","Sand Waterfall Funeral":"Offensive","Quicksand Waterfall Flow":"Offensive","Giant Sand Burial":"Offensive","Puppet Technique":"Offensive","Black Secret Technique Machine One Shot":"Offensive","Black Secret Technique: Salamander":"Offensive","Red Secret Technique Performance of a Hundred Puppets":"Offensive","Iron Sand techniques (puppet/magnet hybrid)":"Offensive","Executioner's Blade techniques":"Offensive","Samehada techniques":"Both","Kusanagi sword techniques":"Offensive","Flying Thunder God Slash":"Both","Totsuka Blade / Yata Mirror":"Defensive","Fan of Temari / Summoning: Blade Dance":"Offensive","Chakra Blade techniques (Asuma)":"Offensive","Sealing Tag / Exploding Tag tools":"Both","Primary Lotus":"Offensive","Hidden Lotus / Reverse Lotus":"Offensive","Morning Peacock":"Offensive","Daytime Tiger":"Offensive","Evening Elephant":"Offensive","Night Guy":"Offensive","Dynamic Entry":"Offensive","Leaf Hurricane / Leaf Dragon God":"Offensive","Creation Rebirth":"Both","Strength of a Hundred Technique":"Both","Cherry Blossom Impact":"Offensive","Shadow Imitation Technique":"Both","Shadow Strangle Technique":"Both","Shadow-Neck Binding":"Offensive","Mind Body Switch Technique":"Both","Mind Body Disturbance Technique":"Both","Multi-Size Technique":"Offensive","Partial Multi-Size Technique":"Offensive","Human Bullet Tank":"Offensive","Butterfly Mode / Calorie Control":"Both","Fang Over Fang":"Offensive","Passing Fang":"Offensive","Wolf Fang Over Fang":"Offensive","Parasitic Destruction Insect Technique":"Offensive","Insect Sphere / Insect Jamming":"Both","Water Style: Water Dragon Bullet":"Offensive","Water Style: Great Waterfall Technique":"Offensive","Water Style: Water Prison":"Offensive","Hiding in Mist Technique":"Defensive","Hydrification Technique":"Defensive","Earth Style: Earth-Style Wall":"Defensive","Earth Style: Swamp of the Underworld":"Offensive","Lightning Style: Lightning Cutter variants":"Offensive","Wind Style: Vacuum Sphere / Serial Waves":"Offensive","Flying Thunder God Technique":"Both","Kamui":"Both","Summoning: Impure World Reincarnation":"Both","Frog Kata":"Offensive","Sage Art: Goemon":"Offensive","Sage Art: Inorganic Reincarnation":"Both","Dance of the Crescent Moon / Camellia / etc.":"Offensive","Bracken Dance":"Offensive","Dance of the Shikigami":"Offensive","Paper Person of God Technique":"Offensive","Explosive Clay":"Offensive","C0 / C1 / C2 / C3 / C4":"Offensive","Curse Technique: Death Controlling Possessed Blood":"Offensive","Earth Grudge Fear":"Offensive","Dead Demon Consuming Seal":"Defensive","Eight Trigrams Sealing Style":"Offensive","Adamantine Sealing Chains":"Offensive","Multiple Shadow Clone Technique":"Both","Body Flicker Technique":"Defensive","Genjutsu: Ketsuryūgan":"Offensive","Blood Transformation Technique":"Both","Exploding Human Technique":"Offensive","Blood Dragon Ascension":"Offensive","Jōgan: Chakra Pathway Perception":"Defensive","Jōgan: Chakra Signature Identification":"Defensive","Jōgan: Dimensional Barrier Perception":"Defensive","Jōgan: Space–Time Portal":"Offensive","Crystal Release: Jade Crystal Prison Technique":"Offensive","Crystal Release: Crystal Lance":"Offensive","Crystal Release: Jade Crystal Labyrinth Technique":"Offensive","Crystal Release: Tearing Crystal Falling Dragon":"Offensive","Dark Release: Inhaling Maw":"Offensive","Dark Release: Judgment":"Offensive","Dark Release: Chakra Absorption":"Both","Dark Release: Absorbed Chakra Rebound":"Both","Steel Release: Body Hardening":"Offensive","Steel Release: Blade-Proof Steel Skin":"Offensive","Swift Release: Shadowless Flight":"Offensive","Swift Release: Blur-Speed Multi-Angle Strikes":"Offensive","Swift Release: Taijutsu-Negating Movement":"Offensive","Typhoon Release: Consecutive Bursting Strong Winds":"Offensive","Typhoon Release: Great Consecutive Bursting Extreme Winds":"Offensive","Typhoon Release: Destructive Wind Vortex":"Offensive","Mud Release: Mud Assault":"Offensive","Mud Release: Quagmire Bind":"Defensive","Bee Bomb Technique":"Offensive","Bee Honey Technique":"Offensive","Beeswax Clone":"Offensive","Thousand Bee Stings Technique":"Offensive","Smoke-Body Transformation":"Both","Partial Smoke Intangibility":"Defensive","Smoke Form Body Possession":"Both","Internal Oxidation (Smoke Form)":"Both","Kurama Clan Kekkei Genkai Genjutsu":"Offensive","Painting-Conduit Genjutsu":"Offensive","Village-Scale Reality Genjutsu":"Offensive","Physical-Damage Genjutsu":"Offensive","Fury":"Offensive","Tsuchigumo Style: Forbidden Life Technique Release: Creation of Heaven and Earth":"Offensive","Tsuchigumo Village Barrier":"Defensive","Tsuchigumo Trap Field":"Offensive","Adamantine Attacking Chains":"Both","Tight Binding Golden Chain Technique":"Offensive","Uzumaki Life-Force Sealing Formula":"Offensive","Power of the Sea Dragon":"Both","Tidal Parting":"Offensive","Blood-Drain Revitalisation":"Defensive","Funato Water Prison Wave":"Offensive","Fūma Shuriken Combat Style":"Both","Giant Folding Shuriken Technique":"Offensive","Wire-Disconnect Multi-Blade":"Offensive","Wind Demon Projectile Tactics":"Offensive","Samehada Partnership Combat":"Both","Water Prison Shark Dance":"Both","Shark-Style Chakra Absorption":"Both","Face Copying Technique":"Offensive","Identity Theft Transformation":"Both","Super Multi-Size Technique":"Offensive","Spiked Human Bullet Tank":"Offensive","Insect Clone Technique":"Both","Human Cocoon Technique":"Offensive","Secret Technique: Insect Gathering":"Offensive","Spider Bind / Insect Jar Technique":"Offensive","Shadow–Sewing Technique":"Both","Shadow Imitation Shuriken Technique":"Both","Shadow Gathering Technique":"Offensive","Mind Body Transmission Technique":"Both","Formation Ino–Shika–Chō":"Offensive","Four Legs Technique":"Offensive","Dynamic Marking":"Offensive","Man–Beast Combination Transformation: Total Combined":"Both","Eight Trigrams Thirty-Two Palms":"Offensive","Fire Release: Great Fireball Technique":"Offensive","Fire Release: Phoenix Sage Fire Technique":"Offensive","Fire Release: Dragon Flame Bomb":"Offensive","Sharingan Genjutsu":"Offensive","Water Gun Technique":"Offensive","Steaming Danger Tyranny":"Offensive","Water Release: Water Colliding Wave":"Offensive","Front Lotus":"Offensive","Reverse Lotus":"Offensive","Eight Gates Released Formation":"Offensive","Ice Release: Ice Rock Dome of Magnificent Nothingness":"Defensive","Ice Release: Certain-Kill Ice Spears":"Offensive","Ice Release: One Horned White Whale":"Offensive","Ice Release: Tearing Dragon Fierce Tiger":"Offensive","Sand Shield":"Both","Sand Arm":"Offensive","Fire Release: Intelligent Hard Work":"Offensive","Lightning Beast Tracking Fang":"Offensive","Eight Trigrams Air Palm":"Offensive","Planetary Rasenshuriken":"Offensive","Water Release: Water Shark Bullet Technique":"Offensive","Water Style: Water Shark Bullet Technique":"Offensive","Water Release: Great Exploding Water Colliding Wave":"Offensive","Wind Release: Great Breakthrough":"Offensive","Lightning Release: Lightning Strike":"Offensive","Lightning Release: False Darkness":"Offensive","Lava Release: Lava River Flow":"Offensive","Chakra Threads":"Offensive","Mystical Palm Technique":"Offensive","Dance of the Clematis":"Offensive","Exploding Clay":"Offensive","Tailed Beast Planetary Rasen Shuriken":"Offensive","Dive Bomb Rasengan / Nosediving Rasengan":"Offensive","Truth-Seeker Kick":"Both","Six Paths Tailed Beast Strike":"Offensive","True Naruto Uzumaki Barrage":"Offensive","Sealed Power":"Both","Baryon Mode Ultimate / Baryon Rasengan":"Both","Shadow Clone Technique":"Both","Clone Lasso":"Offensive","Clone Ladder":"Offensive","Clone Arrow":"Offensive","Charging Bullet":"Offensive","Chakra Gun Volley":"Offensive","Nine Tails' Claw: Sunder / Rampage":"Offensive","Vermillion Rasengan":"Offensive","Fire Style: Fire Ball Jutsu: Fire Rain":"Offensive","Inferno Style: Fire Ball Jutsu":"Offensive","Inferno Style: Flame Control":"Both","Inferno Style: Flame Control Jumping Flames":"Both","Flame Control Sword":"Both","Susanoo: Flame Bind":"Offensive","Susanoo: Fire Thrust":"Both","Susanoo: Flame Spiral":"Both","Susanoo: Tsukumo":"Both","Indra's Arrow / Takemikazuchi-no-Kami":"Offensive","Planetary Devastation: Heavenly Drop":"Both","Curse Mark Chidori":"Offensive","Cursed Power":"Both","Kotoamatsukami: Kobo":"Offensive","Uchiha Style: Halo Dance":"Offensive","Clone Jutsu: Super Explosion":"Offensive","Flash Slice":"Offensive","Combustive Sword Attack":"Offensive","Lightning Blade: Speed":"Offensive","Lightning Blade: Double Lightning Quake":"Offensive","Susanoo: Kamui Lightning Blade":"Both","White Light Blade":"Offensive","Summoning: Demonic Statue of the Outer Path":"Offensive","Eight Trigrams 64 Palms Guard":"Defensive","Leaf Hot Wind":"Offensive","Leaf Burning Sky":"Offensive","One's Own Rule":"Offensive","Shadow Stitching Jutsu: Rook":"Both","Shadow Pull Jutsu":"Both","Shadow Pinning Jutsu":"Both","Kunai Tactics: Siege":"Offensive","Flower Bomb":"Offensive","Flower Bomb: Scatter":"Offensive","Dancing Petals Flower Garden":"Offensive","Ninja Art: Inundated with Flowers":"Offensive","Super Expansion Jutsu":"Offensive","Super Slap":"Offensive","Hidden Jutsu: Insect Bog":"Offensive","Parasitic Insects: Pupa":"Offensive","Absolute Fang Over Fang":"Offensive","The Great Sakura":"Offensive","Full Blossom: Cherry Blossom Clash":"Offensive","Paradise Pure Land":"Offensive","Legendary Herculean Strength":"Both","Heaven Kick of Pain":"Offensive","Giant Layered Sand Burial":"Offensive","Sand Shuriken / Sand Projectiles":"Offensive","Secret Black Move: Iron Maiden":"Offensive","Secret Black Move: Flame Control Scorpion Show":"Both","Iron Sand: Unleash!":"Offensive","Three Treasures Suction Crush":"Offensive","Summoning: Blade Dance":"Offensive","Tornado Drop":"Offensive","True Wind Scythe Jutsu":"Offensive","Water Style: Super Shark Bomb":"Offensive","Water Style: Grand Water Excavation":"Offensive","Silent Killing":"Offensive","Torrent: Water Transformation Jutsu":"Both","Lava Style: Acid Explosion":"Offensive","Water Style: Tri-Water Dragon Jutsu":"Offensive","Water Style: Flowing Whip":"Offensive","Water Style: Bubble Jutsu":"Offensive","Freight Bubbles":"Offensive","Lightning Style: Lariat":"Offensive","Lightning Oppression Horizontal":"Offensive","Lightning Release: Double Lariat":"Offensive","Acrobat / Seven Swords Dance":"Offensive","Earth Style: Rock Bullet Jutsu":"Offensive","Earth Style: Weighted Boulder Jutsu":"Offensive","Particle Style: Atomic Dismantling: Drill":"Offensive","Genes of the First Hokage":"Both","C3":"Offensive","C0":"Offensive","Shikigami Dance: Punishment":"Offensive","Rinne Six Paths":"Both","Almighty Push (Ultimate context)":"Offensive","Curse Jutsu: Death Possession Blood":"Offensive","Fire Style: Burning Ash":"Offensive","Striking Shadow Snake":"Offensive","Snake Bearer Jutsu":"Offensive","Giant Snake Bearer Jutsu":"Offensive","White Snake Charmer Jutsu":"Offensive","Blade Dance (Kusanagi)":"Offensive","Living Wall Fist: Style Zero / Style One":"Defensive","Sage Art: Inorganic Reanimation":"Offensive","Forbidden Technique: Dead Soul Jutsu":"Offensive","Genji Dance":"Offensive","Dance of the Willow":"Offensive","Dance of the Camellia":"Offensive","Demon Flute: Floating Note":"Offensive","Demon Flute: Chains of Fantasia":"Offensive","Demon Flute: Phantom Wave":"Offensive","Demon Flute: Nocturne":"Offensive","Doki summoning (Club / Claw / Bind)":"Offensive","Flying Thunder God: Guide Thunder / Combo Level":"Both","Tandem Paper Bomb":"Offensive","Water Style: Explosive Bite of the Water Dragon":"Offensive","Sealing Jutsu: Reaper Death Seal":"Offensive","Five Style Massive Combo Jutsu":"Offensive","The Red-Hot Habanero":"Offensive","Severe Stinging Slap":"Offensive","Sage Art: Bath of Boiling Oil":"Offensive","Needle Jizō / Art of the Raging Lion's Mane":"Offensive","Gallant Rasengan":"Offensive","Sage Power":"Both","Fire Style: Toad Oil Flame Bullet":"Offensive","Infinite Tsukuyomi":"Offensive","Limbo: Border Jail":"Offensive","Truth-Seeking Balls / Gudōdama":"Offensive","All-Killing Ash Bones":"Offensive","Amenominaka":"Both","Yomotsu Hirasaka":"Both","Chakra Blade: Straight Line":"Offensive","Flying Swallow":"Defensive","Weapon Control: Gigantic Iron Ball":"Offensive","Ninja Tool: Multi Blade Chaos":"Offensive","Ninja Art: Super Beast Scroll — Armor Collection":"Defensive","Ink Clone / Ink Beast":"Offensive","Super Harem Jutsu":"Offensive","Love Roar":"Offensive","Three Tails Rampage":"Offensive","Five-Mountain Jump":"Offensive","Horn Hit":"Offensive","Eruption Kick":"Offensive","Boil Release: Unrivalled Strength":"Both","Scientific Ninja Tool Rasengan":"Offensive","Boruto Stream / Jet Stream":"Offensive","Aqua Shoot / Aqua Blast":"Offensive","Tornado High":"Offensive","Sukunahikona":"Both","Daikokuten":"Both","Takamimusubinokami":"Both","Shuriken Shadow Clone Technique":"Both","Transformation Technique":"Both","Substitution Technique":"Defensive","Clone Technique (basic)":"Both","Sexy Technique / Harem Technique":"Offensive","Temporary Paralysis Technique":"Offensive","Chakra Enhanced Strength":"Both","Fire Release: Great Dragon Fire Technique":"Offensive","Fire Release: Flame Bullet":"Offensive","Fire Release: Great Fire Annihilation":"Offensive","Fire Release: Great Fire Destruction":"Offensive","Fire Release: Ash Pile Burning":"Offensive","Fire Release: Blast Wave Wild Dance":"Offensive","Water Release: Water Formation Wall":"Defensive","Water Release: Water Bullet Technique":"Offensive","Water Release: Water Clone Technique":"Both","Water Release: Wild Water Wave":"Offensive","Earth Release: Earth Shore Return":"Offensive","Earth Release: Added-Weight Rock Technique":"Offensive","Earth Release: Light-Weight Rock Technique":"Offensive","Earth Release: Earth Flow River":"Offensive","Earth Release: Mud Wall":"Defensive","Earth Release: Rock Shelter":"Defensive","Earth Release: Golem Technique":"Offensive","Lightning Release: Electromagnetic Murder":"Offensive","Lightning Release: Thunderbolt":"Offensive","Lightning Release: Wave of Inspiration":"Offensive","Lightning Release: Lightning Ball":"Offensive","Lightning Release: Depth Charge":"Offensive","Wind Release: Vacuum Blade":"Offensive","Wind Release: Air Bullet":"Offensive","Wind Release: Pressure Damage":"Offensive","Wind Release: Gale Palm":"Offensive","Wind Release: Sickle Weasel Technique":"Offensive","Wind Release: Great Sickle Weasel Technique":"Offensive","Demonic Illusion: Hell Viewing Technique":"Offensive","Demonic Illusion: Tree Binding Death":"Offensive","Demonic Illusion: False Surroundings Technique":"Offensive","Bringer-of-Darkness Technique":"Both","Temple of Nirvana Technique":"Offensive","Genjutsu Binding":"Offensive","Demonic Illusion: Shackling Stakes Technique":"Offensive","Ephemeral":"Both","Flower–related genjutsu (Kurenai-style)":"Offensive","Four Symbols Seal":"Defensive","Five Elements Seal":"Defensive","Five Elements Unseal":"Defensive","Contract Seal":"Defensive","String Light Formation":"Offensive","Multiple String Light Formation":"Offensive","Sealing Technique: Tiger Vision Staring Bullet":"Offensive","Dark Sealing Method":"Defensive","Sealing Technique: Phantom Dragons Nine Consuming Seals":"Offensive","Iron Armour Seal":"Defensive","Reverse Four Symbols Sealing":"Defensive","Steel Release: Impervious Armour":"Defensive","Steel Release: Steel Projectile":"Offensive","Steel Release: Steel Shield Technique":"Defensive","Steel Blades Technique":"Offensive","Crystal Release: Jade Crystal Mirror":"Defensive","Crystal Release: Jade Crystal Blade":"Offensive","Crystal Release: Crystal Armour":"Defensive","Crystal Release: Crystal Needles":"Offensive","Crystal Release: Crystal Wheel":"Offensive","Crystal Release: Growing Crystal Thorns":"Offensive","Crystal Release: Crystal Pentagonal Prison":"Offensive","Crystal Release: Shuriken Wild Dance":"Offensive","Crystal Release: The Gods' Crossings Technique":"Offensive","Jade Crystal Clone Technique":"Both","Mud Release: Bottomless Mud Hole":"Offensive","Mud Release: Landslide":"Offensive","Mud Release: Mud Doll":"Offensive","Mud Release: Muddy Water Wall":"Defensive","The Nine-Tailed Rasengan":"Offensive","Wind Style: Rasenshuriken (Ultimate)":"Offensive","True Wind Style: Rasenshuriken":"Offensive","Sage Art: Massive Rasengan Mega Barrage":"Offensive","Tailed Beast Planetary Rasenshuriken":"Offensive","Six Paths: Massive Rasenshuriken":"Offensive","Baryon Mode Ultimate":"Both","Amaterasu (Ultimate)":"Offensive","Susanoo (Ultimate)":"Both","Indra's Arrow":"Offensive","The 100 Healings Jutsu (Ultimate)":"Defensive","Lightning Blade: Twin Lightning Shiver":"Offensive","Kamui (Ultimate)":"Both","Asakujaku (Morning Peacock Ultimate)":"Offensive","Hirudora (Daytime Tiger Ultimate)":"Offensive","One's Own Rule / Hidden Lotus":"Offensive","Ninja Art: Shadow Strangle Jutsu":"Both","8 Trigrams 64 Palms (Ultimate)":"Offensive","Gentle Step Twin Lion Fists (Ultimate)":"Offensive","8 Trigrams 64 Palms Guard":"Defensive","Wolf Fang Over Fang (Ultimate)":"Offensive","Giant Sand Burial (Ultimate)":"Offensive","Tsukuyomi (Ultimate)":"Offensive","Totsuka Blade":"Offensive","Earth Grudge: Final Shot":"Offensive","Almighty Push / Shinra Tensei (Ultimate)":"Both","Wood Style Hidden Jutsu: Deep Forest Emergence (Ultimate)":"Offensive","Perfect Form Susanoo (Ultimate)":"Both","Infinite Tsukuyomi (Ultimate)":"Offensive","Bracken Dance (Ultimate)":"Offensive","Living Wall Fist: Style Zero":"Defensive","Scientific Ninja Tool Rasengan variants":"Offensive","Karma Ultimate":"Offensive","Sukunahikona / Daikokuten (Isshiki Ultimate)":"Both","Takamimusubinokami (Momoshiki Ultimate)":"Both","Boil Release: Skilled Mist Technique (Ultimate)":"Offensive","Crystal Release: Crystal Armour — Absolute":"Defensive","Dark Release: Inhaling Maw (Ultimate)":"Offensive","Explosion Release: Landmine Fist (Ultimate)":"Offensive","Explosion Release: C0 (Ultimate)":"Offensive","Ice Release: Demonic Mirroring Ice Crystals (Ultimate)":"Defensive","Lava Release: Quick Lime Congealing Technique (Ultimate)":"Offensive","Lava Release: Rubber Wall / Lava Stream":"Both","Lava Release: Scorching Rocks":"Offensive","Magnet Release: Conserving Bee Twin Blades (Ultimate)":"Offensive","Magnet Release: Iron Sand World Method":"Offensive","Magnet Release: Gold Dust Imperial Funeral":"Offensive","Mud Release: Quagmire Coffin":"Offensive","Scorch Release: Extremely Steaming Murder (Ultimate)":"Offensive","Scorch Release: Halo Hurricane Jet Black Arrow":"Offensive","Shikotsumyaku: Dance of the Clematis — Vine":"Offensive","Shikotsumyaku: Dance of the Seedling Fern (Ultimate)":"Offensive","Shikotsumyaku: Dance of the Larch (Ultimate)":"Offensive","Storm Release: Laser Circus (Ultimate)":"Offensive","Storm Release: Black Hunting":"Offensive","Typhoon Release: Great Consecutive Breaking Void":"Offensive","Wood Release: Advent of a World of Flowering Trees":"Offensive","Wood Release: Wood Dragon Technique (Ultimate)":"Offensive","Wood Release: Hotei Technique":"Offensive","Wood Release: Smothering Binding Technique":"Offensive","Byakugan: Gentle Fist — Body Blow (Ultimate)":"Offensive","Byakugan: Eight Trigrams Palms Revolving Heaven (Ultimate)":"Defensive","Byakugan: Air Palm — Mountain Crusher":"Defensive","Byakugan: Gentle Step — Lion Camellia":"Offensive","Jōgan: Dimension Breach":"Defensive","Jōgan: Invisible Barrier Sever":"Defensive","Ketsuryūgan: Blood Dragon Ascension":"Offensive","Ketsuryūgan: Genjutsu — Blood Prison":"Offensive","Kokugan: Daikokuten — Complete":"Both","Kokugan: Cubes of Ruin":"Offensive","Rinnegan: Outer Path — Samsara of Heavenly Life":"Offensive","Rinnegan: Planetary Devastation (Chibaku Tensei Ultimate)":"Both","Rinnegan: Human Path — Soul Rip (Ultimate)":"Offensive","Rinnegan: Naraka Path — King of Hell Judgment":"Offensive","Rinnegan: Asura Path — Arm Cannon Barrage":"Offensive","Rinnegan: Preta Path — Blocking Technique Absorption (Ultimate)":"Defensive","Senrigan: Omnipresent Insight":"Defensive","Sharingan: Izanagi (Ultimate)":"Both","Sharingan: Izanami (Ultimate)":"Both","Mangekyō: Yasaka Magatama (Ultimate)":"Offensive","Mangekyō: Kagutsuchi — Blade":"Both","Eternal Mangekyō: Susanoo — Yasaka Magatama":"Both","Tenseigan: Tenseigan Chakra Mode (Ultimate)":"Defensive","Tenseigan: Golden Wheel Reincarnation Explosion":"Offensive","Tenseigan: Silver Wheel Reincarnation Explosion":"Offensive","Rinne Sharingan: Amenominaka":"Both","Rinne Sharingan: Yomotsu Hirasaka (Ultimate)":"Both","Fire Release: Great Fire Annihilation (Ultimate)":"Offensive","Fire Release: Dragon Flame Release Song Technique":"Offensive","Fire Release: Ash Pile Burning (Ultimate)":"Offensive","Wind Release: Vacuum Serial Waves (Ultimate)":"Offensive","Wind Release: Vacuum Sphere (Ultimate)":"Offensive","Wind Release: Great Breakthrough (Ultimate)":"Offensive","Lightning Release: Lightning Oppression Horizontal (Ultimate)":"Offensive","Lightning Release: Lightning Transmission":"Offensive","Lightning Release: False Darkness (Ultimate)":"Offensive","Lightning Release: Hell Stab — One-Finger":"Offensive","Lightning Release: Lightning Beast Tracking Fang":"Offensive","Earth Release: Earth Style Wall — Great Mountain":"Defensive","Earth Release: Swamp of the Underworld (Ultimate)":"Offensive","Earth Release: Added-Weight Rock / Super-Weighted Rock":"Offensive","Earth Release: Light-Weight Rock — Planetary":"Offensive","Earth Release: Earth Dragon Bullet (Ultimate)":"Offensive","Earth Release: Moving Earth Core":"Offensive","Water Release: Great Exploding Water Colliding Wave (Ultimate)":"Offensive","Water Release: Water Dragon Bullet — Emperor":"Offensive","Water Release: A Thousand Feeding Sharks":"Offensive","Water Release: Water Prison Shark Dance (Ultimate)":"Both","Water Release: Tears of the Shinigami":"Offensive","Yin Release: Genjutsu — Bringer-of-Darkness (Ultimate)":"Offensive","Yin Release: Shadow–Mind Dominion":"Offensive","Yang Release: Multi-Size — Super Expansion (Ultimate)":"Offensive","Yang Release: Creation of All Things (Fragment)":"Both","Yin–Yang Release: Truth-Seeking Orbs — Full Set":"Both","Yin–Yang Release: Six Paths — Chibaku Tensei":"Both"};
+
+function fightJutsuFightRole(name){
+  const key = String(name || '').trim();
+  if(!key) return null;
+  return FIGHT_JUTSU_ROLES[key] || FIGHT_JUTSU_ROLES[key.replace(/[’]/g, "'")] || null;
+}
+
+function fightRoleAllows(role, action){
+  if(action === 'attack') return role === 'Offensive' || role === 'Both';
+  if(action === 'defend' || action === 'avoid') return role === 'Defensive' || role === 'Both';
+  return true;
+}
+
+function fightJutsuAllowedForAction(name, action='any'){
+  const role = fightJutsuFightRole(name);
+  // If a technique is outside the classified catalog, preserve existing behavior
+  // rather than silently removing it from combat.
+  return !role || fightRoleAllows(role, action);
+}
+
+function fightJutsuForAction(fighter, action='any'){
+  return fightLearnedJutsu(fighter).filter(j => fightJutsuAllowedForAction(j, action));
+}
+
+function fightLearnedJutsu(fighter){
+  return Array.isArray(fighter?.jutsu) ? fighter.jutsu.filter(x => x && x !== 'None') : [];
+}
+
+function fightTechList(fighter){
+  // "Signature techniques" are not invented separately: they are drawn only
+  // from the ninja's learned/known jutsu already loaded into the fight panel.
+  return fightLearnedJutsu(fighter);
+}
+
+function fightChooseLearnedJutsu(side){
+  const f = side === 'A' ? fightState.a : fightState.b;
+  const c = fightCombatSide(side);
+  const learned = fightLearnedJutsu(f);
+  if(!learned.length) return null;
+  const unused = learned.filter(x => !(c?.jutsuUsed || []).includes(x));
+  const pool = unused.length ? unused : learned;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function fightStateModifier(side){
+  const c = fightCombatSide(side);
+  if(!c) return 1;
+  return 1 + Math.max(-.22, Math.min(.22, c.momentum/100)) - c.injuries*.035;
+}
+
+function fightAbilityBlob(fighter){
+  if(!fighter) return '';
+  return [
+    fighter.dojutsu,
+    fighter.primary,
+    ...(fighter.jutsu || []),
+    ...(fighter.kekkei || []),
+    ...(fighter.natures || []),
+    fighter.techniques
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+/** Byakugan (one or both eyes): immune to genjutsu; advantage vs Sharingan techniques except Susanoo. */
+function fightHasByakugan(fighter){
+  return /byakugan/.test(fightAbilityBlob(fighter));
+}
+
+function fightHasSharinganFamily(fighter){
+  return /sharingan|mangeky[oō]|rinnegan|rinne sharingan/.test(fightAbilityBlob(fighter));
+}
+
+function fightTextLooksLikeGenjutsu(text){
+  return /genjutsu|illusion|hypnot|kotoamatsukami|tsukuyomi|ephemeral|demonic illusion|bringer-of-darkness|iroha/.test(String(text||'').toLowerCase());
+}
+
+function fightTextLooksLikeSusanoo(text){
+  return /susanoo|susano'?o/.test(String(text||'').toLowerCase());
+}
+
+function fightTextLooksLikeSharinganTech(text){
+  const t = String(text||'').toLowerCase();
+  if(fightTextLooksLikeSusanoo(t)) return false;
+  return /sharingan|mangeky[oō]|izanagi|izanami|amaterasu|tsukuyomi|kamui|kotoamatsukami/.test(t);
+}
+
+function fightStyleLooksLikeGenjutsu(fighter){
+  if(!fighter) return false;
+  if(String(fighter.primary||'').toLowerCase() === 'genjutsu') return true;
+  return fightTextLooksLikeGenjutsu(fightAbilityBlob(fighter));
+}
+
+/**
+ * Rewrite pool outcomes for Byakugan rules:
+ * - Genjutsu vs Byakugan always fails
+ * - Sharingan techniques (non-Susanoo) vs Byakugan: Byakugan advantage
+ * - Susanoo vs Byakugan: unchanged
+ */
+function fightApplyByakuganRules(pool){
+  const a = fightState.a, b = fightState.b;
+  const aByaku = fightHasByakugan(a), bByaku = fightHasByakugan(b);
+  if(!aByaku && !bByaku) return pool || [];
+  const aName = a?.name || 'A', bName = b?.name || 'B';
+  const out = [];
+  for(const item of (pool || [])){
+    const name = String(item.name || '');
+    const low = name.toLowerCase();
+    const w = item.weight;
+
+    if(fightTextLooksLikeGenjutsu(name) || /genjutsu\s*\/\s*deception|attempts a genjutsu/i.test(name)){
+      // Determine who is casting toward whom when possible
+      if(bByaku && low.includes(aName.toLowerCase())){
+        out.push(W(`${aName}'s genjutsu fails — ${bName}'s Byakugan is immune`, Math.max(w, 16)));
+        continue;
+      }
+      if(aByaku && low.includes(bName.toLowerCase())){
+        out.push(W(`${bName}'s genjutsu fails — ${aName}'s Byakugan is immune`, Math.max(w, 16)));
+        continue;
+      }
+      // General genjutsu line with a Byakugan present
+      const immune = bByaku ? bName : aName;
+      const other = bByaku ? aName : bName;
+      out.push(W(`Genjutsu fails — ${immune}'s Byakugan is immune`, Math.max(w, 14)));
+      continue;
+    }
+
+    if(fightTextLooksLikeSharinganTech(name)){
+      if(bByaku && (low.includes(aName.toLowerCase()) || fightHasSharinganFamily(a))){
+        out.push(W(`${bName}'s Byakugan reads and shuts down the Sharingan technique`, Math.max(w, 16)));
+        out.push(W(`${aName}'s Sharingan technique is predicted — ${bName} counters`, Math.round(w * 0.65) + 4));
+        out.push(W(name, Math.max(3, Math.round(w * 0.18)))); // small residual chance
+        continue;
+      }
+      if(aByaku && (low.includes(bName.toLowerCase()) || fightHasSharinganFamily(b))){
+        out.push(W(`${aName}'s Byakugan reads and shuts down the Sharingan technique`, Math.max(w, 16)));
+        out.push(W(`${bName}'s Sharingan technique is predicted — ${aName} counters`, Math.round(w * 0.65) + 4));
+        out.push(W(name, Math.max(3, Math.round(w * 0.18))));
+        continue;
+      }
+    }
+
+    // Susanoo and other outcomes: normal
+    out.push(item);
+  }
+  // Dedupe by name, keep highest weight
+  const map = new Map();
+  for(const x of out){
+    if(!map.has(x.name) || map.get(x.name).weight < x.weight) map.set(x.name, x);
+  }
+  return [...map.values()];
+}
+
+function fightMethodItems(side, action='any'){
+  const f = side === 'A' ? fightState.a : fightState.b;
+  const items = [];
+  const add = (label, kind, weight) => { if(label && label !== 'None') items.push({label,kind,weight}); };
+
+  // Jutsu are filtered by the fight-role classification:
+  // attack -> Offensive/Both; defend/avoid -> Defensive/Both.
+  fightJutsuForAction(f, action).forEach(j => add(j, 'jutsu', 16));
+
+  // Weapons, dōjutsu, styles, and kekkei-genkai remain available as combat
+  // methods because the spreadsheet's Fight Role field applies to jutsu.
+  (Array.isArray(f?.weapons) ? f.weapons : []).filter(x => x && x !== 'None').forEach(w => add(w, 'weapon', 15));
+
+  const dojutsu = String(f?.dojutsu || '').trim();
+  if(dojutsu && dojutsu !== 'None') add(dojutsu, 'dojutsu', 12);
+  const primary = String(f?.primary || '').trim();
+  if(primary && primary !== 'None') add(primary, 'style', 10);
+  const kekkei = Array.isArray(f?.kekkei) ? f.kekkei : [];
+  kekkei.filter(x => x && x !== 'None').forEach(k => add(k, 'kekkei', 9));
+
+  const seen = new Set();
+  const unique = items.filter(x => {
+    const key = `${x.kind}:${String(x.label).toLowerCase()}`;
+    if(seen.has(key)) return false;
+    seen.add(key); return true;
+  });
+  const jutsu = unique.filter(x => x.kind === 'jutsu').slice(0,6);
+  const weapons = unique.filter(x => x.kind === 'weapon').slice(0,2);
+  const other = unique.filter(x => x.kind !== 'jutsu' && x.kind !== 'weapon');
+  return [...jutsu, ...weapons, ...other].slice(0,10).map((x,i) => ({...x, weight: Math.max(4, x.weight - Math.min(i,4))}));
+}
+
+function fightMethodsForSide(side, max=4, action='any'){
+  return fightMethodItems(side, action).slice(0,max);
+}
+
+function fightMethodText(item){
+  if(!item) return 'fundamentals';
+  if(item.kind === 'jutsu') return `${item.label}`;
+  if(item.kind === 'weapon') return `${item.label}`;
+  if(item.kind === 'dojutsu') return `${item.label}`;
+  if(item.kind === 'kekkei') return `${item.label}`;
+  return `${item.label} techniques`;
+}
+
+function fightConcreteActions(side, verb, max=5, action='any'){
+  const name = side === 'A' ? fightState.a?.name || 'A' : fightState.b?.name || 'B';
+  const methods = fightMethodsForSide(side, max, action);
+  if(!methods.length) return [W(`${name} ${verb}${/\b(with|using)$/i.test(verb.trim()) ? ' basic movement and fundamentals' : ' with basic movement and fundamentals'}`, 10)];
+  const v = verb.trim();
+  const joiner = /\b(with|using)$/i.test(v) ? ' ' : ' with ';
+  return methods.map((m,i) => W(`${name} ${v}${joiner}${fightMethodText(m)}`, m.weight + Math.max(0, 3-i)));
+}
+
+function fightClashPairs(max=5){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const am = fightMethodsForSide('A',3), bm = fightMethodsForSide('B',3);
+  const pairs=[];
+  for(const x of am) for(const y of bm){
+    pairs.push(W(`${a} and ${b} collide — ${fightMethodText(x)} meets ${fightMethodText(y)}`, Math.round((x.weight+y.weight)/2)));
+  }
+  if(!pairs.length) pairs.push(W(`${a} and ${b} collide in a close-quarters exchange of fundamentals`, 12));
+  return pairs.sort((x,y)=>y.weight-x.weight).slice(0,max);
+}
+
+function fightCounterPairs(max=4){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const am = fightMethodsForSide('A',3), bm = fightMethodsForSide('B',3);
+  const pairs=[];
+  for(const x of am) for(const y of bm){
+    pairs.push(W(`${a} counters ${b}'s ${fightMethodText(y)} with ${fightMethodText(x)}`, Math.round((x.weight+y.weight)/2)));
+    pairs.push(W(`${b} counters ${a}'s ${fightMethodText(x)} with ${fightMethodText(y)}`, Math.round((x.weight+y.weight)/2)));
+  }
+  return pairs.sort((x,y)=>y.weight-x.weight).slice(0,max);
+}
+
+function fightOpeningPool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const pool = [
+    ...fightConcreteActions('A', 'dominates the opening exchange', 4, 'attack').map(x => ({...x, weight: Math.round(x.weight*w.a)+5})),
+    ...fightConcreteActions('B', 'dominates the opening exchange', 4, 'attack').map(x => ({...x, weight: Math.round(x.weight*w.b)+5})),
+    ...fightConcreteActions('A', 'lands a clean early hit using', 3, 'attack').map(x => ({...x, name:x.name.replace('dominates the opening exchange with','lands a clean early hit using'), weight:Math.round(x.weight*w.a)+3})),
+    ...fightConcreteActions('B', 'lands a clean early hit using', 3, 'attack').map(x => ({...x, name:x.name.replace('dominates the opening exchange with','lands a clean early hit using'), weight:Math.round(x.weight*w.b)+3})),
+    ...fightConcreteActions('A', 'defends against the opening exchange with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.a)+3})),
+    ...fightConcreteActions('B', 'defends against the opening exchange with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.b)+3})),
+    ...fightConcreteActions('A', 'avoids the opening attack with', 3, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.a)+2})),
+    ...fightConcreteActions('B', 'avoids the opening attack with', 3, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.b)+2})),
+    W('Both probe with movement, feints, and guarded weapon range — no clear edge', 10)
+  ];
+  return pool;
+}
+
+function fightEarlyEdgePool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const pool = [
+    ...fightConcreteActions('A', 'seizes early control', 4, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.a)+5})),
+    ...fightConcreteActions('B', 'seizes early control', 4, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+5})),
+    ...fightConcreteActions('A', 'forces '+b+' onto the defensive with', 3, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.a)+3})),
+    ...fightConcreteActions('B', 'forces '+a+' onto the defensive with', 3, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+3})),
+    ...fightCounterPairs(4),
+    ...fightConcreteActions('A', 'holds the line and defends with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.a)+3})),
+    ...fightConcreteActions('B', 'holds the line and defends with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.b)+3})),
+    ...fightConcreteActions('A', 'avoids the pressure using', 2, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.a)+2})),
+    ...fightConcreteActions('B', 'avoids the pressure using', 2, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.b)+2})),
+    W(`${a} and ${b} trade short-range attacks and weapon checks without either taking control`, 10)
+  ];
+  return pool;
+}
+
+function fightTechniqueSpotlightPool(side){
+  const f = side === 'A' ? fightState.a : fightState.b;
+  const opp = side === 'A' ? fightState.b : fightState.a;
+  const name = f?.name || side;
+  const oppName = opp?.name || 'opponent';
+  const c = fightCombatSide(side);
+  const stateBoost = Math.max(0, Math.round((c?.momentum || 0) / 5));
+  const pool = [];
+  fightMethodsForSide(side, 8, 'attack').forEach((m,i) => {
+    const label = `${name} uses ${fightMethodText(m)} against ${oppName}`;
+    if(opp && fightHasByakugan(opp) && fightTextLooksLikeGenjutsu(m.label)){
+      pool.push(W(`${label} — it fails because ${oppName}'s Byakugan is immune to genjutsu`, 24));
+    } else if(opp && fightHasByakugan(opp) && fightTextLooksLikeSharinganTech(m.label) && !fightTextLooksLikeSusanoo(m.label)){
+      pool.push(W(`${label} — ${oppName}'s Byakugan reads and disrupts it`, 18));
+    } else {
+      pool.push(W(label, m.weight + stateBoost));
+    }
+  });
+  if(!pool.length) pool.push(W(`${name} fights with movement, timing, and fundamentals against ${oppName}`, 14));
+  return pool;
+}
+
+function fightMomentumPool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const ca = fightCombatSide('A'), cb = fightCombatSide('B');
+  const pool = [
+    ...fightConcreteActions('A', 'swings momentum with', 4, 'attack').map(x => ({...x, name:x.name.replace('swings momentum with','swings momentum with'), weight:Math.round(x.weight*w.a)+5})),
+    ...fightConcreteActions('B', 'swings momentum with', 4, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+5})),
+    ...fightConcreteActions('A', 'pulls ahead on stamina by forcing the pace with', 2, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.a)+4})),
+    ...fightConcreteActions('B', 'pulls ahead on stamina by forcing the pace with', 2, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+4})),
+    ...fightConcreteActions('A', 'absorbs the pressure and defends with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.a)+4})),
+    ...fightConcreteActions('B', 'absorbs the pressure and defends with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.b)+4})),
+    ...fightConcreteActions('A', 'avoids the pressure with', 2, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.a)+3})),
+    ...fightConcreteActions('B', 'avoids the pressure with', 2, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.b)+3})),
+    ...fightClashPairs(3),
+    W(`${a} and ${b} keep trading attacks and weapon exchanges — momentum continues to flip`, 12)
+  ];
+  return pool;
+}
+
+function fightTurningPool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const pool = [
+    ...fightConcreteActions('A', 'finds a critical opening using', 3, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.a)+5})),
+    ...fightConcreteActions('B', 'finds a critical opening using', 3, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+5})),
+    ...fightCounterPairs(5),
+    ...fightClashPairs(3),
+    ...fightConcreteActions('A', 'avoids the critical attack with', 3, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.a)+4})),
+    ...fightConcreteActions('B', 'avoids the critical attack with', 3, 'avoid').map(x => ({...x, weight:Math.round(x.weight*w.b)+4})),
+    ...fightConcreteActions('A', 'defends the critical exchange with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.a)+4})),
+    ...fightConcreteActions('B', 'defends the critical exchange with', 3, 'defend').map(x => ({...x, weight:Math.round(x.weight*w.b)+4})),
+    W(`${a} barely avoids ${b}'s attack and turns the near-miss into a counteropening`, 10),
+    W(`${b} barely avoids ${a}'s attack and turns the near-miss into a counteropening`, 10),
+    W(`${a}'s accumulated injury/exhaustion disrupts the timing of the next exchange`, 8),
+    W(`${b}'s accumulated injury/exhaustion disrupts the timing of the next exchange`, 8)
+  ];
+  if(fightStyleLooksLikeGenjutsu(fightState.a)) pool.push(W(`${a} attempts a genjutsu trap through ${fightMethodsForSide('A',2).map(fightMethodText).join(' and ')}`, 7));
+  if(fightStyleLooksLikeGenjutsu(fightState.b)) pool.push(W(`${b} attempts a genjutsu trap through ${fightMethodsForSide('B',2).map(fightMethodText).join(' and ')}`, 7));
+  return pool;
+}
+
+function fightClimaxPool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const ca = fightCombatSide('A'), cb = fightCombatSide('B');
+  const pool = [
+    ...fightClashPairs(6).map(x => ({...x, weight:x.weight+8})),
+    ...fightConcreteActions('A', 'goes all-in on a finishing sequence with', 4, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.a)+6})),
+    ...fightConcreteActions('B', 'goes all-in on a finishing sequence with', 4, 'attack').map(x => ({...x, weight:Math.round(x.weight*w.b)+6})),
+    W(`${a} and ${b} collide at point-blank range — their active techniques meet head-on`, 12),
+    W(`${a} and ${b} exhaust their remaining chakra in a final exchange of jutsu, weapons, and counters`, 10)
+  ];
+  return pool;
+}
+
+function fightFinishPool(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const w = fightWinWeights();
+  const aw = Math.max(8, Math.round(140 * w.a));
+  const bw = Math.max(8, Math.round(140 * w.b));
+  return [
+    W(`${a} wins — clean victory`, Math.round(aw * .34)),
+    W(`${a} wins — narrow victory`, Math.round(aw * .38)),
+    W(`${a} wins — dominant finish`, Math.round(aw * .18)),
+    W(`${a} wins — last-second comeback`, Math.round(aw * .10)),
+    W(`${b} wins — clean victory`, Math.round(bw * .34)),
+    W(`${b} wins — narrow victory`, Math.round(bw * .38)),
+    W(`${b} wins — dominant finish`, Math.round(bw * .18)),
+    W(`${b} wins — last-second comeback`, Math.round(bw * .10)),
+    W('Draw / interrupted — no winner', 5)
+  ];
+}
+
+function fightHasMangekyoOrGreater(fighter){
+  if(!fighter) return false;
+  const chunks = fightAbilityBlob(fighter);
+  return /mangeky[oō]|eternal mangeky|rinnegan|rinne sharingan/.test(chunks);
+}
+
+function fightResolveWinnerLoser(){
+  const finish = String(fightState.results.finish || '');
+  const a = fightState.a, b = fightState.b;
+  const aName = a?.name || 'A', bName = b?.name || 'B';
+  let winner = null, loser = null;
+  if(/wins/i.test(finish)){
+    if(finish.includes(aName)){ winner = a; loser = b; }
+    else if(finish.includes(bName)){ winner = b; loser = a; }
+  }
+  return { winner, loser, aName, bName };
+}
+
+function fightCanAttemptBeastSteal(){
+  const { winner, loser } = fightResolveWinnerLoser();
+  if(!winner || !loser) return false;
+  return fightHasMangekyoOrGreater(winner) && !!loser.jinchuriki;
+}
+
+function fightBeastStealPool(){
+  const { winner, loser } = fightResolveWinnerLoser();
+  const wName = winner?.name || 'Winner';
+  const lName = loser?.name || 'Host';
+  const beast = loser?.beast ? ` (${loser.beast})` : '';
+  return [
+    W(`Steals tailed beast (host died)${beast}`, 28),
+    W(`Steals tailed beast (host survived)${beast}`, 32),
+    W(`Fails to steal tailed beast${beast}`, 40)
+  ];
+}
+
+function fightAftermathPool(){
+  const finish = String(fightState.results.finish || '');
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const { winner, loser } = fightResolveWinnerLoser();
+  const winnerName = winner?.name || null;
+  const loserName = loser?.name || null;
+  const pool = [
+    W('Both leave exhausted — no lasting change', 12),
+    W('Rivalry intensifies for a rematch', 12),
+    W('Standout technique becomes the talk of the bracket', 10),
+    W('Minor injury carried into the next round', 12),
+    W('Confidence surge for the stronger showing', 10),
+    W('Training focus shifts after hard lessons', 10)
+  ];
+  if(winnerName){
+    pool.unshift(W(`${winnerName} advances with tournament momentum`, 18));
+    pool.push(W(`${winnerName} shows a new edge for later rounds`, 10));
+  }
+  if(loserName){
+    pool.push(W(`${loserName} is eliminated from the bracket`, 16));
+    pool.push(W(`${loserName} vows growth before any rematch`, 10));
+  }
+  // Special rule: Mangekyō+ winner vs jinchūriki loser → high-probability steal attempt
+  if(fightCanAttemptBeastSteal()){
+    const beastNote = loser?.beast ? ` (${loser.beast})` : '';
+    pool.unshift(W(FIGHT_STEAL_ATTEMPT + beastNote, 42));
+    // Also keep a plain label match for detection
+    pool.unshift(W(FIGHT_STEAL_ATTEMPT, 8));
+  }
+  return pool;
+}
+
+function fightSideFromText(text){
+  const t=String(text||'').toLowerCase();
+  const a=(fightState.a?.name||'A').toLowerCase(), b=(fightState.b?.name||'B').toLowerCase();
+  if(t.includes(a)) return 'A';
+  if(t.includes(b)) return 'B';
+  return null;
+}
+
+function fightTechniqueNameFromText(text){
+  const t=String(text||'');
+  const all=[...fightLearnedJutsu(fightState.a), ...fightLearnedJutsu(fightState.b)];
+  return all.find(x=>t.toLowerCase().includes(String(x).toLowerCase())) || null;
+}
+
+function fightWeaponNameFromText(text){
+  const all=[...(fightState.a?.weapons||[]), ...(fightState.b?.weapons||[])].filter(Boolean);
+  return all.find(x=>String(text||'').toLowerCase().includes(String(x).toLowerCase())) || null;
+}
+
+function fightFollowUpTrigger(step,result){
+  const t=String(result||'').toLowerCase();
+  const side=fightSideFromText(result);
+  const named=fightTechniqueNameFromText(result);
+  const weapon=fightWeaponNameFromText(result);
+  if(/feints and reads|information fight/.test(t)) return {kind:'read',stage:'outcome',label:'Read / Counter Follow-Up',parentStep:step};
+  if(/speed contest/.test(t)) return {kind:'speed',stage:'outcome',label:'Speed Exchange Follow-Up',parentStep:step};
+  if(/near-miss changes the entire fight|near-miss into a counteropening/.test(t)) return {kind:'nearMiss',stage:'outcome',label:'Near-Miss Follow-Up',parentStep:step};
+  if(/injury \/ exhaustion becomes decisive|accumulated injury\/exhaustion/.test(t)) return {kind:'fatigue',stage:'outcome',label:'Injury / Exhaustion Follow-Up',parentStep:step};
+  if(/unexpected improvisation shifts control/.test(t)) return {kind:'improv',stage:'choice',label:'Improvisation Follow-Up',parentStep:step};
+  if(!side) return null;
+  if(/creates space for a bigger technique|goes all-in on a finishing sequence|unleashes /.test(t)){
+    return {kind:'technique',side,action:/defends|avoids|guard|evades|blocks/i.test(t)?'defend':'attack',stage:named?'resolution':'choice',technique:named||null,label:named?'Technique Resolution':'Technique Follow-Up',parentStep:step};
+  }
+  // Concrete exchange outcomes that already name a learned jutsu get a
+  // resolution step so the wheel determines whether that exact jutsu works.
+  if(named && !/counters|collide|meets|counteropening/i.test(t)) return {kind:'technique',side,stage:'resolution',technique:named,label:'Technique Resolution',parentStep:step};
+  if(weapon && /uses|with|using|meets|counters|lands|exchange|finishing/i.test(t))
+    return {kind:'weapon',side,stage:'resolution',technique:weapon,label:'Weapon / Tool Resolution',parentStep:step};
+  if(/genjutsu \/ deception attempt|attempts a genjutsu trap/.test(t))
+    return {kind:'genjutsu',side,stage:'choice',label:'Genjutsu Follow-Up',parentStep:step};
+  return null;
+}
+
+function fightOutcomeFollowUpPool(p){
+  const a=fightState.a?.name||'A', b=fightState.b?.name||'B';
+  if(p.kind==='read') return [W(`${a} gets the read and anticipates the next move`,28),W(`${b} gets the read and anticipates the next move`,28),W('Both read the feint — neither gains ground',24),W('The feint fools both briefly — the exchange resets',20)];
+  if(p.kind==='speed') return [W(`${a} wins the speed exchange and acts first`,34),W(`${b} wins the speed exchange and acts first`,34),W('Neither can gain a speed advantage',22),W('A sudden change of pace catches both off guard',10)];
+  if(p.kind==='nearMiss') return [W(`${a} turns the near-miss into an opening`,30),W(`${b} turns the near-miss into an opening`,30),W('Both recognize the danger and reset their spacing',25),W('The near-miss burns stamina without creating an opening',15)];
+  if(p.kind==='fatigue') return [W(`${a} is the one whose injury or exhaustion becomes decisive`,34),W(`${b} is the one whose injury or exhaustion becomes decisive`,34),W('Both fighters are compromised — technique quality drops',22),W('Neither can exploit the fatigue before the fight moves on',10)];
+  if(p.kind==='improv' && p.stage==='choice') return [W(`${a} improvises with a jutsu in an unexpected way`,30),W(`${b} improvises with a jutsu in an unexpected way`,30),W(`${a} improvises with fundamentals instead of a jutsu`,20),W(`${b} improvises with fundamentals instead of a jutsu`,20)];
+  return [W('The exchange resolves without a clear follow-up',1)];
+}
+
+function fightTechniqueChoicePool(side,genjutsuOnly=false,action='attack'){
+  const f=side==='A'?fightState.a:fightState.b, c=fightCombatSide(side), name=f?.name||side;
+  let techs=fightJutsuForAction(f, action);
+  if(genjutsuOnly) techs=techs.filter(fightTextLooksLikeGenjutsu);
+  const unused=techs.filter(x=>!(c?.jutsuUsed||[]).includes(x));
+  techs=unused.length?unused:techs;
+  const pool=techs.map((t,i)=>W(`${name} uses ${t}`, 14 + Math.max(0,Math.round((c?.momentum||0)/6)) - Math.min(i,5)));
+  if(!genjutsuOnly) pool.push(W(`${name} does not commit to a jutsu — keeps the pressure`,12));
+  if(!pool.length) pool.push(W(`${name} has no learned ${genjutsuOnly?'genjutsu ':''}technique available — attempt fails`,24));
+  return pool;
+}
+
+function fightTechniqueResolutionPool(side,technique){
+  const f=side==='A'?fightState.a:fightState.b, opp=side==='A'?fightState.b:fightState.a;
+  const c=fightCombatSide(side), oc=fightCombatSide(side==='A'?'B':'A');
+  const name=f?.name||side, oppName=opp?.name||'opponent';
+  const power=(c?.momentum||0)-(oc?.momentum||0);
+  let success=50 + Math.max(-15,Math.min(15,Math.round(power/3))) + Math.round(((c?.chakra||100)-50)/10) + Math.round(((c?.stamina||100)-50)/15) - (c?.injuries||0)*3;
+  success=Math.max(20,Math.min(78,success));
+  if(fightHasByakugan(opp) && fightTextLooksLikeGenjutsu(technique)) success=0;
+  if(fightHasByakugan(opp) && fightTextLooksLikeSharinganTech(technique) && !fightTextLooksLikeSusanoo(technique)) success=Math.min(success,35);
+  return [
+    W(`${name}'s ${technique} works cleanly — ${oppName} is caught`, Math.max(5,Math.round(success*.62))),
+    W(`${name}'s ${technique} partially works — ${oppName} mitigates it`, Math.max(4,Math.round((100-success)*.45))),
+    W(`${oppName} counters ${name}'s ${technique}`, Math.max(4,Math.round((100-success)*.32))),
+    W(`${name}'s ${technique} fails before taking effect`, Math.max(3,Math.round((100-success)*.23)))
+  ];
+}
+
+function fightWeaponResolutionPool(side,weapon){
+  const f=side==='A'?fightState.a:fightState.b, opp=side==='A'?fightState.b:fightState.a;
+  const c=fightCombatSide(side), oc=fightCombatSide(side==='A'?'B':'A');
+  const name=f?.name||side, oppName=opp?.name||'opponent';
+  let success=52 + Math.max(-14,Math.min(14,Math.round(((c?.momentum||0)-(oc?.momentum||0))/3))) + Math.round(((c?.stamina||100)-50)/15) - (c?.injuries||0)*3;
+  success=Math.max(22,Math.min(82,success));
+  return [
+    W(`${name}'s ${weapon} connects cleanly — ${oppName} is forced back`, Math.max(5,Math.round(success*.55))),
+    W(`${name}'s ${weapon} creates an opening, but ${oppName} recovers`, Math.max(4,Math.round((100-success)*.42))),
+    W(`${oppName} avoids ${name}'s ${weapon} and counters the attack`, Math.max(4,Math.round((100-success)*.34))),
+    W(`${name}'s ${weapon} attack fails to create an opening`, Math.max(3,Math.round((100-success)*.24)))
+  ];
+}
+
+function fightFollowUpPool(){
+  const p=fightState.pendingFollowUp;
+  if(!p) return [];
+  if(p.kind==='technique' && p.stage==='choice') return fightTechniqueChoicePool(p.side,false,p.action||'attack');
+  if(p.kind==='genjutsu' && p.stage==='choice') return fightTechniqueChoicePool(p.side,true);
+  if(p.kind==='technique' && p.stage==='resolution') return fightTechniqueResolutionPool(p.side,p.technique);
+  if(p.kind==='weapon' && p.stage==='resolution') return fightWeaponResolutionPool(p.side,p.technique);
+  return fightOutcomeFollowUpPool(p);
+}
+
+function fightPoolForStep(step){
+  let pool;
+  switch(step){
+    case 'opening': pool = fightOpeningPool(); break;
+    case 'earlyEdge': pool = fightEarlyEdgePool(); break;
+    case 'techniqueA': pool = fightTechniqueSpotlightPool('A'); break;
+    case 'techniqueB': pool = fightTechniqueSpotlightPool('B'); break;
+    case 'momentum': pool = fightMomentumPool(); break;
+    case 'turning': pool = fightTurningPool(); break;
+    case 'climax': pool = fightClimaxPool(); break;
+    case 'finish': pool = fightFinishPool(); break;
+    case 'aftermath': pool = fightAftermathPool(); break;
+    case 'beastSteal': pool = fightBeastStealPool(); break;
+    default: pool = [W('No Result', 1)];
+  }
+  if(step !== 'finish' && step !== 'aftermath' && step !== 'beastSteal') pool = fightApplyDojutsuRules(pool, step);
+  return pool;
+}
+
+/**
+ * Unified dōjutsu interaction hook.
+ * The fight pools are generated first, then the existing Byakugan rules
+ * are applied consistently before the wheel is rendered/rolled.
+ * Keep this wrapper separate so future dōjutsu interactions can be added
+ * without changing every individual fight-step pool.
+ */
+function fightApplyDojutsuRules(pool, step){
+  /*
+   * Fight dōjutsu rules are resolved here, once per wheel step.
+   *
+   * BYAKUGAN RULES
+   * 1. One Byakugan eye OR two Byakugan eyes = complete immunity to genjutsu
+   *    techniques used against that fighter.
+   * 2. Against Sharingan-family techniques, the Byakugan fighter receives an
+   *    advantage and the Sharingan technique can be read/countered.
+   * 3. Susanoo is explicitly excluded from rule #2 and therefore plays out
+   *    normally against a Byakugan user.
+   *
+   * The actual technique spotlight pool also identifies the attacking side
+   * when a named jutsu is available; this final pass protects every other
+   * fight-step pool from bypassing the same rules.
+   */
+  return fightApplyByakuganRules(pool || []);
+}
+
+
+function fightApplyChoiceStatModifier(step,result){
+  const text=String(result||'');
+  const low=text.toLowerCase();
+  const sides={A:fightState.combat?.A,B:fightState.combat?.B};
+  const names={A:(fightState.a?.name||'A'),B:(fightState.b?.name||'B')};
+  const escName=n=>String(n).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const mentioned=[];
+  for(const side of ['A','B']) if(low.includes(String(names[side]).toLowerCase())) mentioned.push(side);
+  if(!mentioned.length && step==='aftermath') mentioned.push('A','B');
+  const add=(side,stat,delta)=>{const c=sides[side];if(!c||!delta)return;const before=Number(c.stats?.[stat]??50);const after=Math.max(1,Math.min(100,before+delta));c.stats[stat]=after;};
+  const methodStat=side=>{
+    const blob=text.toLowerCase();
+    if(/genjutsu|illusion|tsukuyomi|kotoamatsukami/.test(blob)) return 'genjutsu';
+    if(/jutsu|ninjutsu|release|rasengan|chidori|amaterasu|susanoo|kamui|chakra/.test(blob)) return 'ninjutsu';
+    if(/weapon|sword|kunai|shuriken|staff|fan|puppet/.test(blob)) return 'weaponSkill';
+    if(/taijutsu|fist|kick|palm|lotus|fang|gates|body/.test(blob)) return 'taijutsu';
+    return 'battleIQ';
+  };
+  if(/counters|gets the read|anticipates/.test(low)) mentioned.forEach(side=>add(side,'battleIQ',1));
+  else if(/defends|holds the line|blocks|guards|protects|avoids|evades|near-miss|reads and disrupts/.test(low)){
+    mentioned.forEach(side=>{
+      add(side,/defends|blocks|guards|protects/.test(low)?'durability':'speed',1);
+      if(/jutsu|technique|genjutsu|dōjutsu|dojutsu/.test(low)) add(side,'chakraControl',1);
+    });
+  } else if(/uses|lands|connects|seizes|forces|opens|swings momentum|goes all-in|unleashes|advances|wins|creates an opening/.test(low)){
+    mentioned.forEach(side=>add(side,methodStat(side),1));
+  }
+  if(/fails|stalls|disrupted|shuts down/.test(low)) mentioned.forEach(side=>add(side,'stamina',-1));
+  if(/exhausted|exhaustion|last reserves/.test(low)) mentioned.forEach(side=>add(side,'stamina',-2));
+  if(step==='finish'){
+    for(const side of ['A','B']){
+      const isWinner=low.includes(String(names[side]).toLowerCase()) && /wins|dominant|clean victory|narrow victory|comeback/.test(low);
+      const isLoser=low.includes(String(names[side==='A'?'B':'A']).toLowerCase()) && /wins/.test(low);
+      if(isWinner) add(side,'willpower',2);
+      else if(isLoser) add(side,'stamina',-2);
+    }
+  }
+  if(step==='aftermath'){
+    if(/training focus|vows growth|new edge|hard lessons/.test(low)) mentioned.forEach(side=>{add(side,'intelligence',1);add(side,'battleIQ',1)});
+    else if(/confidence surge|momentum/.test(low)) mentioned.forEach(side=>add(side,'willpower',1));
+    else if(/injury/.test(low)) mentioned.forEach(side=>add(side,'durability',-1));
+    else if(/exhausted/.test(low)) mentioned.forEach(side=>add(side,'stamina',-1));
+  }
+}
+
+function fightApplyCombatResult(step, result){
+  if(!fightState.combat || !result) return;
+  fightApplyChoiceStatModifier(step,result);
+  const text = String(result).toLowerCase();
+  const sides = {A:fightState.combat.A, B:fightState.combat.B};
+  const names = {A:(fightState.a?.name||'A'), B:(fightState.b?.name||'B')};
+  const changeMomentum = (side, delta) => { sides[side].momentum = Math.max(-40, Math.min(40, sides[side].momentum + delta)); };
+  const drain = (side, chakra, stamina) => { sides[side].chakra = Math.max(0, sides[side].chakra - chakra); sides[side].stamina = Math.max(0, sides[side].stamina - stamina); };
+  const hit = (side, amount=1) => { sides[side].injuries = Math.min(6, sides[side].injuries + amount); sides[side].stats.durability = Math.max(1, (sides[side].stats.durability||50) - amount); sides[side].stats.stamina = Math.max(1, (sides[side].stats.stamina||50) - amount); };
+  const winnerSide = text.includes(names.A.toLowerCase()) && /wins|dominates|seizes|advances|finds a critical|goes all-in|unleashes|lands a clean|lands|momentum swings|pulls ahead|connects cleanly|creates an opening|turns the near-miss|gets the read/.test(text) ? 'A' :
+                     text.includes(names.B.toLowerCase()) && /wins|dominates|seizes|advances|finds a critical|goes all-in|unleashes|lands a clean|lands|momentum swings|pulls ahead|connects cleanly|creates an opening|turns the near-miss|gets the read/.test(text) ? 'B' : null;
+  const loserSide = winnerSide === 'A' ? 'B' : winnerSide === 'B' ? 'A' : null;
+  const counterA = text.includes(names.A.toLowerCase()) && new RegExp(`${names.A.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} counters`,'i').test(result);
+  const counterB = text.includes(names.B.toLowerCase()) && new RegExp(`${names.B.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')} counters`,'i').test(result);
+  if(counterA || counterB){
+    const side = counterA ? 'A' : 'B';
+    const other = side === 'A' ? 'B' : 'A';
+    changeMomentum(side,7); changeMomentum(other,-6); drain(other,8,6);
+  } else if(/fails|stalls|read and disrupted|shuts down/.test(text)){
+    const side = text.includes(names.A.toLowerCase()) ? 'A' : text.includes(names.B.toLowerCase()) ? 'B' : null;
+    if(side){ changeMomentum(side,-7); drain(side,8,5); }
+  }
+  if(winnerSide){ changeMomentum(winnerSide, step==='finish'?12:7); if(loserSide) changeMomentum(loserSide,-5); }
+  if(/clean early hit|critical opening|major technique|injury|all-out|point-blank|finishing sequence|last-second/.test(text)){
+    if(loserSide) { hit(loserSide, /injury|all-out|finishing|last-second/.test(text) ? 2 : 1); drain(loserSide,10,9); }
+  }
+  if(/jutsu|technique|genjutsu|ninjutsu|dōjutsu|dojutsu/.test(text)){
+    const side = text.includes(names.A.toLowerCase()) ? 'A' : text.includes(names.B.toLowerCase()) ? 'B' : null;
+    if(side){
+      drain(side, 10, 4);
+      const named=fightTechniqueNameFromText(result);
+      if(named && !sides[side].jutsuUsed.includes(named)) sides[side].jutsuUsed.push(named);
+    }
+  }
+  if(/stamina|exhausted|last reserves|exhaustion/.test(text)){
+    const side = text.includes(names.A.toLowerCase()) ? 'A' : text.includes(names.B.toLowerCase()) ? 'B' : null;
+    if(side) drain(side,4,10);
+  }
+  sides.A.control = Math.max(0, Math.min(100, 50 + sides.A.momentum - sides.A.injuries*6));
+  sides.B.control = Math.max(0, Math.min(100, 50 + sides.B.momentum - sides.B.injuries*6));
+  for(const side of ['A','B']){
+    const f = side==='A'?fightState.a:fightState.b;
+    if(f && sides[side]){ f.stats = {...sides[side].stats}; f.power = fightPowerFromStats(f.stats); }
+    sides[side].lastResult = result;
+  }
+}
+
+function fightApplyFinalStatChanges(){
+  if(!fightState.combat || fightState.finalStatsApplied) return;
+  for(const side of ['A','B']){
+    const f = side==='A'?fightState.a:fightState.b;
+    const c = fightState.combat[side];
+    if(!f || !c) continue;
+    const changes = {};
+    const add = (key,delta) => { if(!delta) return; const before=Number(c.stats[key]||50); const after=Math.max(1,Math.min(100,before+delta)); if(after!==before){ c.stats[key]=after; changes[key]={before,after,delta:after-before}; } };
+    const isWinner = String(fightState.results.finish||'').toLowerCase().includes(String(f.name||'').toLowerCase());
+    if(isWinner && !/draw|interrupted/i.test(fightState.results.finish||'')) { add('battleIQ',1); add('willpower',1); }
+    if(c.injuries>0){ add('durability',-c.injuries); add('stamina',-Math.max(1,Math.ceil(c.injuries/2))); }
+    if(/vows growth|training focus|confidence surge|new edge/i.test(fightState.results.aftermath||'')) { add('battleIQ',1); add('intelligence',1); }
+    const baseline=fightState.initialStats?.[side]||{};
+    for(const k of fightStatKeys()){
+      const before=Number(baseline[k]??c.stats[k]??50), after=Number(c.stats[k]??before);
+      if(after!==before) changes[k]={before,after,delta:after-before};
+    }
+    fightState.statChanges[side]=changes;
+    f.stats={...c.stats}; f.power=fightPowerFromStats(f.stats);
+  }
+  fightState.finalStatsApplied = true;
+}
+
+function fightPersistLoadedStats(){
+  for(const side of ['A','B']){
+    const select = document.getElementById('fightSource'+side);
+    const val = select?.value || '';
+    const target = val==='current' ? lastCharacter : (val.startsWith('log:') ? characterLog[Number(val.slice(4))] : null);
+    const f = side==='A'?fightState.a:fightState.b;
+    if(target && f?.stats){ target.stats = {...f.stats}; }
+  }
+}
+
+function fightIsStealAttempt(result){
+  return String(result || '').toLowerCase().includes('attempts to steal tailed beast');
+}
+
+function buildFightWheel(pool){
+  const svg = document.getElementById('fightWheelSvg');
+  if(!svg) return [];
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', '0 0 200 200');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  const cx = 100, cy = 100, r = 98;
+  const segs = finalizeWheelSegments(pool);
+  const colors = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#3498db','#9b59b6','#1abc9c','#e84393','#00b894','#6c5ce7'];
+  const polar = (deg, rad) => {
+    const a = (deg - 90) * Math.PI / 180;
+    return [cx + rad * Math.cos(a), cy + rad * Math.sin(a)];
+  };
+  for(let i = 0; i < segs.length; i++){
+    const x = segs[i], start = x.startAngle, end = x.endAngle, span = end - start, large = span > 180 ? 1 : 0, mid = (start + end) / 2;
+    const [x1, y1] = polar(start, r), [x2, y2] = polar(end, r);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`);
+    path.setAttribute('fill', colors[i % colors.length]);
+    path.setAttribute('stroke', '#0d1119');
+    path.setAttribute('stroke-width', '1.2');
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = String(x.name || '');
+    path.appendChild(title);
+    svg.appendChild(path);
+    if(span >= 3.5){
+      const lr = span >= 30 ? 52 : span >= 16 ? 58 : span >= 8 ? 64 : 70;
+      const [tx, ty] = polar(mid, lr);
+      const maxChars = span >= 45 ? 18 : span >= 28 ? 14 : span >= 16 ? 10 : span >= 10 ? 7 : 5;
+      const raw = String(x.name || '');
+      const label = raw.length <= maxChars ? raw : raw.slice(0, Math.max(1, maxChars - 1)) + '…';
+      let rotation = mid - 90; if(mid > 90 && mid < 270) rotation += 180;
+      const fontSize = span >= 36 ? 7.2 : span >= 22 ? 6.2 : span >= 12 ? 5.4 : 4.6;
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      t.setAttribute('x', tx.toFixed(2));
+      t.setAttribute('y', ty.toFixed(2));
+      t.setAttribute('fill', '#0b0e14');
+      t.setAttribute('font-size', fontSize);
+      t.setAttribute('font-weight', '800');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('dominant-baseline', 'middle');
+      t.setAttribute('transform', `rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})`);
+      t.textContent = label;
+      svg.appendChild(t);
+    }
+  }
+  const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r', r);
+  c.setAttribute('fill', 'none'); c.setAttribute('stroke', '#c5cedd');
+  c.setAttribute('stroke-width', '1.5'); c.setAttribute('opacity', '.35');
+  svg.appendChild(c);
+  return segs;
+}
+
+function renderFightWheel(){
+  syncFightFightersFromInputs();
+  updateFightVsLabel();
+  const inSteal = !!fightState.pendingBeastSteal && !fightState.results.beastSteal;
+  const inFollowUp = !!fightState.pendingFollowUp;
+  const step = inSteal ? 'beastSteal' : (FIGHT_STEPS[Math.min(fightState.stepIndex, FIGHT_STEPS.length - 1)] || 'opening');
+  const title = document.getElementById('fightWheelTitle');
+  const prog = document.getElementById('fightWheelProgress');
+  const hint = document.getElementById('fightWheelHint');
+  const btn = document.getElementById('fightSpinButton');
+  if(title) title.textContent = inFollowUp ? (fightState.pendingFollowUp.label || 'Follow-Up') : (FIGHT_STEP_LABELS[step] || step);
+  if(inSteal){
+    if(prog) prog.textContent = `Bonus step — ${FIGHT_STEP_LABELS.beastSteal}`;
+  } else if(inFollowUp){
+    if(prog) prog.textContent = `Follow-Up — ${fightState.pendingFollowUp.stage === 'choice' ? 'Choose the action' : 'Resolve the technique'}`;
+  } else {
+    if(prog) prog.textContent = `Step ${Math.min(fightState.stepIndex + 1, FIGHT_STEPS.length)} of ${FIGHT_STEPS.length} — ${FIGHT_STEP_LABELS[step]}`;
+  }
+  buildFightWheel(inFollowUp ? fightFollowUpPool() : fightPoolForStep(step));
+  const ready = !!(fightState.a?.name && fightState.b?.name);
+  const complete = !!fightState.results.aftermath && !inSteal && (fightIsStealAttempt(fightState.results.aftermath) ? !!fightState.results.beastSteal : true);
+  if(hint){
+    if(!ready) hint.textContent = 'Enter or load both ninjas, then spin.';
+    else if(inSteal) hint.textContent = 'Mangekyō+ winner vs jinchūriki — spin for the steal attempt result.';
+    else if(inFollowUp) hint.textContent = 'This outcome triggers a follow-up: determine the actual technique and whether it works.';
+    else if(!fightState.active && fightState.stepIndex === 0 && !fightState.results.opening)
+      hint.textContent = 'Press Start / Reset Fight, then SPIN through all 9 steps.';
+    else if(complete) hint.textContent = 'Fight complete. Copy summary or start a new fight.';
+    else hint.textContent = `Spin for: ${FIGHT_STEP_LABELS[step]}`;
+  }
+  if(btn) btn.disabled = !ready || fightState.spinning || complete;
+}
+
+function fightShowOverlay(v){
+  const o = document.getElementById('fightWheelOverlay');
+  const r = document.getElementById('fightWheelResultValue');
+  if(r) r.textContent = v;
+  if(o) o.classList.add('show');
+}
+function fightHideOverlay(){ document.getElementById('fightWheelOverlay')?.classList.remove('show'); }
+
+function fightSpinVisual(value, pool){
+  return new Promise(resolve => {
+    const wheel = document.getElementById('fightFortuneWheel');
+    let segs = buildFightWheel(pool);
+    let idx = segs.findIndex(x => x.name === value);
+    if(idx < 0){ segs = buildFightWheel([...pool, W(value, 1)]); idx = segs.findIndex(x => x.name === value); }
+    const win = segs[idx] || segs[0];
+    const mid = (win.startAngle + win.endAngle) / 2;
+    const current = Number(wheel?.dataset.rot || 0);
+    const norm = ((current % 360) + 360) % 360;
+    let delta = (360 - (mid % 360) - norm + 360) % 360;
+    delta += 360 * (5 + Math.floor(Math.random() * 3));
+    const target = current + delta;
+    const skip = !!document.getElementById('fightSkipAnimation')?.checked;
+
+    if(wheel){
+      wheel.dataset.rot = String(target);
+      if(skip){
+        // The CSS transition is what was making the old 0ms timeout continue
+        // animating. Temporarily disable it and apply the final rotation directly.
+        wheel.classList.remove('spinning');
+        wheel.style.transition = 'none';
+        wheel.style.transform = `rotate(${target}deg)`;
+        // Restore the normal transition for the next non-skipped spin.
+        requestAnimationFrame(() => {
+          if(wheel) wheel.style.transition = '';
+        });
+        resolve();
+        return;
+      }
+      wheel.style.transition = '';
+      wheel.classList.add('spinning');
+      wheel.style.transform = `rotate(${target}deg)`;
+    }
+    setTimeout(() => { wheel?.classList.remove('spinning'); resolve(); }, 3200);
+  });
+}
+
+function renderFightBreakdown(){
+  const el = document.getElementById('fightBreakdown');
+  const narr = document.getElementById('fightNarrative');
+  if(!el) return;
+  let html = '';
+  const order = [...FIGHT_STEPS, 'beastSteal'];
+  for(const k of order){
+    if(!fightState.results[k]) continue;
+    html += `<div class="fight-beat"><span>${fightEsc(FIGHT_STEP_LABELS[k] || k)}</span><strong>${fightEsc(fightState.results[k])}</strong></div>`;
+    const related=(fightState.followUps||[]).filter(x=>x.parentStep===k);
+    for(const fu of related){
+      html += `<div class="fight-beat" style="margin-left:18px"><span>↳ ${fightEsc(fu.label||'Follow-Up')}</span><strong>${fightEsc(fu.result)}</strong></div>`;
+    }
+  }
+  el.innerHTML = html || '<div class="small">No fight resolved yet.</div>';
+  const statsHost = document.getElementById('fightUpdatedStats');
+  if(statsHost){
+    if(fightState.combat && (fightState.results.finish || Object.values(fightState.statChanges||{}).some(x=>Object.keys(x||{}).length))){
+      const make = side => {
+        const f = side==='A'?fightState.a:fightState.b, st=f?.stats||{}, changes=fightState.statChanges?.[side]||{};
+        return `<div class="fight-stat-impact"><h4>${fightEsc(f?.name||('Ninja '+side))}</h4>` + fightStatKeys().map(k=>{
+          const ch=changes[k], before=ch?ch.before:st[k]; const after=ch?ch.after:st[k];
+          const marker=ch ? ` <b>${ch.delta>0?'+':''}${ch.delta}</b>` : '';
+          return `<div class="fight-stat-row"><span>${fightEsc(fightStatLabel(k))}</span><b>${fightEsc(String(before??50))} → ${fightEsc(String(after??50))}${marker}</b></div>`;
+        }).join('') + `</div>`;
+      };
+      statsHost.innerHTML = make('A') + make('B');
+    } else statsHost.innerHTML = '<div class="small">No fight-driven stat changes yet.</div>';
+  }
+  if(narr){
+    if(fightState.results.finish){
+      const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+      const order = [...FIGHT_STEPS, 'beastSteal'];
+      narr.innerHTML = `<b>${fightEsc(a)} vs ${fightEsc(b)}</b> · Power ${fightState.a?.power || '?'} vs ${fightState.b?.power || '?'}<br>` +
+        order.filter(k => fightState.results[k]).map(k => `${FIGHT_STEP_LABELS[k] || k}: ${fightEsc(fightState.results[k])}`).join('<br>');
+    } else narr.textContent = '';
+  }
+}
+
+function commitFightToLog(){
+  if(!fightState.results.finish || fightState.committed) return;
+  fightApplyFinalStatChanges();
+  fightPersistLoadedStats();
+  fightState.committed = true;
+  const entry = {
+    date: new Date().toISOString(),
+    a: fightState.a?.name, b: fightState.b?.name,
+    powerA: fightState.a?.power, powerB: fightState.b?.power,
+    results: {...fightState.results},
+    followUps: [...(fightState.followUps||[])],
+    summary: `${fightState.a?.name} vs ${fightState.b?.name} — ${fightState.results.finish}`
+  };
+  fightState.log.unshift(entry);
+  if(fightState.log.length > 50) fightState.log = fightState.log.slice(0, 50);
+  renderFightLog();
+}
+
+function renderFightLog(){
+  const el = document.getElementById('fightLog');
+  if(!el) return;
+  if(!fightState.log.length){
+    el.innerHTML = '<div class="small">No tournament fights recorded this session.</div>';
+    return;
+  }
+  el.innerHTML = fightState.log.map((x, i) =>
+    `<div class="fight-log-item"><b>#${fightState.log.length - i} — ${fightEsc(x.summary)}</b>` +
+    `<span>${fightEsc(formatGeneratedDate(x.date))} · Power ${x.powerA ?? '?'} vs ${x.powerB ?? '?'}</span>` +
+    `<div class="small" style="margin-top:4px">${[...FIGHT_STEPS,'beastSteal'].filter(k=>x.results[k]).map(k=>`${FIGHT_STEP_LABELS[k]||k}: ${fightEsc(x.results[k])}${(x.followUps||[]).filter(f=>f.parentStep===k).map(f=>` · Follow-Up: ${fightEsc(f.result)}`).join('')}`).join(' · ')}</div></div>`
+  ).join('');
+}
+
+function startFightSequence(){
+  syncFightFightersFromInputs();
+  updateFightVsLabel();
+  if(!fightState.a?.name || !fightState.b?.name){
+    alert('Enter names for both ninjas first.');
+    return;
+  }
+  fightState.stepIndex = 0;
+  fightState.results = {};
+  fightState.active = true;
+  fightState.spinning = false;
+  fightState.pendingBeastSteal = false;
+  fightState.pendingFollowUp = null;
+  fightState.followUps = [];
+  fightState.combat = null;
+  fightState.statChanges = {A:{},B:{}};
+  fightState.committed = false;
+  fightInitCombatState();
+  renderFightBreakdown();
+  renderFightWheel();
+  document.getElementById('fightWheelStage')?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function skipFightStep(){
+  if(fightState.spinning || fightState.results.aftermath) return;
+  if(fightState.pendingFollowUp){
+    fightState.pendingFollowUp=null;
+    fightState.stepIndex=Math.min(fightState.stepIndex+1,FIGHT_STEPS.length-1);
+    renderFightWheel();
+    return;
+  }
+  if(!fightState.active) startFightSequence();
+  if(fightState.stepIndex < FIGHT_STEPS.length - 1){
+    fightState.stepIndex++;
+    renderFightWheel();
+  }
+}
+
+async function spinFightWheel(){
+  if(fightState.spinning) return;
+  syncFightFightersFromInputs();
+  if(!fightState.a?.name || !fightState.b?.name){
+    alert('Load or enter both ninjas first.');
+    return;
+  }
+  if(!fightState.active) startFightSequence();
+  if(fightState.results.aftermath && !fightState.pendingBeastSteal){
+    renderFightWheel();
+    return;
+  }
+  if(fightState.results.beastSteal){
+    renderFightWheel();
+    return;
+  }
+  const inFollowUp = !!fightState.pendingFollowUp;
+  const step = (fightState.pendingBeastSteal && !fightState.results.beastSteal)
+    ? 'beastSteal'
+    : FIGHT_STEPS[fightState.stepIndex];
+  const pool = inFollowUp ? fightFollowUpPool() : fightPoolForStep(step);
+  const result = rollWeighted(pool.length ? pool : [W('No Result', 1)]).name;
+  fightState.spinning = true;
+  const btn = document.getElementById('fightSpinButton');
+  if(btn) btn.disabled = true;
+  fightHideOverlay();
+  try{
+    await fightSpinVisual(result, pool);
+    fightShowOverlay(result);
+    await new Promise(r => setTimeout(r, document.getElementById('fightSkipAnimation')?.checked ? 0 : 1100));
+    fightHideOverlay();
+    if(inFollowUp){
+      const p=fightState.pendingFollowUp;
+      const record={parentStep:p.parentStep,label:p.label,result};
+      fightState.followUps.push(record);
+      if(p.kind==='technique' || p.kind==='genjutsu' || p.kind==='weapon'){
+        if(p.stage==='choice'){
+          const chosen=fightTechniqueNameFromText(result);
+          if(chosen){
+            p.technique=chosen;
+            p.stage='resolution';
+            p.label='Technique Resolution';
+          } else {
+            fightApplyCombatResult(p.parentStep,result);
+            fightState.pendingFollowUp=null;
+            fightState.stepIndex=Math.min(fightState.stepIndex+1,FIGHT_STEPS.length-1);
+          }
+        } else {
+          fightApplyCombatResult(p.parentStep,result);
+          fightState.pendingFollowUp=null;
+          fightState.stepIndex=Math.min(fightState.stepIndex+1,FIGHT_STEPS.length-1);
+        }
+      } else {
+        fightApplyCombatResult(p.parentStep,result);
+        fightState.pendingFollowUp=null;
+        fightState.stepIndex=Math.min(fightState.stepIndex+1,FIGHT_STEPS.length-1);
+      }
+      renderFightBreakdown();
+    } else {
+      fightState.results[step] = result;
+      fightApplyCombatResult(step, result);
+      const trigger=fightFollowUpTrigger(step,result);
+      if(trigger){
+        trigger.parentStep=step;
+        const named=fightTechniqueNameFromText(result);
+        if(trigger.kind==='technique' && trigger.stage==='resolution' && named) trigger.technique=named;
+        fightState.pendingFollowUp=trigger;
+      }
+      renderFightBreakdown();
+    }
+    if(!inFollowUp && step === 'aftermath'){
+      if(fightIsStealAttempt(result) && fightCanAttemptBeastSteal()){
+        // Follow-up wheel: results of the steal attempt
+        fightState.pendingBeastSteal = true;
+        fightState.stepIndex = FIGHT_STEPS.length; // beyond normal steps; render uses special mode
+      } else {
+        fightApplyFinalStatChanges();
+        fightState.active = false;
+        fightState.pendingBeastSteal = false;
+        commitFightToLog();
+      }
+    } else if(!inFollowUp && step === 'beastSteal'){
+      fightApplyFinalStatChanges();
+      fightState.active = false;
+      fightState.pendingBeastSteal = false;
+      commitFightToLog();
+    } else if(!inFollowUp && !fightState.pendingFollowUp){
+      fightState.stepIndex = Math.min(fightState.stepIndex + 1, FIGHT_STEPS.length - 1);
+    }
+  }catch(err){
+    console.warn('spinFightWheel', err);
+  }finally{
+    fightState.spinning = false;
+    renderFightWheel();
+  }
+}
+
+function copyFightSummary(){
+  const a = fightState.a?.name || 'A', b = fightState.b?.name || 'B';
+  const lines = [
+    `${a} vs ${b}`,
+    `Power: ${fightState.a?.power ?? '?'} vs ${fightState.b?.power ?? '?'}`,
+    ''
+  ];
+  for(const k of [...FIGHT_STEPS, 'beastSteal']){
+    if(fightState.results[k]){
+      lines.push(`${FIGHT_STEP_LABELS[k] || k}: ${fightState.results[k]}`);
+      for(const fu of (fightState.followUps||[]).filter(x=>x.parentStep===k)) lines.push(`  Follow-Up — ${fu.label}: ${fu.result}`);
+    }
+  }
+  const textOut = lines.join('\n');
+  if(lines.length <= 3){ alert('No fight results to copy yet.'); return; }
+  navigator.clipboard.writeText(textOut).then(()=>{
+    const hint = document.getElementById('fightWheelHint');
+    if(hint) hint.textContent = 'Fight summary copied.';
+  }).catch(()=> prompt('Copy fight summary:', textOut));
+}
+
+function initFightSystem(){
+  try{
+    fightSourceOptions();
+    fightFillCombatSelects();
+    renderFightStatsGrid('A', {});
+    renderFightStatsGrid('B', {});
+    renderFightAbilityFields('A', {});
+    renderFightAbilityFields('B', {});
+    renderFightWheel();
+    renderFightLog();
+  }catch(e){ console.warn('Fight system init', e); }
+}
+
+window.addEventListener('DOMContentLoaded', ()=>{
+  try{ initFightSystem(); }catch(e){ console.warn(e); }
+});
+
+
 
 /* ===================== OPTIONAL NINJA PORTRAIT (Grok prompt helper) ===================== */
 function enablePortraitControls(on){
@@ -6168,8 +8286,7 @@ function buildNinjaPortraitPromptFromCharacter(c){
   if(lineage.length) parts.push('Lineage & abilities: '+lineage.join('; ')+'.');
   // Combat
   const combat=[];
-  if(c.primary) combat.push('primary combat style: '+c.primary);
-  if(c.secondary) combat.push('secondary: '+c.secondary);
+  if(c.primary) combat.push('combat specialization: '+c.primary);
   if(c.weapon && c.weapon!=='None') combat.push('signature tool/weapon: '+c.weapon);
   if(c.specialtyJutsu && c.specialtyJutsu.name) combat.push('specialty jutsu: '+c.specialtyJutsu.name);
   if(c.signatureTechnique && c.signatureTechnique.name && c.signatureTechnique.name!=='None') combat.push('signature technique: '+c.signatureTechnique.name);
@@ -6396,8 +8513,7 @@ function characterDetailHTML(c){
     ${logRowAlways("Space-Time Ninjutsu", c.spaceTime)}
   </div>
   <div class="log-detail-card"><b>Combat</b>
-    ${logRowAlways("Primary", c.primary)}
-    ${logRowAlways("Secondary", c.secondary)}
+    ${logRowAlways("Combat Specialization", c.primary)}
     ${logRowAlways("Weapon", c.weapon)}
     ${logRowAlways("Eight Gates", eightGatesLabel)}
     ${logRowAlways("Jutsu 1", specialtyLabel)}
@@ -6418,6 +8534,7 @@ function characterDetailHTML(c){
 function renderCharacterLog(){
   const list=document.getElementById("characterLogList"),detail=document.getElementById("characterLogDetail");if(!list||!detail)return;
   try{devSourceOptions()}catch(e){}
+  try{fightSourceOptions()}catch(e){}
   if(!characterLog.length){list.innerHTML='<div class="log-empty">No ninjas have been generated yet. Complete a generation and it will appear here.</div>';detail.style.display="none";return}
   list.innerHTML=characterLog.map((c,i)=>`<div class="character-log-entry ${i===selectedLogIndex?"selected":""}" onclick="openCharacterLogEntry(${i})"><div class="entry-main"><div class="entry-name">Ninja #${characterLog.length-i}: ${esc(characterDisplayName(c))}</div><div class="entry-meta">${esc(formatGeneratedDate(c.generatedAt))} · ${esc(c.age??"?")}-year-old ${esc(c.type||"Ninja")} · ${esc(c.land||"Unknown land")}</div></div><div class="entry-number">›</div></div>`).join("");
   if(selectedLogIndex!==null&&characterLog[selectedLogIndex]){detail.innerHTML=characterDetailHTML(characterLog[selectedLogIndex]);detail.style.display="block"}else detail.style.display="none";
