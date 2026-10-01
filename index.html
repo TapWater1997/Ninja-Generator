@@ -722,16 +722,45 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div><label class="small">Land</label><select id="manualCatalogueLand"><option value="">Select...</option></select></div>
       <div><label class="small">Village / Settlement</label><select id="manualCatalogueVillage"><option value="">Select...</option></select></div>
       <div><label class="small">Clan</label><select id="manualCatalogueClan"><option value="">Select...</option></select></div>
+      <div><label class="small">Occupation</label><select id="manualCatalogueOccupation"><option value="">Select...</option></select></div>
+      <div><label class="small">Minor Land</label><select id="manualCatalogueMinorLand"><option value="">Select...</option></select></div>
+      <div><label class="small">Age Band</label><select id="manualCatalogueAgeBand"><option value="">Select...</option></select></div>
       <div><label class="small">Combat Specialization</label><select id="manualCatalogueCombat"><option value="">Select...</option></select></div>
       <div class="full"><label class="small">Chakra Natures (up to 5)</label><div class="catalogue-nature-grid">
         <select id="manualCatalogueNature1"><option value="">Nature 1</option></select><select id="manualCatalogueNature2"><option value="">Nature 2</option></select><select id="manualCatalogueNature3"><option value="">Nature 3</option></select><select id="manualCatalogueNature4"><option value="">Nature 4</option></select><select id="manualCatalogueNature5"><option value="">Nature 5</option></select>
       </div></div>
       <div><label class="small">Kekkei Genkai</label><select id="manualCatalogueKG"><option value="">Select...</option></select></div>
+      <div><label class="small">Bloodline</label><select id="manualCatalogueBloodline"><option value="">Select...</option></select></div>
+      <div><label class="small">Hiden Technique</label><select id="manualCatalogueHiden"><option value="">Select...</option></select></div>
       <div><label class="small">Dōjutsu</label><select id="manualCatalogueDojutsu"><option value="">Select...</option></select></div>
+      <div><label class="small">Dōjutsu Eyes</label><select id="manualCatalogueDojutsuEyes"><option value="">Select...</option></select></div>
+      <div><label class="small">Dōjutsu Stage</label><select id="manualCatalogueDojutsuStage"><option value="">Select...</option></select></div>
+      <div><label class="small">Susanoo Access</label><select id="manualCatalogueSusanoo"><option value="">Select...</option></select></div>
       <div><label class="small">Weapon</label><select id="manualCatalogueWeapon"><option value="">Select...</option></select></div>
       <div><label class="small">Jutsu 1</label><select id="manualCatalogueJutsu1"><option value="">Select a jutsu...</option></select></div>
       <div><label class="small">Jutsu 2</label><select id="manualCatalogueJutsu2"><option value="">Select a jutsu...</option></select></div>
       <div><label class="small">Ultimate Jutsu</label><select id="manualCatalogueUltimate"><option value="">Select an ultimate jutsu...</option></select></div>
+      <div><label class="small">Senjutsu</label><select id="manualCatalogueSenjutsu"><option value="">Select...</option></select></div>
+      <div><label class="small">Sage Type</label><select id="manualCatalogueSageType"><option value="">Select...</option></select></div>
+      <div><label class="small">Jinchūriki</label><select id="manualCatalogueJinchuriki"><option value="">Select...</option></select></div>
+      <div><label class="small">Tailed Beast</label><select id="manualCatalogueBeast"><option value="">Select...</option></select></div>
+      <div><label class="small">Jinchūriki Relationship</label><select id="manualCatalogueRelationship"><option value="">Select...</option></select></div>
+      <div><label class="small">Summoning</label><select id="manualCatalogueSummoning"><option value="">Select...</option></select></div>
+      <div><label class="small">Summoning Type / Contract</label><select id="manualCatalogueSummonType"><option value="">Select...</option></select></div>
+      <div><label class="small">Legendary Heritage</label><select id="manualCatalogueLegendary"><option value="">Select...</option></select></div>
+      <div><label class="small">Legendary Relative / Target</label><select id="manualCatalogueLegendaryTarget"><option value="">Select...</option></select></div>
+      <div><label class="small">Six Paths</label><select id="manualCatalogueSixPaths"><option value="">Select...</option></select></div>
+      <div><label class="small">Six Paths Level</label><select id="manualCatalogueSixPathsLevel"><option value="">Select...</option></select></div>
+      <div><label class="small">Ōtsutsuki Heritage</label><select id="manualCatalogueOtsutsuki"><option value="">Select...</option></select></div>
+      <div><label class="small">Ōtsutsuki Member</label><select id="manualCatalogueOtsutsukiMember"><option value="">Select...</option></select></div>
+      <div><label class="small">Ōtsutsuki Level</label><select id="manualCatalogueOtsutsukiLevel"><option value="">Select...</option></select></div>
+      <div><label class="small">Space-Time Ninjutsu</label><select id="manualCatalogueSpaceTime"><option value="">Select...</option></select></div>
+      <div><label class="small">Eight Gates</label><select id="manualCatalogueEightGates"><option value="">Select...</option></select></div>
+      <div><label class="small">Eight Gates Level</label><select id="manualCatalogueEightGatesLevel"><option value="">Select...</option></select></div>
+      <div><label class="small">Forbidden Techniques</label><select id="manualCatalogueForbidden"><option value="">Select...</option></select></div>
+      <div><label class="small">Forbidden Technique</label><select id="manualCatalogueForbiddenTechnique"><option value="">Select...</option></select></div>
+      <div><label class="small">Heritage</label><select id="manualCatalogueHeritage"><option value="">Select...</option></select></div>
+      <div><label class="small">Exceptional Trait</label><select id="manualCatalogueExceptional"><option value="">Select...</option></select></div>
       <div><label class="small">Moral Alignment</label><select id="manualCatalogueMoral"><option value="">Select...</option></select></div>
       <div><label class="small">Motivation</label><select id="manualCatalogueMotivation"><option value="">Select...</option></select></div>
       <div><label class="small">Current Goal</label><select id="manualCatalogueGoal"><option value="">Select...</option></select></div>
@@ -8847,13 +8876,49 @@ function populateManualCatalogueOptions(){
   const moralVals=(typeof DATA!=='undefined'?DATA.moral:[]).map(x=>x?.name||x);
   const motivationVals=(typeof DATA!=='undefined'?DATA.motivation:[]).map(x=>x?.name||x);
   const goalVals=(typeof GOAL_POOL!=='undefined'?GOAL_POOL:[]).map(x=>x?.name||x);
+  const catalogueFieldVals=(field, fallback=[])=>catalogueUnique([...fallback,...ninjaCatalogue.flatMap(c=>[c?.[field]]),...characterLog.flatMap(c=>[c?.[field]])]);
+  const occupationVals=catalogueFieldVals('occupation',['None','Shinobi occupation','Civilian occupation']);
+  const minorLandVals=catalogueFieldVals('minorLand',['None']);
+  const ageBandVals=catalogueFieldVals('ageBand',['Child','Pre-teen','Teenager','Young Adult','Adult','Middle-aged','Elder']);
+  const bloodlineVals=catalogueFieldVals('bloodline',['None',...kgVals]);
+  const hidenVals=catalogueFieldVals('hiden',['None']);
+  const dojutsuEyesVals=catalogueFieldVals('dojutsuEyes',['None']);
+  const dojutsuStageVals=catalogueFieldVals('dojutsuStage',['None']);
+  const susanooVals=catalogueFieldVals('susanooAccess',['None','No','Yes']);
+  const senjutsuVals=catalogueFieldVals('senjutsu',['None','No','Yes']);
+  const sageTypeVals=catalogueFieldVals('sageType',['None']);
+  const jinchurikiVals=catalogueFieldVals('jinchuriki',['No','Yes']);
+  const beastVals=catalogueFieldVals('beast',['None']);
+  const relationshipVals=catalogueFieldVals('relationship',['None']);
+  const summoningVals=catalogueFieldVals('summoning',['No','Yes']);
+  const summonTypeVals=catalogueFieldVals('summonType',['None']);
+  const legendaryVals=catalogueFieldVals('legendary',['None','No','Yes']);
+  const legendaryTargetVals=catalogueFieldVals('legendaryTarget',['None']);
+  const sixPathsVals=catalogueFieldVals('sixPaths',['None','No','Yes']);
+  const sixPathsLevelVals=catalogueFieldVals('sixPathsLevel',['None']);
+  const otsutsukiVals=catalogueFieldVals('otsutsuki',['None','No','Yes']);
+  const otsutsukiMemberVals=catalogueFieldVals('otsutsukiMember',['None']);
+  const otsutsukiLevelVals=catalogueFieldVals('otsutsukiLevel',['None']);
+  const spaceTimeVals=catalogueFieldVals('spaceTime',['None','No','Yes']);
+  const gatesVals=catalogueFieldVals('eightGates',['None','No','Yes']);
+  const gatesLevelVals=catalogueFieldVals('eightGatesLevel',['None','1','2','3','4','5','6','7','8']);
+  const forbiddenVals=catalogueFieldVals('forbidden',['None','No','Yes']);
+  const forbiddenTechniqueVals=catalogueFieldVals('forbiddenTechnique',['None']);
+  const exceptionalVals=catalogueFieldVals('exceptional',['None']);
+  const heritageVals=catalogueFieldVals('heritage',['None']);
   fillCatalogueSelect('manualCatalogueAge',Array.from({length:101},(_,i)=>String(i)));
   fillCatalogueSelect('manualCatalogueType',typeVals);fillCatalogueSelect('manualCatalogueRank',rankVals);
   fillCatalogueSelect('manualCatalogueLand',landVals);fillCatalogueSelect('manualCatalogueVillage',villageVals);fillCatalogueSelect('manualCatalogueClan',clanVals);
+  fillCatalogueSelect('manualCatalogueOccupation',occupationVals);fillCatalogueSelect('manualCatalogueMinorLand',minorLandVals);fillCatalogueSelect('manualCatalogueAgeBand',ageBandVals);
   fillCatalogueSelect('manualCatalogueCombat',combatVals);
   for(let i=1;i<=5;i++)fillCatalogueSelect('manualCatalogueNature'+i,natureVals);
-  fillCatalogueSelect('manualCatalogueKG',['None',...kgVals]);fillCatalogueSelect('manualCatalogueDojutsu',['None',...dojVals]);fillCatalogueSelect('manualCatalogueWeapon',weaponVals);
+  fillCatalogueSelect('manualCatalogueKG',['None',...kgVals]);fillCatalogueSelect('manualCatalogueBloodline',bloodlineVals);fillCatalogueSelect('manualCatalogueHiden',hidenVals);
+  fillCatalogueSelect('manualCatalogueDojutsu',['None',...dojVals]);fillCatalogueSelect('manualCatalogueDojutsuEyes',dojutsuEyesVals);fillCatalogueSelect('manualCatalogueDojutsuStage',dojutsuStageVals);fillCatalogueSelect('manualCatalogueSusanoo',susanooVals);fillCatalogueSelect('manualCatalogueWeapon',weaponVals);
   const js=catalogueJutsuCatalogue();fillCatalogueSelect('manualCatalogueJutsu1',js);fillCatalogueSelect('manualCatalogueJutsu2',js);fillCatalogueSelect('manualCatalogueUltimate',js);
+  fillCatalogueSelect('manualCatalogueSenjutsu',senjutsuVals);fillCatalogueSelect('manualCatalogueSageType',sageTypeVals);fillCatalogueSelect('manualCatalogueJinchuriki',jinchurikiVals);fillCatalogueSelect('manualCatalogueBeast',beastVals);fillCatalogueSelect('manualCatalogueRelationship',relationshipVals);
+  fillCatalogueSelect('manualCatalogueSummoning',summoningVals);fillCatalogueSelect('manualCatalogueSummonType',summonTypeVals);fillCatalogueSelect('manualCatalogueLegendary',legendaryVals);fillCatalogueSelect('manualCatalogueLegendaryTarget',legendaryTargetVals);
+  fillCatalogueSelect('manualCatalogueSixPaths',sixPathsVals);fillCatalogueSelect('manualCatalogueSixPathsLevel',sixPathsLevelVals);fillCatalogueSelect('manualCatalogueOtsutsuki',otsutsukiVals);fillCatalogueSelect('manualCatalogueOtsutsukiMember',otsutsukiMemberVals);fillCatalogueSelect('manualCatalogueOtsutsukiLevel',otsutsukiLevelVals);
+  fillCatalogueSelect('manualCatalogueSpaceTime',spaceTimeVals);fillCatalogueSelect('manualCatalogueEightGates',gatesVals);fillCatalogueSelect('manualCatalogueEightGatesLevel',gatesLevelVals);fillCatalogueSelect('manualCatalogueForbidden',forbiddenVals);fillCatalogueSelect('manualCatalogueForbiddenTechnique',forbiddenTechniqueVals);fillCatalogueSelect('manualCatalogueHeritage',heritageVals);fillCatalogueSelect('manualCatalogueExceptional',exceptionalVals);
   fillCatalogueSelect('manualCatalogueMoral',moralVals);fillCatalogueSelect('manualCatalogueMotivation',motivationVals);fillCatalogueSelect('manualCatalogueGoal',goalVals);
 }
 function createManualCatalogueNinja(){
@@ -8863,18 +8928,23 @@ function createManualCatalogueNinja(){
   const c={
     catalogueName:name, catalogueId:Date.now()+"_"+Math.random().toString(36).slice(2,9), cataloguedAt:new Date().toISOString(),
     age:manualCatalogueValue("manualCatalogueAge")||"", type:manualCatalogueValue("manualCatalogueType")||"Ninja", rank:manualCatalogueValue("manualCatalogueRank")||"",
-    land:manualCatalogueValue("manualCatalogueLand")||"", village:manualCatalogueValue("manualCatalogueVillage")||"", clan:manualCatalogueValue("manualCatalogueClan")||"",
-    primary:manualCatalogueValue("manualCatalogueCombat")||"", natures,
-    kekkeiGenkai:manualCatalogueValue("manualCatalogueKG")||"", dojutsu:manualCatalogueValue("manualCatalogueDojutsu")||"", weapon:manualCatalogueValue("manualCatalogueWeapon")||"",
-    specialty:manualCatalogueValue("manualCatalogueJutsu1")||"", signature:manualCatalogueValue("manualCatalogueJutsu2")||"", ultimateJutsu:manualCatalogueValue("manualCatalogueUltimate")||"",
-    moral:manualCatalogueValue("manualCatalogueMoral")||"", motivation:manualCatalogueValue("manualCatalogueMotivation")||"", currentGoal:manualCatalogueValue("manualCatalogueGoal")||"",
+    land:manualCatalogueValue("manualCatalogueLand")||"", minorLand:manualCatalogueValue("manualCatalogueMinorLand")||"", village:manualCatalogueValue("manualCatalogueVillage")||"", clan:manualCatalogueValue("manualCatalogueClan")||"",
+    occupation:manualCatalogueValue("manualCatalogueOccupation")||"", ageBand:manualCatalogueValue("manualCatalogueAgeBand")||"", primary:manualCatalogueValue("manualCatalogueCombat")||"", natures,
+    kekkeiGenkai:manualCatalogueValue("manualCatalogueKG")||"", bloodline:manualCatalogueValue("manualCatalogueBloodline")||"", hiden:manualCatalogueValue("manualCatalogueHiden")||"",
+    dojutsu:manualCatalogueValue("manualCatalogueDojutsu")||"", dojutsuEyes:manualCatalogueValue("manualCatalogueDojutsuEyes")||"", dojutsuStage:manualCatalogueValue("manualCatalogueDojutsuStage")||"", susanooAccess:manualCatalogueValue("manualCatalogueSusanoo")||"",
+    weapon:manualCatalogueValue("manualCatalogueWeapon")||"", specialty:manualCatalogueValue("manualCatalogueJutsu1")||"", signature:manualCatalogueValue("manualCatalogueJutsu2")||"", ultimateJutsu:manualCatalogueValue("manualCatalogueUltimate")||"",
+    senjutsu:manualCatalogueValue("manualCatalogueSenjutsu")||"", sageType:manualCatalogueValue("manualCatalogueSageType")||"", jinchuriki:manualCatalogueValue("manualCatalogueJinchuriki")||"No", beast:manualCatalogueValue("manualCatalogueBeast")||"", relationship:manualCatalogueValue("manualCatalogueRelationship")||"",
+    summoning:manualCatalogueValue("manualCatalogueSummoning")||"No", summonType:manualCatalogueValue("manualCatalogueSummonType")||"", legendary:manualCatalogueValue("manualCatalogueLegendary")||"", legendaryTarget:manualCatalogueValue("manualCatalogueLegendaryTarget")||"",
+    sixPaths:manualCatalogueValue("manualCatalogueSixPaths")||"", sixPathsLevel:manualCatalogueValue("manualCatalogueSixPathsLevel")||"", otsutsuki:manualCatalogueValue("manualCatalogueOtsutsuki")||"", otsutsukiMember:manualCatalogueValue("manualCatalogueOtsutsukiMember")||"", otsutsukiLevel:manualCatalogueValue("manualCatalogueOtsutsukiLevel")||"",
+    spaceTime:manualCatalogueValue("manualCatalogueSpaceTime")||"", eightGates:manualCatalogueValue("manualCatalogueEightGates")||"", eightGatesLevel:manualCatalogueValue("manualCatalogueEightGatesLevel")||"", forbidden:manualCatalogueValue("manualCatalogueForbidden")||"", forbiddenTechnique:manualCatalogueValue("manualCatalogueForbiddenTechnique")||"",
+    heritage:manualCatalogueValue("manualCatalogueHeritage")||"", exceptional:manualCatalogueValue("manualCatalogueExceptional")||"", moral:manualCatalogueValue("manualCatalogueMoral")||"", motivation:manualCatalogueValue("manualCatalogueMotivation")||"", currentGoal:manualCatalogueValue("manualCatalogueGoal")||"",
     notes:manualCatalogueValue("manualCatalogueNotes")||"", stats:{}
   };
   STAT_NAMES.forEach(([key])=>c.stats[key]=1);
   ninjaCatalogue.unshift(c); selectedCatalogueIndex=0; saveNinjaCatalogue(); populateCatalogueSelect();
   const sel=document.getElementById("catalogueSelect");if(sel)sel.value="0"; renderCatalogueEntry(); clearManualCatalogueForm();
 }
-function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueCombat","manualCatalogueKG","manualCatalogueDojutsu","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""})}
+function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueAgeBand","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueJinchuriki","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummoning","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""})}
 
 function addSelectedNinjaToCatalogue(){
   const source=document.getElementById("catalogueSourceSelect")?.value;
