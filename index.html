@@ -645,10 +645,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   </div>
 
   <div class="catalogue-note">Create a ninja directly here, or import one from the Character Log. Nothing in this section requires a generated ninja first. Saved Catalogue entries remain in this browser until you delete them or clear browser site data.</div>
-  <div class="catalogue-actions" style="margin-bottom:14px"><button type="button" onclick="exportNinjaCatalogueJSON()">Export Ninja Catalogue</button><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueImportFile').click()">Import Ninja Catalogue JSON</button><input id="ninjaCatalogueImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importNinjaCatalogueJSON(this.files[0])"><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueHTMLImportFile').click()">Load Saved Catalogue HTML</button><input id="ninjaCatalogueHTMLImportFile" type="file" accept=".html,.htm,text/html,*/*" style="display:none" onchange="importNinjaCatalogueHTML(this.files[0])"><button type="button" class="secondary" onclick="downloadSelfContainedCatalogueHTML()">Download Self-Contained HTML</button><span id="catalogueTransferStatus" class="small" aria-live="polite"></span></div>
+  <div class="catalogue-actions" style="margin-bottom:14px"><button type="button" onclick="downloadSelfContainedCatalogueHTML()">Export Ninja Catalogue (HTML)</button><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueHTMLImportFile').click()">Import Ninja Catalogue (HTML)</button><input id="ninjaCatalogueHTMLImportFile" type="file" accept=".html,.htm,text/html" style="display:none" onchange="importNinjaCatalogueHTML(this.files[0])"><span id="catalogueTransferStatus" class="small" aria-live="polite"></span></div>
 
-  <div class="log-detail-card">
-    <h3>Create Ninja Directly</h3>
+  <div class="log-detail-card" id="catalogueManualEditorCard">
+    <h3 id="catalogueManualEditorTitle">Create Ninja Directly</h3>
+    <div id="catalogueEditNotice" class="catalogue-note" style="display:none;margin-bottom:12px">Editing the selected Catalogue ninja. Changes will update this existing entry rather than creating a duplicate.</div>
     <div class="catalogue-manual-grid">
       <div><label class="small">Catalogue Name</label><input id="manualCatalogueName" type="text" placeholder="Ninja name"></div>
       <div><label class="small">Age</label><select id="manualCatalogueAge"><option value="">Select...</option><option value="0">0</option><option value="1">1</option><option value="10">10</option><option value="100">100</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="2">2</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="3">3</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="4">4</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="5">5</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option><option value="6">6</option><option value="60">60</option><option value="61">61</option><option value="62">62</option><option value="63">63</option><option value="64">64</option><option value="65">65</option><option value="66">66</option><option value="67">67</option><option value="68">68</option><option value="69">69</option><option value="7">7</option><option value="70">70</option><option value="71">71</option><option value="72">72</option><option value="73">73</option><option value="74">74</option><option value="75">75</option><option value="76">76</option><option value="77">77</option><option value="78">78</option><option value="79">79</option><option value="8">8</option><option value="80">80</option><option value="81">81</option><option value="82">82</option><option value="83">83</option><option value="84">84</option><option value="85">85</option><option value="86">86</option><option value="87">87</option><option value="88">88</option><option value="89">89</option><option value="9">9</option><option value="90">90</option><option value="91">91</option><option value="92">92</option><option value="93">93</option><option value="94">94</option><option value="95">95</option><option value="96">96</option><option value="97">97</option><option value="98">98</option><option value="99">99</option></select></div>
@@ -702,7 +703,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <div class="full catalogue-stats-editor"><div class="catalogue-section-title"><h4>D100 Stats</h4><span class="small">Set each individual stat from 1–100 for this ninja. These values are saved with the Catalogue entry.</span></div><div id="manualCatalogueStatGrid" class="catalogue-stat-input-grid"></div></div>
       <div class="full"><label class="small">Lineage &amp; Abilities / Notes</label><textarea id="manualCatalogueNotes" placeholder="Lineage, abilities, personality, history, or any other information you want to preserve."></textarea></div>
     </div>
-    <div class="catalogue-actions"><button onclick="createManualCatalogueNinja()">Add Ninja to Catalogue</button><button class="secondary" onclick="clearManualCatalogueForm()">Clear Form</button></div>
+    <div class="catalogue-actions"><button id="catalogueManualSaveButton" onclick="createManualCatalogueNinja()">Add Ninja to Catalogue</button><button id="catalogueManualCancelEdit" class="secondary" style="display:none" onclick="cancelCatalogueEdit()">Cancel Edit</button><button class="secondary" onclick="clearManualCatalogueForm()">Clear Form</button></div>
   </div>
 
   <div class="log-detail-card" style="margin-top:14px">
@@ -725,6 +726,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <h3 id="catalogueSelectedName">Ninja Catalogue Entry</h3>
       <div class="catalogue-actions">
         <button onclick="saveCatalogueStats()">Save D100 Stats</button>
+        <button onclick="editSelectedCatalogueNinja()">Edit Selected Ninja</button>
         <button class="secondary" onclick="renameCatalogueEntry()">Rename Ninja</button>
         <button class="secondary" onclick="loadCatalogueIntoDevelopment()">Load into Development</button>
       </div>
@@ -7196,31 +7198,6 @@ function loadNinjaCatalogue(){
   }catch(e){return[]}
 }
 function saveNinjaCatalogue(){try{localStorage.setItem(NINJA_CATALOGUE_KEY,JSON.stringify(ninjaCatalogue))}catch(e){} return true}
-function exportNinjaCatalogueJSON(){
-  try{
-    const payload={format:"Ninja Generator Ninja Catalogue",version:1,exportedAt:new Date().toISOString(),ninjas:JSON.parse(JSON.stringify(ninjaCatalogue||[]))};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json;charset=utf-8"});
-    const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="Ninja_Generator_Ninja_Catalogue.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-    const status=document.getElementById("catalogueTransferStatus");if(status)status.textContent=`Exported ${ninjaCatalogue.length} Catalogue ninja${ninjaCatalogue.length===1?"":"s"}.`;return true;
-  }catch(e){console.error(e);alert("Could not export the Ninja Catalogue.");return false;}
-}
-function importNinjaCatalogueJSON(file){
-  if(!file)return;const reader=new FileReader();
-  reader.onload=()=>{try{
-    const raw=JSON.parse(String(reader.result||""));const incoming=Array.isArray(raw)?raw:(Array.isArray(raw?.ninjas)?raw.ninjas:null);
-    if(!incoming)throw new Error("No Catalogue array found");
-    const imported=incoming.map(normaliseCatalogueNinja).filter(Boolean);
-    const byId=new Map(ninjaCatalogue.map((n,i)=>[String(n.catalogueId||""),i]).filter(([id])=>id));
-    const byName=new Map(ninjaCatalogue.map((n,i)=>[catalogueEntryName(n).trim().toLowerCase(),i]));
-    let added=0,updated=0;
-    imported.forEach(n=>{const id=String(n.catalogueId||""),name=catalogueEntryName(n).trim().toLowerCase();const idx=id&&byId.has(id)?byId.get(id):byName.get(name);if(idx===undefined){ninjaCatalogue.unshift(n);added++;}else{ninjaCatalogue[idx]=Object.assign({},ninjaCatalogue[idx],n);updated++;}});
-    selectedCatalogueIndex=null;saveNinjaCatalogue();populateCatalogueSelect();populateManualCatalogueOptions();refreshNinjaIntegrationMenus();renderCatalogueEntry();
-    const status=document.getElementById("catalogueTransferStatus");if(status)status.textContent=`Imported ${imported.length} ninja${imported.length===1?"":"s"}: ${added} added, ${updated} updated.`;
-    const input=document.getElementById("ninjaCatalogueImportFile");if(input)input.value="";
-  }catch(e){console.error(e);alert("Could not import this Ninja Catalogue file. Please select a JSON Catalogue export.");}};
-  reader.readAsText(file);
-}
-
 function downloadSelfContainedCatalogueHTML(){
   try{
     const html=document.documentElement.outerHTML;
@@ -7497,7 +7474,87 @@ function createManualCatalogueNinja(){
   ninjaCatalogue.unshift(c); selectedCatalogueIndex=0; saveNinjaCatalogue(); populateCatalogueSelect(); try{refreshNinjaIntegrationMenus()}catch(e){}
   const sel=document.getElementById("catalogueSelect");if(sel)sel.value="0"; renderCatalogueEntry(); clearManualCatalogueForm();
 }
-function clearManualCatalogueForm(){["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes","manualCatalogueNatureCount",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning",""); renderManualCatalogueStatInputs();}
+let editingCatalogueIndex=null;
+
+function setManualCatalogueSelect(id,value){
+  const el=document.getElementById(id); if(!el)return;
+  const v=value==null?'':String(value);
+  if(v && !Array.from(el.options).some(o=>o.value===v)){
+    const opt=document.createElement('option'); opt.value=v; opt.textContent=v; el.appendChild(opt);
+  }
+  el.value=v;
+}
+function setManualCatalogueText(id,value){const el=document.getElementById(id);if(el)el.value=value==null?'':String(value)}
+function catalogueFieldText(c,...keys){for(const key of keys){const v=c?.[key];if(v!==undefined&&v!==null&&String(v)!=='')return String(v)}return ''}
+function catalogueJutsuName(v){return typeof v==='string'?v:(v?.name||v?.technique||'')}
+function editSelectedCatalogueNinja(){
+  if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex]){
+    alert('Please select a saved ninja from the Catalogue first.');
+    return;
+  }
+  try{populateManualCatalogueOptions()}catch(e){console.warn('Catalogue option refresh',e)}
+  const c=normaliseCatalogueNinja(ninjaCatalogue[selectedCatalogueIndex]);
+  const jutsu=Array.isArray(c.jutsu)?c.jutsu.map(catalogueJutsuName).filter(Boolean):[];
+  const j1=catalogueFieldText(c,'specialty','jutsu1')||jutsu[0]||catalogueJutsuName(c.specialtyJutsu);
+  const j2=catalogueFieldText(c,'signature','jutsu2')||jutsu[1]||catalogueJutsuName(c.signatureTechnique);
+  const natures=Array.isArray(c.natures)?c.natures.map(catalogueJutsuName).filter(Boolean):devSplit(c.natures||'');
+
+  setManualCatalogueText('manualCatalogueName',catalogueEntryName(c));
+  [['manualCatalogueAge','age'],['manualCatalogueType','type','status'],['manualCatalogueRank','rank','level'],['manualCatalogueLand','land'],['manualCatalogueMinorLand','minorLand'],['manualCatalogueVillage','village'],['manualCatalogueClan','clan'],['manualCatalogueOccupation','occupation'],['manualCatalogueCombat','primary','combatSpecialization'],['manualCatalogueNatureCount','natureCount'],['manualCatalogueKG','kekkeiGenkai','bloodline'],['manualCatalogueBloodline','bloodline'],['manualCatalogueHiden','hiden'],['manualCatalogueDojutsu','dojutsu','dōjutsu'],['manualCatalogueDojutsuEyes','dojutsuEyes'],['manualCatalogueDojutsuStage','dojutsuStage'],['manualCatalogueSusanoo','susanooAccess'],['manualCatalogueWeapon','weapon','weapons'],['manualCatalogueJutsu1','specialty'],['manualCatalogueJutsu2','signature'],['manualCatalogueUltimate','ultimateJutsu'],['manualCatalogueSenjutsu','senjutsu'],['manualCatalogueSageType','sageType'],['manualCatalogueBeast','beast','tailedBeast'],['manualCatalogueRelationship','relationship'],['manualCatalogueSummonType','summonType','summoning'],['manualCatalogueLegendary','legendary'],['manualCatalogueLegendaryTarget','legendaryTarget'],['manualCatalogueSixPaths','sixPaths'],['manualCatalogueSixPathsLevel','sixPathsLevel'],['manualCatalogueOtsutsuki','otsutsuki'],['manualCatalogueOtsutsukiMember','otsutsukiMember'],['manualCatalogueOtsutsukiLevel','otsutsukiLevel'],['manualCatalogueSpaceTime','spaceTime'],['manualCatalogueEightGates','eightGates'],['manualCatalogueEightGatesLevel','eightGatesLevel'],['manualCatalogueForbidden','forbidden'],['manualCatalogueForbiddenTechnique','forbiddenTechnique'],['manualCatalogueHeritage','heritage'],['manualCatalogueExceptional','exceptional'],['manualCatalogueMoral','moral'],['manualCatalogueMotivation','motivation'],['manualCatalogueGoal','currentGoal']].forEach(([id,...keys])=>setManualCatalogueSelect(id,catalogueFieldText(c,...keys)));
+  setManualCatalogueSelect('manualCatalogueJutsu1',j1); setManualCatalogueSelect('manualCatalogueJutsu2',j2);
+  for(let i=1;i<=5;i++)setManualCatalogueSelect('manualCatalogueNature'+i,natures[i-1]||'');
+  setManualCatalogueText('manualCatalogueNotes',catalogueFieldText(c,'notes','lineageNotes','description'));
+  syncManualBinaryGroup('manualCatalogueJinchuriki',catalogueFieldText(c,'jinchuriki')||'No');
+  syncManualBinaryGroup('manualCatalogueSummoning',catalogueFieldText(c,'summoning')||'No');
+  renderManualCatalogueStatInputs(c.stats||{});
+  editingCatalogueIndex=selectedCatalogueIndex;
+  const title=document.getElementById('catalogueManualEditorTitle'); if(title)title.textContent='Edit Catalogue Ninja';
+  const notice=document.getElementById('catalogueEditNotice'); if(notice)notice.style.display='block';
+  const save=document.getElementById('catalogueManualSaveButton'); if(save){save.textContent='Save Changes to Catalogue';save.onclick=saveEditedCatalogueNinja}
+  const cancel=document.getElementById('catalogueManualCancelEdit'); if(cancel)cancel.style.display='inline-block';
+  document.getElementById('catalogueManualEditorCard')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function saveEditedCatalogueNinja(){
+  const idx=editingCatalogueIndex;
+  if(idx===null||!ninjaCatalogue[idx]){alert('No Catalogue ninja is currently being edited.');return}
+  const name=manualCatalogueValue('manualCatalogueName');
+  if(!name){alert('Please enter a Catalogue Name.');return}
+  const c=ninjaCatalogue[idx];
+  const natures=Array.from({length:5},(_,i)=>manualCatalogueValue('manualCatalogueNature'+(i+1))).filter(Boolean);
+  const read=id=>manualCatalogueValue(id);
+  const updates={
+    catalogueName:name,name:name,fullName:name,age:read('manualCatalogueAge'),type:read('manualCatalogueType')||'Ninja',rank:read('manualCatalogueRank'),land:read('manualCatalogueLand'),minorLand:read('manualCatalogueMinorLand'),village:read('manualCatalogueVillage'),clan:read('manualCatalogueClan'),occupation:read('manualCatalogueOccupation'),primary:read('manualCatalogueCombat'),natureCount:Number(read('manualCatalogueNatureCount'))||natures.length,natures,
+    kekkeiGenkai:read('manualCatalogueKG'),bloodline:read('manualCatalogueBloodline'),hiden:read('manualCatalogueHiden'),dojutsu:read('manualCatalogueDojutsu'),dojutsuEyes:read('manualCatalogueDojutsuEyes'),dojutsuStage:read('manualCatalogueDojutsuStage'),susanooAccess:read('manualCatalogueSusanoo'),weapon:read('manualCatalogueWeapon'),specialty:read('manualCatalogueJutsu1'),signature:read('manualCatalogueJutsu2'),ultimateJutsu:read('manualCatalogueUltimate'),senjutsu:read('manualCatalogueSenjutsu'),sageType:read('manualCatalogueSageType'),jinchuriki:read('manualCatalogueJinchuriki')||'No',beast:read('manualCatalogueBeast'),relationship:read('manualCatalogueRelationship'),summoning:read('manualCatalogueSummoning')||'No',summonType:read('manualCatalogueSummonType'),legendary:read('manualCatalogueLegendary'),legendaryTarget:read('manualCatalogueLegendaryTarget'),sixPaths:read('manualCatalogueSixPaths'),sixPathsLevel:read('manualCatalogueSixPathsLevel'),otsutsuki:read('manualCatalogueOtsutsuki'),otsutsukiMember:read('manualCatalogueOtsutsukiMember'),otsutsukiLevel:read('manualCatalogueOtsutsukiLevel'),spaceTime:read('manualCatalogueSpaceTime'),eightGates:read('manualCatalogueEightGates'),eightGatesLevel:read('manualCatalogueEightGatesLevel'),forbidden:read('manualCatalogueForbidden'),forbiddenTechnique:read('manualCatalogueForbiddenTechnique'),heritage:read('manualCatalogueHeritage'),exceptional:read('manualCatalogueExceptional'),moral:read('manualCatalogueMoral'),motivation:read('manualCatalogueMotivation'),currentGoal:read('manualCatalogueGoal'),notes:read('manualCatalogueNotes')
+  };
+  Object.assign(c,updates);
+  c.stats=c.stats||{};
+  STAT_NAMES.forEach(([key])=>{const el=document.getElementById('manualCatalogueStat_'+key);if(el)c.stats[key]=Math.max(1,Math.min(100,Number(el.value)||50));});
+  const j1=read('manualCatalogueJutsu1'),j2=read('manualCatalogueJutsu2');
+  const existingJutsu=Array.isArray(c.jutsu)?c.jutsu.map(catalogueJutsuName).filter(Boolean):[];
+  c.jutsu=existingJutsu.slice();
+  if(j1)c.jutsu[0]=j1;else c.jutsu.splice(0,1);
+  if(j2)c.jutsu[1]=j2;else c.jutsu.splice(1,1);
+  c.catalogueUpdatedAt=new Date().toISOString();
+  c.fullName=name;
+  selectedCatalogueIndex=idx;
+  saveNinjaCatalogue();
+  populateCatalogueSelect();
+  try{refreshNinjaIntegrationMenus()}catch(e){}
+  const sel=document.getElementById('catalogueSelect');if(sel)sel.value=String(idx);
+  renderCatalogueEntry();
+  cancelCatalogueEdit(false);
+  const status=document.getElementById('catalogueTransferStatus');if(status)status.textContent=`Updated ${name} in the Ninja Catalogue.`;
+}
+function cancelCatalogueEdit(keepSelection){
+  editingCatalogueIndex=null;
+  const title=document.getElementById('catalogueManualEditorTitle');if(title)title.textContent='Create Ninja Directly';
+  const notice=document.getElementById('catalogueEditNotice');if(notice)notice.style.display='none';
+  const save=document.getElementById('catalogueManualSaveButton');if(save){save.textContent='Add Ninja to Catalogue';save.onclick=createManualCatalogueNinja}
+  const cancel=document.getElementById('catalogueManualCancelEdit');if(cancel)cancel.style.display='none';
+  if(!keepSelection)clearManualCatalogueForm();
+}
+
+function clearManualCatalogueForm(){editingCatalogueIndex=null;const title=document.getElementById('catalogueManualEditorTitle');if(title)title.textContent='Create Ninja Directly';const notice=document.getElementById('catalogueEditNotice');if(notice)notice.style.display='none';const save=document.getElementById('catalogueManualSaveButton');if(save){save.textContent='Add Ninja to Catalogue';save.onclick=createManualCatalogueNinja}const cancel=document.getElementById('catalogueManualCancelEdit');if(cancel)cancel.style.display='none';["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes","manualCatalogueNatureCount",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning",""); renderManualCatalogueStatInputs();}
 
 function addSelectedNinjaToCatalogue(){
   const source=document.getElementById("catalogueSourceSelect")?.value;
@@ -8927,6 +8984,26 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       return;
     }
 
+    // Cinematic weapon motion pass: every physical weapon gets a readable
+    // swing arc and velocity streak during a contact animation, while the
+    // specialized blocks below preserve each weapon's signature silhouette.
+    if(f.atkPulse>0){
+      const swing=clamp(f.atkPulse/15,0,1);
+      ctx.save();ctx.globalAlpha=.22+.42*swing;ctx.strokeStyle=f.hitFlash>0?'#ffffff':f.color;
+      ctx.lineWidth=f.hitFlash>0?4:2.5;ctx.shadowBlur=10;ctx.shadowColor=f.color;
+      ctx.beginPath();ctx.arc(base.x,base.y,L*.72,a-.72-swing*.28,a+.18+swing*.42);ctx.stroke();
+      for(let i=0;i<3;i++){
+        const rr=L*(.35+i*.16),aa=a-.58+i*.12;
+        ctx.globalAlpha*=.72;ctx.beginPath();ctx.moveTo(base.x+Math.cos(aa)*rr,base.y+Math.sin(aa)*rr);ctx.lineTo(base.x+Math.cos(aa)*Math.max(8,rr-18),base.y+Math.sin(aa)*Math.max(8,rr-18));ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if(f.combatMode==='ranged' && (f.rangedPulse>0||f.atkPulse>0)){
+      ctx.save();ctx.globalAlpha=.7;ctx.fillStyle='#fff';ctx.shadowBlur=14;ctx.shadowColor=f.color;
+      ctx.beginPath();ctx.arc(tip.x,tip.y,3.5+(f.rangedPulse>0?3:0),0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+
     // Source-inspired motion accents: the base silhouettes remain readable, while
     // signature weapons visibly behave like their canon counterparts.
     if(f.weaponType==='kiba'){
@@ -9007,6 +9084,34 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const sig=e.signature||techniqueSignature(e.name||kind),scale=sig.scale*(e.slot==='ult'?1.58:1);
     const x=f.x,y=f.y,tx=target.x,ty=target.y,ang=Math.atan2(ty-y,tx-x),fade=clamp(1-age,0,1);
     ctx.save();ctx.globalAlpha=fade;
+
+    /* Universal cinematic pass: every named technique gets a distinct launch
+       trail, travelling energy, and impact bloom in addition to its specific
+       renderer below. The seeded signature keeps the accents stable for a
+       technique instead of looking like random noise. */
+    const cinematicColor = f.color;
+    const cinematicTravel = 34 + sig.scale*42;
+    const travelX = x + Math.cos(ang)*cinematicTravel*(0.35 + age*.65);
+    const travelY = y + Math.sin(ang)*cinematicTravel*(0.35 + age*.65);
+    if(age < .72 && !isDefensiveTechnique(e.name||'')){
+      ctx.save();
+      ctx.globalAlpha*=.28*(1-age*.65);
+      ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?5:2.5;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(travelX,travelY);ctx.stroke();
+      for(let i=0;i<3;i++){
+        const q=(i+1)/4,px=x+(travelX-x)*q,py=y+(travelY-y)*q;
+        ctx.beginPath();ctx.arc(px,py,2+(sig.rays+i)%3,0,Math.PI*2);ctx.fillStyle=cinematicColor;ctx.fill();
+      }
+      ctx.restore();
+    }
+    if(age>.56){
+      const impact=clamp((age-.56)/.44,0,1),ir=(8+sig.scale*12)+impact*(e.slot==='ult'?48:32);
+      ctx.save();ctx.globalAlpha*=.48*(1-impact*.45);ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?4:2;
+      ctx.shadowBlur=e.slot==='ult'?20:10;ctx.shadowColor=cinematicColor;
+      ctx.beginPath();ctx.arc(tx,ty,ir,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha*=.65;ctx.beginPath();ctx.arc(tx,ty,Math.max(2,ir*.42),sig.phase+impact*4,sig.phase+impact*4+1.8);ctx.stroke();
+      ctx.restore();
+    }
     const beam=(col,w,spread=0)=>{ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(tx,ty);ctx.stroke();if(spread){ctx.globalAlpha*=.45;ctx.lineWidth=w*3;ctx.stroke()}};
     const orb=(cx,cy,r,fill,stroke)=>{ctx.shadowBlur=18;ctx.shadowColor=stroke||fill;ctx.fillStyle=fill;ctx.strokeStyle=stroke||fill;ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.shadowBlur=0};
     const rotatePoint=(cx,cy,rx,ry,a)=>[cx+Math.cos(a)*rx,cy+Math.sin(a)*ry];
