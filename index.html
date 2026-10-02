@@ -645,7 +645,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   </div>
 
   <div class="catalogue-note">Create a ninja directly here, or import one from the Character Log. Nothing in this section requires a generated ninja first. Saved Catalogue entries remain in this browser until you delete them or clear browser site data.</div>
-  <div class="catalogue-actions" style="margin-bottom:14px"><button type="button" onclick="exportNinjaCatalogueJSON()">Export Ninja Catalogue</button><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueImportFile').click()">Import Ninja Catalogue JSON</button><input id="ninjaCatalogueImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importNinjaCatalogueJSON(this.files[0])"><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueHTMLImportFile').click()">Load Saved Catalogue HTML</button><input id="ninjaCatalogueHTMLImportFile" type="file" accept="text/html,.html,.htm" style="display:none" onchange="importNinjaCatalogueHTML(this.files[0])"><button type="button" class="secondary" onclick="downloadSelfContainedCatalogueHTML()">Download Self-Contained HTML</button><span id="catalogueTransferStatus" class="small" aria-live="polite"></span></div>
+  <div class="catalogue-actions" style="margin-bottom:14px"><button type="button" onclick="exportNinjaCatalogueJSON()">Export Ninja Catalogue</button><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueImportFile').click()">Import Ninja Catalogue JSON</button><input id="ninjaCatalogueImportFile" type="file" accept="application/json,.json" style="display:none" onchange="importNinjaCatalogueJSON(this.files[0])"><button type="button" class="secondary" onclick="document.getElementById('ninjaCatalogueHTMLImportFile').click()">Load Saved Catalogue HTML</button><input id="ninjaCatalogueHTMLImportFile" type="file" accept=".html,.htm,text/html,*/*" style="display:none" onchange="importNinjaCatalogueHTML(this.files[0])"><button type="button" class="secondary" onclick="downloadSelfContainedCatalogueHTML()">Download Self-Contained HTML</button><span id="catalogueTransferStatus" class="small" aria-live="polite"></span></div>
 
   <div class="log-detail-card">
     <h3>Create Ninja Directly</h3>
@@ -718,10 +718,6 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
   <div class="catalogue-toolbar" style="grid-template-columns:1fr auto">
     <div><label class="small">Saved Ninja</label><select id="catalogueSelect" onchange="openCatalogueEntry(this.value)"><option value="">Select a saved ninja</option></select></div>
     <button class="secondary" onclick="deleteSelectedCatalogueNinja()">Delete Selected Ninja</button>
-  </div>
-  <div class="catalogue-actions" style="margin-top:8px">
-    <button onclick="downloadSelfContainedCatalogueHTML()">Download Self-Contained HTML</button>
-    <span id="catalogueEmbedStatus" class="small" style="align-self:center"></span>
   </div>
 
   <div id="catalogueEditor" style="display:none">
@@ -7228,49 +7224,107 @@ function importNinjaCatalogueJSON(file){
 function downloadSelfContainedCatalogueHTML(){
   try{
     const html=document.documentElement.outerHTML;
-    /* Encode the catalogue as a JSON string literal. This avoids regex problems
-       if a ninja name/jutsu happens to contain brackets, semicolons, or HTML. */
-    const encoded=JSON.stringify(JSON.stringify(ninjaCatalogue||[]))
+    /* Embed the complete Catalogue directly into the existing declaration.
+       HTML-sensitive characters are escaped so arbitrary names, notes and
+       jutsu cannot terminate the script or corrupt the saved document. */
+    const catalogueJSON=JSON.stringify(ninjaCatalogue||[])
       .replace(/</g,"\\u003c")
       .replace(/>/g,"\\u003e")
       .replace(/&/g,"\\u0026");
-    const re=/const EMBEDDED_NINJA_CATALOGUE\s*=\s*[^;]+;/;
-    if(!re.test(html)){alert("The embedded Catalogue section could not be located.");return false;}
-    const updated=html.replace(re,`const EMBEDDED_NINJA_CATALOGUE = JSON.parse(${encoded});`);
+    const embeddedDeclaration=`const EMBEDDED_NINJA_CATALOGUE = ${catalogueJSON};`;
+    const declaration=/const\s+EMBEDDED_NINJA_CATALOGUE\s*=\s*[^;]+;/;
+    if(!declaration.test(html))throw new Error("The Ninja Catalogue embedding point could not be located.");
+
+    /* Strip any data marker left by an earlier broken build before saving. */
+    const oldDataBlock=/<!--\s*NINJA_CATALOGUE_DATA_START\s*-->[\s\S]*?<!--\s*NINJA_CATALOGUE_DATA_END\s*-->/gi;
+    let updated=html.replace(oldDataBlock,"");
+    updated=updated.replace(declaration,embeddedDeclaration);
+
     const blob=new Blob(["<!doctype html>\n",updated],{type:"text/html;charset=utf-8"});
     const url=URL.createObjectURL(blob),a=document.createElement("a");
-    a.href=url;a.download="Ninja_Generator_Self_Contained_Catalogue.html";document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
+    a.href=url;a.download="Ninja_Generator_Self_Contained_Catalogue.html";
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
     const status=document.getElementById("catalogueTransferStatus");
     if(status)status.textContent=`Saved ${ninjaCatalogue.length} Catalogue ninja${ninjaCatalogue.length===1?"":"s"} into a self-contained HTML file.`;
     return true;
-  }catch(e){console.error(e);alert("Could not create the self-contained HTML file.");return false;}
+  }catch(e){
+    console.error(e);
+    alert("Could not create the self-contained Catalogue HTML file. Please try again.");
+    return false;
+  }
+}
+
+function parseCatalogueArrayFromDeclaration(source, declarationIndex){
+  const start=source.indexOf('[',declarationIndex);
+  if(start<0)throw new Error("Catalogue array start not found.");
+  let depth=0,inString=false,escape=false;
+  for(let i=start;i<source.length;i++){
+    const ch=source[i];
+    if(inString){
+      if(escape)escape=false;
+      else if(ch==='\\')escape=true;
+      else if(ch==='"')inString=false;
+      continue;
+    }
+    if(ch==='"'){inString=true;continue;}
+    if(ch==='[')depth++;
+    else if(ch===']'){
+      depth--;
+      if(depth===0){
+        const raw=source.slice(start,i+1);
+        const parsed=JSON.parse(raw);
+        if(!Array.isArray(parsed))throw new Error("Embedded Catalogue is not an array.");
+        return parsed;
+      }
+    }
+  }
+  throw new Error("Catalogue array was not closed.");
 }
 
 function extractEmbeddedNinjaCatalogueFromHTML(text){
   const source=String(text||"");
-  /* New format: JSON is wrapped in JSON.parse(...) so arbitrary catalogue
-     text cannot accidentally terminate the embedded declaration. */
-  let match=source.match(/const EMBEDDED_NINJA_CATALOGUE\s*=\s*JSON\.parse\(("(?:\\.|[^"\\])*")\)\s*;/);
-  if(match){
+
+  /* Current format: an explicit application/json data block. */
+  const dataMatch=source.match(/<script[^>]*id=["']ninjaCatalogueEmbeddedData["'][^>]*>([\s\S]*?)<\/script>/i);
+  if(dataMatch){
     try{
-      const encoded=JSON.parse(match[1]);
+      const decoded=dataMatch[1].replace(/\\u003c/gi,'<').replace(/\\u003e/gi,'>').replace(/\\u0026/gi,'&');
+      const incoming=JSON.parse(decoded);
+      if(Array.isArray(incoming))return incoming;
+    }catch(e){
+      console.warn("Embedded Catalogue data block could not be parsed; trying legacy formats.",e);
+    }
+  }
+
+  /* Previous format: const EMBEDDED_NINJA_CATALOGUE = JSON.parse("..."); */
+  const jsonParseMatch=source.match(/const\s+EMBEDDED_NINJA_CATALOGUE\s*=\s*JSON\.parse\(("(?:\\.|[^"\\])*")\)\s*;/);
+  if(jsonParseMatch){
+    try{
+      const encoded=JSON.parse(jsonParseMatch[1]);
       const incoming=JSON.parse(encoded);
       if(Array.isArray(incoming))return incoming;
-    }catch(e){}
+    }catch(e){
+      console.warn("Legacy JSON.parse Catalogue data could not be parsed.",e);
+    }
   }
-  /* Backward compatibility with earlier self-contained HTML versions. */
-  match=source.match(/const EMBEDDED_NINJA_CATALOGUE\s*=\s*(\[[\s\S]*?\])\s*;\s*let\s+ninjaCatalogue\s*=/);
+
+  /* Older format: const EMBEDDED_NINJA_CATALOGUE = [ ... ];
+     Use a bracket/string-aware parser so a ']' inside a ninja's notes or name
+     cannot terminate the match early. */
+  const decl=/const\s+EMBEDDED_NINJA_CATALOGUE\s*=\s*/g;
+  const match=decl.exec(source);
   if(match){
-    try{
-      const incoming=JSON.parse(match[1]);
-      if(Array.isArray(incoming))return incoming;
-    }catch(e){}
+    try{return parseCatalogueArrayFromDeclaration(source,match.index+match[0].length)}catch(e){
+      console.warn("Legacy array Catalogue data could not be parsed.",e);
+    }
   }
-  throw new Error("No embedded Ninja Catalogue was found in this HTML file.");
+
+  throw new Error("No embedded Ninja Catalogue data was found in this HTML file.");
 }
 
 function mergeImportedNinjaCatalogue(incoming,sourceLabel){
+  if(!Array.isArray(incoming))throw new Error("Catalogue data is not an array.");
   const imported=incoming.map(normaliseCatalogueNinja).filter(Boolean);
   const byId=new Map(ninjaCatalogue.map((n,i)=>[String(n.catalogueId||""),i]).filter(([id])=>id));
   const byName=new Map(ninjaCatalogue.map((n,i)=>[catalogueEntryName(n).trim().toLowerCase(),i]));
@@ -7299,14 +7353,16 @@ function importNinjaCatalogueHTML(file){
   reader.onload=()=>{
     try{
       const incoming=extractEmbeddedNinjaCatalogueFromHTML(reader.result);
+      if(!Array.isArray(incoming))throw new Error("No Catalogue array found.");
       mergeImportedNinjaCatalogue(incoming,"saved HTML");
       const input=document.getElementById("ninjaCatalogueHTMLImportFile");
       if(input)input.value="";
     }catch(e){
       console.error(e);
-      alert("Could not load this Catalogue HTML. Please choose a Ninja Generator HTML file that was saved with the Catalogue download button.");
+      alert("Could not load this Catalogue HTML. Please choose a Ninja Generator HTML file containing a saved Ninja Catalogue.");
     }
   };
+  reader.onerror=()=>alert("The Catalogue HTML file could not be read.");
   reader.readAsText(file);
 }
 function catalogueEntryName(c){return c.catalogueName||characterDisplayName(c)||"Unnamed Ninja"}
