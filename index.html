@@ -7228,11 +7228,16 @@ function importNinjaCatalogueJSON(file){
 function downloadSelfContainedCatalogueHTML(){
   try{
     const html=document.documentElement.outerHTML;
-    const payload=JSON.stringify(ninjaCatalogue||[]).replace(/</g,"\\u003c").replace(/>/g,"\\u003e").replace(/&/g,"\\u0026");
-    const re=/const EMBEDDED_NINJA_CATALOGUE\\s*=\\s*\\[[\\s\\S]*?\\];\\s*let ninjaCatalogue/;
+    /* Encode the catalogue as a JSON string literal. This avoids regex problems
+       if a ninja name/jutsu happens to contain brackets, semicolons, or HTML. */
+    const encoded=JSON.stringify(JSON.stringify(ninjaCatalogue||[]))
+      .replace(/</g,"\\u003c")
+      .replace(/>/g,"\\u003e")
+      .replace(/&/g,"\\u0026");
+    const re=/const EMBEDDED_NINJA_CATALOGUE\s*=\s*[^;]+;/;
     if(!re.test(html)){alert("The embedded Catalogue section could not be located.");return false;}
-    const updated=html.replace(re,`const EMBEDDED_NINJA_CATALOGUE = ${payload};\\nlet ninjaCatalogue`);
-    const blob=new Blob(["<!doctype html>\\n",updated],{type:"text/html;charset=utf-8"});
+    const updated=html.replace(re,`const EMBEDDED_NINJA_CATALOGUE = JSON.parse(${encoded});`);
+    const blob=new Blob(["<!doctype html>\n",updated],{type:"text/html;charset=utf-8"});
     const url=URL.createObjectURL(blob),a=document.createElement("a");
     a.href=url;a.download="Ninja_Generator_Self_Contained_Catalogue.html";document.body.appendChild(a);a.click();a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -7242,40 +7247,64 @@ function downloadSelfContainedCatalogueHTML(){
   }catch(e){console.error(e);alert("Could not create the self-contained HTML file.");return false;}
 }
 
+function extractEmbeddedNinjaCatalogueFromHTML(text){
+  const source=String(text||"");
+  /* New format: JSON is wrapped in JSON.parse(...) so arbitrary catalogue
+     text cannot accidentally terminate the embedded declaration. */
+  let match=source.match(/const EMBEDDED_NINJA_CATALOGUE\s*=\s*JSON\.parse\(("(?:\\.|[^"\\])*")\)\s*;/);
+  if(match){
+    try{
+      const encoded=JSON.parse(match[1]);
+      const incoming=JSON.parse(encoded);
+      if(Array.isArray(incoming))return incoming;
+    }catch(e){}
+  }
+  /* Backward compatibility with earlier self-contained HTML versions. */
+  match=source.match(/const EMBEDDED_NINJA_CATALOGUE\s*=\s*(\[[\s\S]*?\])\s*;\s*let\s+ninjaCatalogue\s*=/);
+  if(match){
+    try{
+      const incoming=JSON.parse(match[1]);
+      if(Array.isArray(incoming))return incoming;
+    }catch(e){}
+  }
+  throw new Error("No embedded Ninja Catalogue was found in this HTML file.");
+}
+
+function mergeImportedNinjaCatalogue(incoming,sourceLabel){
+  const imported=incoming.map(normaliseCatalogueNinja).filter(Boolean);
+  const byId=new Map(ninjaCatalogue.map((n,i)=>[String(n.catalogueId||""),i]).filter(([id])=>id));
+  const byName=new Map(ninjaCatalogue.map((n,i)=>[catalogueEntryName(n).trim().toLowerCase(),i]));
+  let added=0,updated=0;
+  imported.forEach(n=>{
+    const id=String(n.catalogueId||"");
+    const name=catalogueEntryName(n).trim().toLowerCase();
+    const idx=id&&byId.has(id)?byId.get(id):byName.get(name);
+    if(idx===undefined){ninjaCatalogue.unshift(n);added++;}
+    else{ninjaCatalogue[idx]=Object.assign({},ninjaCatalogue[idx],n);updated++;}
+  });
+  selectedCatalogueIndex=null;
+  saveNinjaCatalogue();
+  populateCatalogueSelect();
+  populateManualCatalogueOptions();
+  refreshNinjaIntegrationMenus();
+  renderCatalogueEntry();
+  const status=document.getElementById("catalogueTransferStatus");
+  if(status)status.textContent=`Loaded ${imported.length} ninja${imported.length===1?"":"s"} from ${sourceLabel}: ${added} added, ${updated} updated.`;
+  return {imported:imported.length,added,updated};
+}
+
 function importNinjaCatalogueHTML(file){
   if(!file)return;
   const reader=new FileReader();
   reader.onload=()=>{
     try{
-      const text=String(reader.result||"");
-      const match=text.match(/const EMBEDDED_NINJA_CATALOGUE\\s*=\\s*(\\[[\\s\\S]*?\\]);\\s*let ninjaCatalogue/);
-      if(!match)throw new Error("No embedded Ninja Catalogue was found in this HTML file.");
-      const incoming=JSON.parse(match[1]);
-      if(!Array.isArray(incoming))throw new Error("Embedded Catalogue is not an array.");
-      const imported=incoming.map(normaliseCatalogueNinja).filter(Boolean);
-      const byId=new Map(ninjaCatalogue.map((n,i)=>[String(n.catalogueId||""),i]).filter(([id])=>id));
-      const byName=new Map(ninjaCatalogue.map((n,i)=>[catalogueEntryName(n).trim().toLowerCase(),i]));
-      let added=0,updated=0;
-      imported.forEach(n=>{
-        const id=String(n.catalogueId||"");
-        const name=catalogueEntryName(n).trim().toLowerCase();
-        const idx=id&&byId.has(id)?byId.get(id):byName.get(name);
-        if(idx===undefined){ninjaCatalogue.unshift(n);added++;}
-        else{ninjaCatalogue[idx]=Object.assign({},ninjaCatalogue[idx],n);updated++;}
-      });
-      selectedCatalogueIndex=null;
-      saveNinjaCatalogue();
-      populateCatalogueSelect();
-      populateManualCatalogueOptions();
-      refreshNinjaIntegrationMenus();
-      renderCatalogueEntry();
-      const status=document.getElementById("catalogueTransferStatus");
-      if(status)status.textContent=`Loaded ${imported.length} ninja${imported.length===1?"":"s"} from saved HTML: ${added} added, ${updated} updated.`;
+      const incoming=extractEmbeddedNinjaCatalogueFromHTML(reader.result);
+      mergeImportedNinjaCatalogue(incoming,"saved HTML");
       const input=document.getElementById("ninjaCatalogueHTMLImportFile");
       if(input)input.value="";
     }catch(e){
       console.error(e);
-      alert("Could not load this saved Catalogue HTML. Please choose an HTML file downloaded with the Ninja Generator's “Download Self-Contained HTML” button.");
+      alert("Could not load this Catalogue HTML. Please choose a Ninja Generator HTML file that was saved with the Catalogue download button.");
     }
   };
   reader.readAsText(file);
