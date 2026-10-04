@@ -9787,7 +9787,7 @@ populateSources();resetState();
        distance; melee fighters circle at a wider engagement radius instead of
        repeatedly pinning both orbs to the same small patch of the stage. */
     const ideal=f.combatMode==='ranged'
-      ? Math.max(105,f.r+target.r+Math.min(f.weaponReach,34)*1.15)
+      ? Math.max(92,f.r+target.r+Math.min(f.weaponReach,30)*.92)
       : f.unarmed ? Math.max(46,f.r+target.r+8) : Math.max(112,f.r+target.r+f.weaponReach*.85);
     const roamRange=f.combatMode==='ranged'?230:185;
     f.moveClock-=dt;f.dashTimer-=dt;if(f.dashCooldown>0)f.dashCooldown-=dt;
@@ -9817,12 +9817,11 @@ populateSources();resetState();
     }
     else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){ax=nx;ay=ny;acc=2.0;maxMul=1.9}
     else if(dist>ideal+10){ax=nx;ay=ny}
-    else if(dist<ideal-(f.combatMode==='ranged'?34:18)){
-      /* Ranged fighters only disengage when the opponent gets genuinely
-         close. Inside their normal firing distance they circle/hold ground
-         instead of continuously running away, giving melee fighters a real
-         chance to catch them. */
-      if(f.combatMode==='ranged'){ax=-nx*.38;ay=-ny*.38}
+    else if(dist<ideal-(f.combatMode==='ranged'?12:18)){
+      /* Ranged fighters give ground only when the opponent is actually
+         inside their preferred range. The retreat force is deliberately
+         mild so a melee fighter can continue closing the gap. */
+      if(f.combatMode==='ranged'){ax=-nx*.14;ay=-ny*.14}
       else{ax=-nx;ay=-ny}
     }
     else{
@@ -9833,7 +9832,7 @@ populateSources();resetState();
          range, but they now lean substantially toward the opponent. This keeps
          both orbs actively seeking each other instead of settling into parallel
          orbit paths and creating long middle-of-arena standstills. */
-      const pursuitBias=f.combatMode==='ranged'?0.82:0.62;
+      const pursuitBias=f.combatMode==='ranged'?0.92:0.62;
       ax+=nx*pursuitBias;ay+=ny*pursuitBias;
 
       /* Keep the quadrant-roaming behavior, but make it secondary to pursuit. */
@@ -9845,7 +9844,7 @@ populateSources();resetState();
     const unarmedMoveMul=f.unarmed?1.16:1;
     /* Ranged users give up some mobility while firing, but every fighter gets
        a stronger pursuit response so opponents keep re-engaging. */
-    const rangedMobilityMul=f.combatMode==='ranged'?.92:((foe.combatMode==='ranged'&&!f.unarmed)?1.10:1);
+    const rangedMobilityMul=f.combatMode==='ranged'?.84:((foe.combatMode==='ranged'&&!f.unarmed)?1.10:1);
     const rangedPursuitAccel=(foe.combatMode==='ranged'&&f.combatMode!=='ranged')?1.28:1;
     /* Melee weapon users close distance 40% faster, but only while they are
        actually approaching the opposing orb. Ranged and unarmed fighters
@@ -9855,8 +9854,9 @@ populateSources();resetState();
     const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel*meleeWeaponApproachMul;
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.972;f.vy*=.972;
-    const dashRangeFloor=f.combatMode==='ranged'?ideal*.92:ideal*.72;
-    if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>dashRangeFloor&&Math.random()<.72){
+    const dashRangeFloor=f.combatMode==='ranged'?ideal*1.08:ideal*.72;
+    const dashChance=f.combatMode==='ranged'?.32:.72;
+    if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>dashRangeFloor&&Math.random()<dashChance){
       const side=(Math.random()<.5?-1:1),tx=-ny*side+nx*.55,ty=nx*side+ny*.55;
       const tl=Math.max(.01,Math.hypot(tx,ty));
       f.vx+=tx/tl*(2.4+f.speed*1.5);f.vy+=ty/tl*(2.4+f.speed*1.5);
