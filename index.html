@@ -89,7 +89,15 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 #orbBattlePanel .bar.hp.b span{background:linear-gradient(90deg,#2471a3,#53b8ff)}
 #orbBattlePanel .bar.j1 span{background:linear-gradient(90deg,#2aa876,#62e5aa)}
 #orbBattlePanel .bar.j2 span{background:linear-gradient(90deg,#2471a3,#6abfff)}
-#orbBattlePanel .bar.ult span{background:linear-gradient(90deg,#8e44ad,#f1c40f)}
+#orbBattlePanel .bar.ult span{
+  background:linear-gradient(90deg,#7b2dbe,#c77dff 45%,#f1c40f);
+  box-shadow:0 0 10px rgba(193,125,255,.35);
+}
+#orbBattlePanel .bar.ult{position:relative}
+#orbBattlePanel .orb-hud-card.active-fighter{
+  border-color:var(--orb-accent);
+  box-shadow:0 0 0 1px rgba(78,161,255,.45),0 4px 14px rgba(0,0,0,.25);
+}
     .bar.consumable{height:7px;margin-top:5px;background:rgba(77,190,255,.10);border:1px solid rgba(112,215,255,.24)}
     .bar.consumable span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5fc9ff,#b6f0ff);box-shadow:0 0 8px rgba(95,201,255,.55);transition:width .12s linear}
     .consumable-meta{font-size:10px;color:#8edfff;text-align:center;min-height:14px;margin-top:2px}
@@ -98,15 +106,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 #orbBattlePanel .orb-canvas-wrap{position:relative}
 #orbBattlePanel canvas{width:100%;height:auto;display:block;border-radius:14px;border:1px solid var(--orb-line);background:radial-gradient(circle at 50% 45%,#152033 0%,#0a0f18 70%);touch-action:none}
 #orbBattlePanel .orb-banner{
-  position:absolute;left:50%;top:-34px;transform:translateX(-50%);
+  position:absolute;left:50%;top:-34px;transform:translateX(-50%) scale(.92);
   padding:0;border:0;background:transparent;box-shadow:none;
   color:#fff;font-weight:950;font-size:clamp(15px,3vw,22px);
   line-height:1.15;text-align:center;white-space:nowrap;
-  pointer-events:none;opacity:0;transition:opacity .2s ease;
-  max-width:96%;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 10px rgba(0,0,0,.9);
+  pointer-events:none;opacity:0;
+  transition:opacity .22s ease,transform .28s cubic-bezier(.08,.7,.12,1);
+  max-width:96%;overflow:hidden;text-overflow:ellipsis;
+  text-shadow:0 2px 12px rgba(0,0,0,.95),0 0 18px rgba(78,161,255,.35);
   z-index:5;
 }
-#orbBattlePanel .orb-banner.show{opacity:1}
+#orbBattlePanel .orb-banner.show{opacity:1;transform:translateX(-50%) scale(1)}
 #orbBattlePanel .orb-log{margin-top:10px;max-height:150px;overflow:auto;font-size:12px;color:var(--orb-muted);line-height:1.4}
 #orbBattlePanel .orb-log div{padding:3px 0;border-bottom:1px solid rgba(36,48,68,.45)}
 @media(max-width:900px){#orbBattlePanel .orb-layout{grid-template-columns:1fr}}
@@ -4286,11 +4296,9 @@ function eligibleUltimatePool(c){
 }
 
 function rollUltimateJutsu(c, excludeNames){
-  /* Ultimate Jutsu uses the same HARD KG > Dōjutsu > Nature hierarchy. */
+  /* Ultimate Jutsu uses soft KG ≫ Dōjutsu ≫ Nature weighting on a merged pool. */
   let pool=getStrictGeneratedJutsuPool(c,'ultimate',excludeNames||[]);
   if(!pool.length){
-    // If exclusions removed the only technique in the preferred tier, allow
-    // that tier to remain rather than falling through to a lower tier.
     pool=getStrictGeneratedJutsuPool(c,'ultimate',[]);
   }
   if(!pool.length){
@@ -4428,12 +4436,12 @@ function techniqueMatchesCharacterLineage(t, c){
   return techniqueMatchesCharacterDojutsu(t,c) || techniqueMatchesCharacterKg(t,c);
 }
 function lineagePriorityForTechnique(t, c){
-  /* HARD priority for Jutsu 1 / Jutsu 2 / Ultimate Jutsu:
-     1) Kekkei Genkai
+  /* Soft priority tiers for Jutsu 1 / Jutsu 2 / Ultimate Jutsu:
+     1) Kekkei Genkai  (highest roll weight)
      2) Dōjutsu
-     3) Chakra nature
-     The first available tier is used; lower tiers are never selected while a
-     higher-priority eligible tier exists. */
+     3) Chakra nature  (lowest of the three)
+     All three tiers remain eligible at once when the character qualifies;
+     probability is applied by jutsuPriorityWeight(), not by removing tiers. */
   if(techniqueMatchesCharacterKg(t,c)) return 3;
   if(techniqueMatchesCharacterDojutsu(t,c)) return 2;
   if(techniqueMatchesCharacterNature(t,c)) return 1;
@@ -4449,27 +4457,26 @@ function characterHasSusanoo(c){
   return !!(c && c.susanooAccess==="Yes" && dojutsuSatisfied("Mangekyō Sharingan",c));
 }
 function jutsuPriorityWeight(c,t){
-  /* Weight only matters inside the already-selected tier. The tier itself is
-     hard-filtered, so KG can never lose to Dōjutsu or nature when KG options exist. */
-  if(characterHasSusanoo(c) && techniqueRequiresSusanoo(t)) return 60;
+  /* Soft probability ordering across all eligible tiers:
+     Kekkei Genkai ≫ Dōjutsu ≫ chakra nature. All three stay on the wheel. */
+  if(characterHasSusanoo(c) && techniqueRequiresSusanoo(t)) return 90;
   const tier=lineagePriorityForTechnique(t,c);
-  if(tier===3) return 50; // Kekkei Genkai
-  if(tier===2) return 40; // Dōjutsu
-  if(tier===1) return 30; // Chakra nature
+  if(tier===3) return 72; // Kekkei Genkai — highest chance
+  if(tier===2) return 36; // Dōjutsu
+  if(tier===1) return 14; // Chakra nature
   if(t && t.exclusive) return 10;
   return 1;
 }
 function getLineagePriorityPool(c, source, excludeNames){
   /*
-   * HARD priority for generated Jutsu 1 / Jutsu 2 / Ultimate Jutsu:
-   *   1. Kekkei Genkai-exclusive techniques
+   * Soft priority for generated Jutsu 1 / Jutsu 2 / Ultimate Jutsu:
+   *   1. Kekkei Genkai-exclusive techniques  (highest weight)
    *   2. Dōjutsu-exclusive techniques
-   *   3. Chakra-nature-compatible techniques
+   *   3. Chakra-nature-compatible techniques (lowest of the three)
    *
-   * This is intentionally a tiered FILTER, not a weighting system. Once a
-   * higher tier has at least one eligible technique, lower tiers are removed
-   * completely. This prevents a Wood Release user from ever falling through
-   * to ordinary Earth/Water techniques while Wood Release techniques exist.
+   * All eligible tiers are MERGED into one pool. Probability is applied by
+   * jutsuPriorityWeight() at roll / wheel time so KG is most likely, then
+   * dōjutsu, then nature — without hiding lower tiers from the wheel.
    */
   const src=Array.isArray(source)?source:[];
   const excluded=new Set((excludeNames||[]).filter(Boolean).map(x=>String(x).toLowerCase()));
@@ -4478,27 +4485,29 @@ function getLineagePriorityPool(c, source, excludeNames){
     return n && n!=="None" && !isExcludedSpecialtyJutsu(n) && !excluded.has(n.toLowerCase());
   });
 
-  const kgPool=clean.filter(t=>techniqueMatchesCharacterKg(t,c));
-  if(kgPool.length) return kgPool;
-
-  const dojutsuPool=clean.filter(t=>techniqueMatchesCharacterDojutsu(t,c));
-  if(dojutsuPool.length) return dojutsuPool;
-
-  const naturePool=clean.filter(t=>techniqueMatchesCharacterNature(t,c));
-  if(naturePool.length) return naturePool;
-
-  return [];
+  const seen=new Set();
+  const out=[];
+  const pushAll=(arr)=>{
+    for(const t of arr){
+      const n=String(t && (t.name||(t.meta&&t.meta.name)||t.technique)||"").trim().toLowerCase();
+      if(!n || seen.has(n)) continue;
+      seen.add(n);
+      out.push(t);
+    }
+  };
+  pushAll(clean.filter(t=>techniqueMatchesCharacterKg(t,c)));
+  pushAll(clean.filter(t=>techniqueMatchesCharacterDojutsu(t,c)));
+  pushAll(clean.filter(t=>techniqueMatchesCharacterNature(t,c)));
+  return out;
 }
 
 function getStrictGeneratedJutsuPool(c, kind, excludeNames){
   /*
-   * HARD source separation for generated Jutsu 1 / Jutsu 2 / Ultimate Jutsu.
-   * The KG tier is built directly from the catalogue instead of relying on the
-   * merged/cached signature pool. This is important because a KG technique
-   * must never disappear merely because another eligibility path or stale pool
-   * omitted it. Required prerequisites are still enforced.
-   *
-   * Priority: Kekkei Genkai > Dōjutsu > chakra nature.
+   * Soft priority pool for generated Jutsu 1 / Jutsu 2 / Ultimate Jutsu.
+   * All eligible KG, dōjutsu, and chakra-nature techniques are MERGED.
+   * Required prerequisites are still enforced via localJutsuEligible.
+   * Roll / wheel probability is applied by jutsuPriorityWeight():
+   *   Kekkei Genkai ≫ Dōjutsu ≫ chakra nature.
    */
   const excluded=new Set((excludeNames||[]).filter(Boolean).map(x=>String(x).toLowerCase()));
   const clean=(arr)=> (Array.isArray(arr)?arr:[]).filter(t=>{
@@ -4520,45 +4529,37 @@ function getStrictGeneratedJutsuPool(c, kind, excludeNames){
     try{return localJutsuEligible(t,c||{});}catch(_e){return false;}
   });
 
-  const kgPool=source.filter(t=>techniqueMatchesCharacterKg(t,c||{}));
-  if(kgPool.length) return kgPool;
+  const seen=new Set();
+  const out=[];
+  const pushAll=(arr)=>{
+    for(const t of arr){
+      const n=String(t && (t.name||(t.meta&&t.meta.name)||t.technique)||"").trim().toLowerCase();
+      if(!n || seen.has(n)) continue;
+      seen.add(n);
+      out.push(t);
+    }
+  };
 
-  const dojutsuPool=source.filter(t=>techniqueMatchesCharacterDojutsu(t,c||{}));
-  if(dojutsuPool.length) return dojutsuPool;
+  /* Merge all three priority tiers — do not drop lower tiers when higher ones exist. */
+  pushAll(source.filter(t=>techniqueMatchesCharacterKg(t,c||{})));
+  pushAll(source.filter(t=>techniqueMatchesCharacterDojutsu(t,c||{})));
 
   /*
-   * Puppet weapons are a weapon-linked specialty, but their named puppet
-   * techniques are also represented in WEAPON_EXCLUSIVE_TECHNIQUES rather
-   * than always carrying a catalog requiredKekkeiGenkai field. The final
-   * strict generator used to skip that pool entirely, so a ninja could have
-   * Puppet Master forced onto them while Jutsu 1 / Jutsu 2 fell through to
-   * ordinary nature techniques.
-   *
-   * Keep the global hierarchy intact: true KG first, dōjutsu second, then
-   * puppet-tool techniques, and only then ordinary chakra-nature techniques.
-   * This applies only to Jutsu 1 / Jutsu 2; the Ultimate Jutsu catalogue has
-   * its own separate pool and must not inherit the Jutsu 1 / Jutsu 2 puppet
-   * additions. Exclusions are respected so Jutsu 2 will not repeat Jutsu 1
-   * when another puppet technique is available.
+   * Puppet weapons: include named puppet techniques in the merged pool with
+   * high priority weight at roll time, without wiping nature / KG / dōjutsu
+   * options from the wheel. Ultimate catalogue is separate and unchanged.
    */
   if(kind!=='ultimate' && characterHasPuppetTool(c||{})) {
     const puppetSource = getWeaponExclusiveTechniquePool(c||{}) || [];
-    /* getWeaponExclusiveTechniquePool() is already gated to the matching
-       weapon set, so do not re-filter by the technique name here. Several
-       valid puppet techniques (for example Black Secret Technique: Machine
-       One Shot) do not literally contain the word "puppet" in their title. */
-    const puppetPool = clean(puppetSource);
-    if(puppetPool.length) return puppetPool;
+    pushAll(clean(puppetSource));
   }
 
-  const naturePool=source.filter(t=>techniqueMatchesCharacterNature(t,c||{}));
-  if(naturePool.length) return naturePool;
-  return [];
+  pushAll(source.filter(t=>techniqueMatchesCharacterNature(t,c||{})));
+  return out;
 }
 function getForcedLineageJutsuPool(c, source, excludeNames){
-  /* Strict hierarchy requested by the generator:
-     Kekkei-genkai exclusive > Dōjutsu exclusive > chakra-nature compatible.
-     No lower tier is returned while a higher-priority tier exists. */
+  /* Soft hierarchy: Kekkei-genkai > Dōjutsu > chakra-nature (by weight).
+     All eligible tiers remain in the pool for rolls and wheels. */
   return getLineagePriorityPool(c, source, excludeNames);
 }
 
@@ -4603,12 +4604,9 @@ function eligibleSignaturePool(c){
         seen.add(key);
       }
     }
-    // Puppet users: restrict to puppet-related techniques when any exist (no fallback catalogue)
+    // Puppet users: keep puppet techniques available alongside KG/dōjutsu/nature.
+    // Probability bias is applied by jutsuPriorityWeight / roll boosts, not by removing tiers.
     let final=out;
-    if(characterHasPuppetTool(c||{})){
-      const pup=out.filter(isPuppetRelatedJutsu);
-      if(pup.length) final=pup;
-    }
     final = filterSpecialtySignaturePool(final);
     if(c) c._sigPoolCache = final;
     return final;
@@ -4859,13 +4857,14 @@ function rollSignatureTechnique(c){
     // repeat rather than silently dropping to a lower-priority tier.
     pool=getStrictGeneratedJutsuPool(c,'signature',[]);
   }
-  /* Puppet-tool restriction never overrides Dōjutsu/KG priority. */
-  if(characterHasPuppetTool(c||{}) && !pool.some(t=>techniqueMatchesCharacterDojutsu(t,c)) && !pool.some(t=>techniqueMatchesCharacterKg(t,c))){
-    const pup=pool.filter(isPuppetRelatedJutsu);
-    if(pup.length) pool=pup;
-  }
+  /* Soft priority: keep KG + dōjutsu + nature + puppet techniques together.
+     Puppet techniques get a weight boost at roll time, not an exclusive filter. */
   if(!pool.length) return {name:"None", classification:"", meta:{name:"None"}};
-  const weighted=pool.map(t=>W(t.name||(t.meta&&t.meta.name)||"Unknown",jutsuPriorityWeight(c,t),{ref:t}));
+  const weighted=pool.map(t=>{
+    let w=jutsuPriorityWeight(c,t);
+    if(characterHasPuppetTool(c||{}) && isPuppetRelatedJutsu(t)) w=Math.max(w,55);
+    return W(t.name||(t.meta&&t.meta.name)||"Unknown",w,{ref:t});
+  });
   const pick=rollWeighted(weighted);
   const ref=pick.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===pick.name)||pool[0];
   return {name:pick.name, meta:ref.meta||ref, classification:(ref.meta&&ref.meta.classification)||ref.classification||""};
@@ -4975,7 +4974,7 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='ultimate_jutsu'){
-      /* Display exactly the same hard-priority pool used by the actual roll. */
+      /* Same merged soft-priority pool as the actual roll (KG + dōjutsu + nature, weighted). */
       let pool=getStrictGeneratedJutsuPool(c,'ultimate',[c.specialtyJutsu&&c.specialtyJutsu.name,c.signatureTechnique&&c.signatureTechnique.name]);
       if(!pool.length) pool=getStrictGeneratedJutsuPool(c,'ultimate',[]);
       if(!pool.length) pool=eligibleUltimatePool(c)||[];
@@ -4988,20 +4987,20 @@ function getWheelSegments(){
       }
     }
     else if(s.key==='specialty_jutsu' || s.key==='signature'){
-      /* Display exactly the same hard-priority pool used by Jutsu 1 / Jutsu 2. */
+      /* Same merged soft-priority pool as Jutsu 1 / Jutsu 2 (KG + dōjutsu + nature, weighted). */
       c._sigPoolCache=null;
       let pool=getStrictGeneratedJutsuPool(c,'signature',s.key==='signature'?[c.specialtyJutsu&&c.specialtyJutsu.name]:[]);
       if(!pool.length && s.key==='signature') pool=getStrictGeneratedJutsuPool(c,'signature',[]);
-      if(characterHasPuppetTool(c)){
-        const pup=pool.filter(isPuppetRelatedJutsu);
-        if(pup.length) pool=pup;
-      }
+      /* Puppet tools: keep puppet techniques in the pool with high weight, but do not
+         strip KG / dōjutsu / nature options from the wheel. */
       if(!pool.length){
         options=[{name:"None",weight:1}];
       } else {
         options=pool.map(t=>{
           const n=t.name||(t.meta&&t.meta.name)||"?";
-          return {name:n, weight:jutsuPriorityWeight(c, t)};
+          let w=jutsuPriorityWeight(c, t);
+          if(characterHasPuppetTool(c) && isPuppetRelatedJutsu(t)) w=Math.max(w, 55);
+          return {name:n, weight:w};
         });
       }
     }
@@ -5323,17 +5322,18 @@ function rollSpecialtyJutsu(c){
   if(c) c._sigPoolCache=null;
   let pool=getStrictGeneratedJutsuPool(c,'signature',[]);
   if(!pool.length) return {name:"None",style:"None",meta:{name:"None"}};
-  if(characterHasPuppetTool(c||{})){
-    const pup=pool.filter(isPuppetRelatedJutsu);
-    if(pup.length) pool=pup;
-  }
-  const weighted=pool.map(t=>W(t.name||(t.meta&&t.meta.name)||"Unknown",jutsuPriorityWeight(c,t),{ref:t}));
+  /* Soft priority: KG + dōjutsu + nature (+ puppet boost) all remain rollable. */
+  const weighted=pool.map(t=>{
+    let w=jutsuPriorityWeight(c,t);
+    if(characterHasPuppetTool(c||{}) && isPuppetRelatedJutsu(t)) w=Math.max(w,55);
+    return W(t.name||(t.meta&&t.meta.name)||"Unknown",w,{ref:t});
+  });
   const picked=rollWeighted(weighted);
   const pick=picked.ref||pool.find(x=>(x.name||(x.meta&&x.meta.name))===picked.name)||pool[0];
   const name=pick.name||(pick.meta&&pick.meta.name)||picked.name||"Unknown";
   let style="General";
-  if(techniqueMatchesCharacterDojutsu(pick,c)) style=c.dojutsu||"Dōjutsu";
-  else if(characterKekkeiGenkaiName(c) && techniqueMatchesCharacterKg(pick,c)) style=characterKekkeiGenkaiName(c);
+  if(characterKekkeiGenkaiName(c) && techniqueMatchesCharacterKg(pick,c)) style=characterKekkeiGenkaiName(c);
+  else if(techniqueMatchesCharacterDojutsu(pick,c)) style=c.dojutsu||"Dōjutsu";
   else if(techniqueMatchesCharacterNature(pick,c)) style=specialtyStyleFor(c)||"Chakra Nature";
   else style=specialtyStyleFor(c)||"General";
   return {name,style,meta:pick.meta||pick};
@@ -7721,46 +7721,316 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 </section>
 
 <style>
-#fightWheelPanel{margin-top:24px;background:#05070b;color:#eef3f9;border:1px solid #202b3a;border-radius:16px;overflow:hidden}
-#fightWheelPanel .fw-wrap{padding:20px;background:radial-gradient(900px 500px at 50% -10%,#172238 0%,#070a10 62%,#030406 100%)}
-#fightWheelPanel .fw-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
-#fightWheelPanel .fw-head h2{margin:0 0 6px}
-#fightWheelPanel .fw-sub{margin:0;color:#9eabc0;line-height:1.45}
-#fightWheelPanel .fw-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
-#fightWheelPanel .fw-source{background:#0b1018;border:1px solid #263247;border-radius:12px;padding:12px}
-#fightWheelPanel label{display:block;color:#9eabc0;font-size:11px;font-weight:800;margin:0 0 5px}
-#fightWheelPanel select{width:100%;padding:9px;background:#080d15;color:#eef3f9;border:1px solid #2a3950;border-radius:8px}
-#fightWheelPanel .fw-source-info{margin-top:8px;font-size:11px;line-height:1.45;color:#cdd7e6;min-height:34px}
-#fightWheelPanel .fw-stage{display:grid;grid-template-columns:minmax(250px,340px) minmax(0,1fr);gap:18px;align-items:center;margin-top:18px}
-#fightWheelPanel .fw-wheel-area{position:relative;display:flex;flex-direction:column;align-items:center;min-width:0}
-#fightWheelPanel .fw-wheel-box{position:relative;width:min(100%,420px);aspect-ratio:1/1;margin:0 auto}
-#fightWheelPanel #fightWheelSvg{width:100%;height:100%;display:block;filter:drop-shadow(0 14px 28px rgba(0,0,0,.35))}
-#fightWheelPanel .fw-pointer{position:absolute;right:-4px;top:50%;transform:translateY(-50%);width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-right:30px solid #f4f7fb;filter:drop-shadow(0 2px 3px #000);z-index:4}
-#fightWheelPanel .fw-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:82px;height:82px;border-radius:50%;background:#0b111b;border:3px solid #d8e0eb;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:900;line-height:1.05;z-index:3;pointer-events:none;white-space:pre-line}
-#fightWheelPanel .fw-wheel-svg-wrap{transition:transform 1.7s cubic-bezier(.12,.78,.13,1)}
-#fightWheelPanel .fw-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
-#fightWheelPanel .fw-actions button{min-height:42px;font-weight:900}
-#fightWheelPanel .fw-readout{background:#0a1018;border:1px solid #27364c;border-radius:14px;padding:15px;min-height:260px}
-#fightWheelPanel .fw-stage-name{font-size:13px;color:#91a4bd;text-transform:uppercase;letter-spacing:.08em;font-weight:900}
+/* Fight Wheel styling aligned with the Character Generator and Development wheels. */
+#fightWheelPanel{
+  margin-top:24px;
+  background:#000;
+  color:var(--text);
+  border:0;
+  border-radius:0;
+  overflow:visible;
+}
+#fightWheelPanel .fw-wrap{
+  padding:22px;
+  background:#000;
+  border:1px solid #111;
+  border-radius:18px;
+  box-shadow:0 12px 35px rgba(0,0,0,.45);
+}
+#fightWheelPanel .fw-head{
+  display:flex;justify-content:space-between;gap:18px;align-items:flex-start;flex-wrap:wrap
+}
+#fightWheelPanel .fw-head h2{margin:0 0 5px}
+#fightWheelPanel .fw-sub{margin:0;color:var(--muted);line-height:1.45}
+#fightWheelPanel .fw-controls{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px
+}
+#fightWheelPanel .fw-source{
+  background:#111721;border:1px solid var(--line);border-radius:10px;padding:12px
+}
+#fightWheelPanel label{
+  display:block;color:var(--muted);font-size:11px;font-weight:800;margin:0 0 5px
+}
+#fightWheelPanel select{
+  width:100%;padding:9px;background:#111722;color:var(--text);
+  border:1px solid var(--line);border-radius:8px
+}
+#fightWheelPanel .fw-source-info{
+  margin-top:8px;font-size:11px;line-height:1.45;color:#cbd5e1;min-height:34px
+}
+
+/* One centered wheel, like the Generator/Development wheel presentation. */
+#fightWheelPanel .fw-stage{
+  display:grid;
+  grid-template-columns:1fr;
+  justify-items:center;
+  gap:18px;
+  align-items:center;
+  margin:72px 0 110px;
+  padding:0 0 10px;
+  background:#000;
+}
+#fightWheelPanel .fw-wheel-area{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:100%;
+  min-width:0;
+}
+#fightWheelPanel .fw-wheel-title{
+  display:block;
+  text-align:center;
+  font-size:clamp(18px,2.4vw,26px);
+  font-weight:900;
+  color:#fff;
+  margin:0 0 14px;
+  padding:0 10px;
+  line-height:1.2;
+  letter-spacing:.02em;
+  max-width:min(94vw,480px);
+}
+#fightWheelPanel .fw-wheel-box{
+  position:relative;
+  width:480px;
+  height:480px;
+  min-width:480px;
+  min-height:480px;
+  max-width:480px;
+  max-height:480px;
+  aspect-ratio:1/1;
+  margin:auto;
+  display:grid;
+  place-items:center;
+  overflow:visible;
+  contain:layout size;
+  flex-shrink:0;
+}
+#fightWheelPanel .fw-wheel-svg-wrap{
+  width:460px;
+  height:460px;
+  min-width:460px;
+  min-height:460px;
+  max-width:460px;
+  max-height:460px;
+  aspect-ratio:1/1;
+  border-radius:50%;
+  overflow:hidden;
+  background:#0d1119;
+  border:10px solid #1a2030;
+  box-shadow:0 0 0 7px #0d1119,0 0 0 10px #3d4a5c,0 18px 40px rgba(0,0,0,.5);
+  transition:transform 3.2s cubic-bezier(.08,.7,.12,1);
+  will-change:transform;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+  contain:layout paint;
+}
+#fightWheelPanel #fightWheelSvg{
+  width:100%;
+  height:100%;
+  min-width:100%;
+  min-height:100%;
+  display:block;
+  filter:none;
+  border-radius:50%;
+}
+#fightWheelPanel .fw-pointer{
+  width:0;
+  height:0;
+  border-left:16px solid transparent;
+  border-right:16px solid transparent;
+  border-top:36px solid #f5f7fb;
+  position:absolute;
+  top:-6px;
+  left:50%;
+  right:auto;
+  transform:translateX(-50%);
+  z-index:10;
+  filter:drop-shadow(0 3px 3px rgba(0,0,0,.55));
+  pointer-events:none;
+}
+#fightWheelPanel .fw-pointer:after{
+  content:"";
+  position:absolute;
+  left:-6px;
+  top:-36px;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:#f5f7fb;
+  box-shadow:0 0 0 2px #1a2030;
+}
+#fightWheelPanel .fw-result-overlay{
+  position:absolute;z-index:20;left:50%;top:50%;
+  width:460px;height:460px;min-width:460px;min-height:460px;
+  max-width:460px;max-height:460px;aspect-ratio:1/1;
+  transform:translate(-50%,-50%);display:grid;place-items:center;
+  padding:30px;text-align:center;pointer-events:none;opacity:0;visibility:hidden;
+  transition:opacity .22s ease,visibility .22s ease;box-sizing:border-box;
+}
+#fightWheelPanel .fw-result-overlay.show{opacity:1;visibility:visible}
+#fightWheelPanel .fw-result-backdrop{position:absolute;inset:0;border-radius:50%;background:rgba(8,11,17,.80)}
+#fightWheelPanel .fw-result-card{
+  position:relative;max-width:82%;padding:18px 24px;border-radius:14px;
+  background:linear-gradient(180deg,#222c3d,#121925);border:2px solid var(--accent);
+  box-shadow:0 12px 35px rgba(0,0,0,.55),0 0 24px rgba(255,159,67,.2);
+  animation:fwResultPop .3s ease;text-align:center;
+}
+#fightWheelPanel .fw-result-label{display:block;color:var(--muted);font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:5px}
+#fightWheelPanel .fw-result-value{display:block;color:#fff;font-size:clamp(20px,3vw,32px);font-weight:950;line-height:1.15;overflow-wrap:anywhere}
+@keyframes fwResultPop{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+#fightWheelPanel .fw-center{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:88px;
+  height:88px;
+  border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3d4f6a,#152032);
+  border:4px solid #f0f4fa;
+  color:#f5f7fb;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-size:12px;
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:.08em;
+  z-index:5;
+  pointer-events:auto;
+  cursor:pointer;
+  white-space:pre-line;
+  font-family:inherit;
+  padding:0;
+  box-shadow:0 3px 12px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.15);
+}
+#fightWheelPanel .fw-center:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.05)}
+#fightWheelPanel .fw-center:active:not(:disabled){transform:translate(-50%,-50%) scale(.97)}
+#fightWheelPanel .fw-center:disabled{opacity:.45;cursor:not-allowed}
+#fightWheelPanel .fw-actions{
+  display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px
+}
+#fightWheelPanel .fw-actions button{
+  min-height:42px;font-weight:900;padding:12px 20px
+}
+
+/* Result/readout remains below the isolated wheel instead of competing with it. */
+#fightWheelPanel .fw-readout{
+  width:min(100%,900px);
+  background:#111721;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:15px;
+  min-height:260px;
+}
+#fightWheelPanel .fw-stage-name{
+  font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:900
+}
 #fightWheelPanel .fw-result{font-size:25px;font-weight:950;margin:8px 0 12px;line-height:1.12}
 #fightWheelPanel .fw-narrative{font-size:13px;line-height:1.55;color:#d3dce9}
 #fightWheelPanel .fw-meter-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-#fightWheelPanel .fw-meter{background:#070b11;border:1px solid #1e2a3c;border-radius:9px;padding:8px}
-#fightWheelPanel .fw-meter span{display:block;color:#8e9db3;font-size:10px}
+#fightWheelPanel .fw-meter{background:#0d1219;border:1px solid var(--line);border-radius:9px;padding:8px}
+#fightWheelPanel .fw-meter span{display:block;color:var(--muted);font-size:10px}
 #fightWheelPanel .fw-meter b{display:block;margin-top:2px;font-size:14px}
 #fightWheelPanel .fw-progress{height:7px;border-radius:99px;background:#1d2736;overflow:hidden;margin-top:5px}
 #fightWheelPanel .fw-progress i{display:block;height:100%;width:50%;transition:width .25s ease}
 #fightWheelPanel .fw-log{margin-top:16px;background:#06090e;border:1px solid #1d2838;border-radius:12px;padding:10px;max-height:190px;overflow:auto;font-size:11px;line-height:1.45;color:#aebbd0}
 #fightWheelPanel .fw-log div{padding:4px 0;border-bottom:1px solid rgba(45,58,79,.45)}
-#fightWheelPanel .fw-help{margin-top:12px;color:#8796ab;font-size:10px;line-height:1.45}
-@media(max-width:900px){
-  #fightWheelPanel{margin-top:24px;border-radius:0;border-left:0;border-right:0}
-  #fightWheelPanel .fw-wrap{padding:28px 12px 34px;min-height:900px}
+#fightWheelPanel .fw-help{margin-top:12px;color:var(--muted);font-size:10px;line-height:1.45}
+
+@media(max-width:720px){
+  #fightWheelPanel{
+    margin-top:0 !important;
+    background:#000;
+    border:0;
+    border-radius:0;
+    padding:0;
+  }
+  #fightWheelPanel .fw-wrap{
+    background:#000;
+    border:0;
+    border-radius:0;
+    padding:16px 10px 0;
+    box-shadow:none;
+  }
+  #fightWheelPanel .fw-head{padding:0 6px}
   #fightWheelPanel .fw-controls{grid-template-columns:1fr}
-  #fightWheelPanel .fw-stage{grid-template-columns:1fr;gap:18px}
-  #fightWheelPanel .fw-wheel-box{width:min(96vw,500px)}
-  #fightWheelPanel .fw-pointer{right:-1px}
-  #fightWheelPanel .fw-readout{min-height:220px}
+  #fightWheelPanel .fw-stage{
+    display:grid;
+    grid-template-columns:1fr;
+    justify-items:center;
+    text-align:center;
+    gap:clamp(120px,28vh,240px);
+    margin:32vh 0 40vh;
+    padding:0;
+    min-height:calc(100svh - 8vh);
+    box-sizing:border-box;
+    background:#000;
+    align-content:center;
+  }
+  #fightWheelPanel .fw-wheel-area{
+    width:100%;
+    background:transparent;
+  }
+  #fightWheelPanel .fw-wheel-title{
+    display:block;
+    font-size:clamp(18px,5.8vw,24px);
+    font-weight:900;
+    margin:0 0 16px;
+    padding:0 12px;
+    color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.55);
+    max-width:min(94vw,430px);
+  }
+  #fightWheelPanel .fw-wheel-box{
+    margin:auto;
+    width:min(94vw,430px);
+    height:min(94vw,430px);
+    min-width:min(94vw,430px);
+    min-height:min(94vw,430px);
+    max-width:min(94vw,430px);
+    max-height:min(94vw,430px);
+    aspect-ratio:1/1;
+    contain:layout size;
+  }
+  #fightWheelPanel .fw-wheel-svg-wrap{
+    width:min(90vw,410px);
+    height:min(90vw,410px);
+    min-width:min(90vw,410px);
+    min-height:min(90vw,410px);
+    max-width:min(90vw,410px);
+    max-height:min(90vw,410px);
+    border-width:9px;
+  }
+  #fightWheelPanel .fw-result-overlay{width:min(94vw,460px);height:min(94vw,460px);min-width:0;min-height:0;max-width:none;max-height:none;padding:20px}
+  #fightWheelPanel .fw-pointer{top:-6px}
+  #fightWheelPanel .fw-center{width:74px;height:74px;font-size:11px}
+  #fightWheelPanel .fw-center:hover:not(:disabled){transform:translate(-50%,-50%) scale(1.05)}
+#fightWheelPanel .fw-center:active:not(:disabled){transform:translate(-50%,-50%) scale(.97)}
+#fightWheelPanel .fw-center:disabled{opacity:.45;cursor:not-allowed}
+#fightWheelPanel .fw-actions{justify-content:center}
+  #fightWheelPanel .fw-readout{width:100%;min-height:220px;text-align:left}
+}
+@media(max-width:420px){
+  #fightWheelPanel .fw-wrap{padding-left:6px;padding-right:6px}
+  #fightWheelPanel .fw-stage{
+    margin-top:30vh;
+    margin-bottom:38vh;
+    gap:clamp(110px,26vh,220px);
+    min-height:calc(100svh - 6vh);
+  }
+  #fightWheelPanel .fw-wheel-title{
+    font-size:clamp(17px,6vw,22px);
+    margin-bottom:14px;
+  }
+  #fightWheelPanel .fw-wheel-box{
+    width:94vw;height:94vw;min-width:94vw;min-height:94vw;max-width:94vw;max-height:94vw;
+  }
+  #fightWheelPanel .fw-wheel-svg-wrap{
+    width:90vw;height:90vw;min-width:90vw;min-height:90vw;max-width:90vw;max-height:90vw;
+  }
 }
 </style>
 
@@ -7779,8 +8049,9 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     </div>
     <div class="fw-stage">
       <div class="fw-wheel-area">
-        <div class="fw-wheel-box"><div class="fw-pointer"></div><div class="fw-center" id="fightWheelCenter">OPENING\nEXCHANGE</div><div class="fw-wheel-svg-wrap" id="fightWheelSvgWrap"><svg id="fightWheelSvg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet"></svg></div></div>
-        <div class="fw-actions"><button type="button" id="fightWheelSpinBtn" onclick="spinFightWheel()">SPIN FIGHT WHEEL</button><button type="button" class="secondary" onclick="fightWheelReset()">RESET FIGHT</button><button type="button" class="secondary" onclick="fightWheelSkip()">SKIP ANIMATION</button></div>
+        <div class="fw-wheel-title" id="fightWheelStageTitle">Opening Exchange</div>
+        <div class="fw-wheel-box"><div class="fw-pointer"></div><div class="fw-wheel-svg-wrap" id="fightWheelSvgWrap"><svg id="fightWheelSvg" viewBox="0 0 300 300" preserveAspectRatio="xMidYMid meet"></svg></div><button type="button" class="fw-center" id="fightWheelSpinBtn" onclick="spinFightWheel()">SPIN</button><div class="fw-result-overlay" id="fightWheelResultOverlay" aria-live="polite"><div class="fw-result-backdrop"></div><div class="fw-result-card"><span class="fw-result-label">Fight Wheel Result</span><span class="fw-result-value" id="fightWheelResultValue">—</span></div></div></div>
+        <div class="fw-actions"><button type="button" class="secondary" onclick="fightWheelReset()">RESET FIGHT</button><button type="button" class="secondary" onclick="fightWheelSkip()">SKIP ANIMATION</button></div>
       </div>
       <div class="fw-readout">
         <div class="fw-stage-name" id="fightWheelStage">Stage 1 of 9 · Opening Exchange</div>
@@ -7806,7 +8077,7 @@ const el=id=>document.getElementById(id),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)
 const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const names=v=>Array.isArray(v)?v.map(x=>typeof x==='string'?x:String(x?.name||x?.technique||'')).filter(Boolean):String(v||'').split(',').map(x=>x.trim()).filter(Boolean);
 const stat=(n,k)=>clamp(Number(n?.stats?.[k]??50)||50,1,100),avg=(n,ks)=>ks.reduce((s,k)=>s+stat(n,k),0)/ks.length,clean=v=>String(v??'').trim()||'None';
-const state={A:null,B:null,stage:0,spinning:false,skip:false,done:false,momentum:{A:50,B:50},chakra:{A:100,B:100},stamina:{A:100,B:100},injury:{A:0,B:0},techniqueUsed:{A:[],B:[]},lastWinner:null,history:[],rotation:0};
+const state={A:null,B:null,stage:0,spinning:false,skip:false,done:false,phase:'main',pendingMain:null,pendingSub:null,momentum:{A:50,B:50},chakra:{A:100,B:100},stamina:{A:100,B:100},injury:{A:0,B:0},techniqueUsed:{A:[],B:[]},lastWinner:null,history:[],rotation:0};
 const stages=[{key:'opening',name:'Opening Exchange'},{key:'early',name:'Early Advantage'},{key:'techA',name:'Technique Spotlight A'},{key:'techB',name:'Technique Spotlight B'},{key:'mid',name:'Mid-Fight Momentum'},{key:'turn',name:'Turning Point'},{key:'climax',name:'Climax Exchange'},{key:'finish',name:'Finish'},{key:'aftermath',name:'Aftermath'}];
 const fallbackMethods=['Taijutsu exchange','Weapon clash','Ninjutsu exchange','Genjutsu attempt','Dōjutsu counter','Kekkei Genkai technique'];
 function sources(){const out=[];try{if(typeof devState!=='undefined'&&devState?.ninja)out.push({value:'development',label:'◆ Development — '+clean(devState.ninja.name||devState.ninja.catalogueName||'Developed Ninja')});}catch(e){}try{if(typeof ninjaCatalogue!=='undefined')ninjaCatalogue.forEach((n,i)=>out.push({value:'catalogue:'+i,label:'★ Catalogue — '+clean(n.catalogueName||n.name||'Ninja '+(i+1))}));}catch(e){}try{if(typeof characterLog!=='undefined')characterLog.forEach((n,i)=>out.push({value:'log:'+i,label:'Log — '+clean(typeof characterDisplayName==='function'?characterDisplayName(n):n.name||'Ninja')}));}catch(e){}try{if(typeof lastCharacter!=='undefined'&&lastCharacter)out.push({value:'current',label:'Current Generated Ninja — '+clean(lastCharacter.name||lastCharacter.catalogueName||'Current Ninja')});}catch(e){}return out;}
@@ -7822,18 +8093,434 @@ function renderSourceInfo(side,n){const x=el('fightWheelInfo'+side);if(!x)return
 function populateSources(){const opts=sources();for(const s of ['A','B']){const sel=el('fightWheelSource'+s);if(!sel)continue;const prev=sel.value;sel.innerHTML='<option value="">Select a Ninja…</option>'+opts.map(o=>`<option value="${esc(o.value)}">${esc(o.label)}</option>`).join('');if(opts.some(o=>o.value===prev))sel.value=prev;else if(opts.length)sel.value=opts[Math.min(s==='A'?0:1,opts.length-1)].value;fightWheelLoadSource(s,false)}}
 function fightWheelLoadSource(side,announce=true){const n=normalise(getSource(el('fightWheelSource'+side)?.value||''));state[side]=n;renderSourceInfo(side,n);if(announce&&n)log(`${n.name||'Ninja'} loaded as Fighter ${side}.`);const btn=el('fightWheelSpinBtn');if(btn)btn.disabled=!(state.A&&state.B)||state.spinning||state.done;if(state.A&&state.B&&!state.spinning&&!state.done&&state.stage===0)drawWheel();}
 function fightWheelRefreshSources(){populateSources();if(state.A&&state.B)drawWheel();log('Fight Wheel sources refreshed from generated/developed ninja data.')}
-function resetState(){state.stage=0;state.spinning=false;state.skip=false;state.done=false;state.momentum={A:50,B:50};state.chakra={A:100,B:100};state.stamina={A:100,B:100};state.injury={A:0,B:0};state.techniqueUsed={A:[],B:[]};state.lastWinner=null;state.history=[];state.rotation=0;const wrap=el('fightWheelSvgWrap');if(wrap)wrap.style.transform='rotate(0deg)';setText('fightWheelResult','—');setText('fightWheelNarrative','Load two ninjas and spin the wheel to begin.');setText('fightWheelStage','Stage 1 of 9 · Opening Exchange');setText('fightWheelCenter','OPENING\nEXCHANGE');updateMeters();const box=el('fightWheelLog');if(box)box.innerHTML='<div>Fight Wheel reset.</div>';const btn=el('fightWheelSpinBtn');if(btn)btn.disabled=!(state.A&&state.B);drawWheel();}
+function resetState(){state.stage=0;state.spinning=false;state.skip=false;state.done=false;state.phase='main';state.pendingMain=null;state.pendingSub=null;state.momentum={A:50,B:50};state.chakra={A:100,B:100};state.stamina={A:100,B:100};state.injury={A:0,B:0};state.techniqueUsed={A:[],B:[]};state.lastWinner=null;state.history=[];state.rotation=0;fightWheelHideOverlay();const wrap=el('fightWheelSvgWrap');if(wrap)wrap.style.transform='rotate(0deg)';setText('fightWheelResult','—');setText('fightWheelNarrative','Load two ninjas and spin the wheel to begin.');setText('fightWheelStage','Stage 1 of 9 · Opening Exchange');setText('fightWheelStageTitle','Opening Exchange');setText('fightWheelCenter','SPIN');updateMeters();const box=el('fightWheelLog');if(box)box.innerHTML='<div>Fight Wheel reset.</div>';const btn=el('fightWheelSpinBtn');if(btn)btn.disabled=!(state.A&&state.B);drawWheel();}
 function fightWheelReset(){resetState();if(state.A&&state.B)log(`${state.A.name||'Fighter A'} vs ${state.B.name||'Fighter B'} — new fight.`)}
 function currentStage(){return stages[Math.min(state.stage,stages.length-1)]}
-function stageOptions(stage){const a=state.A,b=state.B,gap=power(a)-power(b)+((state.momentum.A-state.momentum.B)*.45),lead=gap>=0?'A':'B',other=lead==='A'?'B':'A',A=a.name||'Fighter A',B=b.name||'Fighter B';if(stage.key==='opening')return[{name:`${A} takes the initiative`,weight:34,actor:'A'},{name:`${B} takes the initiative`,weight:34,actor:'B'},{name:'Both test each other cautiously',weight:22,actor:'none'},{name:'A sudden opening appears',weight:10,actor:lead}];if(stage.key==='early')return[{name:`${lead==='A'?A:B} gains an early advantage`,weight:38,actor:lead},{name:`${lead==='A'?B:A} answers with a counter`,weight:30,actor:other},{name:'A brief stalemate develops',weight:20,actor:'none'},{name:`${lead==='A'?A:B} is forced onto the defensive`,weight:12,actor:other}];if(stage.key==='techA'){const m=chooseWeighted(methodPool(a).map((x,i)=>({...x,weight:Math.max(5,20-i*2)})));return[{name:`${A} uses ${m.name}`,weight:100,actor:'A',method:m}]};if(stage.key==='techB'){const m=chooseWeighted(methodPool(b).map((x,i)=>({...x,weight:Math.max(5,20-i*2)})));return[{name:`${B} uses ${m.name}`,weight:100,actor:'B',method:m}]};if(stage.key==='mid')return[{name:`${lead==='A'?A:B} converts momentum into pressure`,weight:32,actor:lead},{name:`${other==='A'?A:B} finds a counter-window`,weight:30,actor:other},{name:'Both fighters reset their distance',weight:18,actor:'none'},{name:'A clash leaves both fighters damaged',weight:20,actor:'both'}];if(stage.key==='turn')return[{name:`${other==='A'?A:B} turns the fight around`,weight:34,actor:other},{name:`${lead==='A'?A:B} shuts down the counter`,weight:28,actor:lead},{name:'A costly exchange changes the momentum',weight:24,actor:'both'},{name:'A Tailed Beast steal attempt is made',weight:7,actor:lead,steal:true},{name:'A hidden technique creates a reversal',weight:7,actor:other}];if(stage.key==='climax')return[{name:`${lead==='A'?A:B} unleashes a decisive combination`,weight:30,actor:lead,climax:true},{name:`${other==='A'?A:B} survives the combination and retaliates`,weight:28,actor:other,climax:true},{name:'Both commit to a final exchange',weight:28,actor:'both',climax:true},{name:`${lead==='A'?A:B} attempts an Ultimate technique`,weight:14,actor:lead,climax:true,ultimate:true}];if(stage.key==='finish'){const hpA=state.momentum.A-state.injury.A*4+state.stamina.A*.15+power(a)*.18,hpB=state.momentum.B-state.injury.B*4+state.stamina.B*.15+power(b)*.18,fl=hpA>=hpB?'A':'B',fo=fl==='A'?'B':'A';return[{name:`${fl==='A'?A:B} secures the finish`,weight:30+Math.abs(hpA-hpB)*.12,actor:fl,finish:true},{name:`${fo==='A'?A:B} escapes the finishing sequence`,weight:18,actor:fo,finish:true},{name:'The fight ends in a draw after a final clash',weight:12,actor:'draw',finish:true},{name:'A last-second counter decides the fight',weight:25,actor:fo,finish:true},{name:'Both fighters collapse from exhaustion',weight:15,actor:'draw',finish:true}]};return[{name:'Victory is recorded',weight:65,actor:state.lastWinner||'A'},{name:'The fighters part after a hard-fought draw',weight:20,actor:'draw'},{name:'The defeated fighter is left unable to continue',weight:15,actor:state.lastWinner==='A'?'B':'A'}];}
+function stageOptions(stage){
+  const a=state.A,b=state.B,gap=power(a)-power(b)+((state.momentum.A-state.momentum.B)*.45);
+  const lead=gap>=0?'A':'B',other=lead==='A'?'B':'A',A=a.name||'Fighter A',B=b.name||'Fighter B';
+  const renormalize=(arr)=>{const total=arr.reduce((s,x)=>s+x.weight,0)||1;return arr.map(x=>({...x,weight:x.weight*100/total}))};
+  const techChoices=(n,side)=>{
+    const methods=methodPool(n,false),unique=[];methods.forEach(x=>{if(!state.techniqueUsed[side].includes(x.name)&&!unique.some(y=>y.name===x.name))unique.push(x)});if(!unique.length)methods.forEach(x=>{if(!unique.some(y=>y.name===x.name))unique.push(x)});
+    const weights=[24,19,16,13,10,8,6,4];
+    return unique.slice(0,8).map((m,i)=>({name:`${side==='A'?A:B} chooses ${m.name}`,weight:weights[i]||4,actor:side,method:m,actionKey:'technique'}));
+  };
+  if(stage.key==='opening')return[
+    {name:`${A} takes the initiative`,weight:26,actor:'A',actionKey:'initiative'},
+    {name:`${B} takes the initiative`,weight:26,actor:'B',actionKey:'initiative'},
+    {name:'Both test each other cautiously',weight:18,actor:'none',actionKey:'probe'},
+    {name:'A sudden opening appears',weight:15,actor:lead,actionKey:'opening'},
+    {name:'A feint creates a brief opening',weight:15,actor:other,actionKey:'feint'}
+  ];
+  if(stage.key==='early')return[
+    {name:`${lead==='A'?A:B} gains an early advantage`,weight:27,actor:lead,actionKey:'pressure'},
+    {name:`${lead==='A'?B:A} answers with a counter`,weight:24,actor:other,actionKey:'counter'},
+    {name:'A brief stalemate develops',weight:16,actor:'none',actionKey:'stalemate'},
+    {name:`${lead==='A'?A:B} is forced onto the defensive`,weight:18,actor:other,actionKey:'defense'},
+    {name:'A risky exchange changes the pace',weight:15,actor:lead,actionKey:'risk'}
+  ];
+  if(stage.key==='techA')return techChoices(a,'A');
+  if(stage.key==='techB')return techChoices(b,'B');
+  if(stage.key==='mid')return[
+    {name:`${lead==='A'?A:B} converts momentum into pressure`,weight:25,actor:lead,actionKey:'pressure'},
+    {name:`${other==='A'?A:B} finds a counter-window`,weight:24,actor:other,actionKey:'counter'},
+    {name:'Both fighters reset their distance',weight:16,actor:'none',actionKey:'reset'},
+    {name:'A clash leaves both fighters damaged',weight:19,actor:'both',actionKey:'clash'},
+    {name:'A tactical pause reveals a new opening',weight:16,actor:lead,actionKey:'read'}
+  ];
+  if(stage.key==='turn'){
+    const turn=[
+      {name:`${other==='A'?A:B} turns the fight around`,weight:24,actor:other,actionKey:'reversal'},
+      {name:`${lead==='A'?A:B} shuts down the counter`,weight:20,actor:lead,actionKey:'shutdown'},
+      {name:'A costly exchange changes the momentum',weight:18,actor:'both',actionKey:'clash'},
+      {name:'A hidden technique creates a reversal',weight:15,actor:other,actionKey:'hidden'},
+      {name:'A defensive retreat creates a counterattack',weight:15,actor:lead,actionKey:'retreat'}
+    ];
+    const jinA=isJinch(a),jinB=isJinch(b);
+    if(jinA||jinB)turn.splice(3,0,{name:'A Tailed Beast steal attempt is made',weight:8,actor:lead,steal:true,actionKey:'steal'});
+    return renormalize(turn);
+  }
+  if(stage.key==='climax'){
+    const c=[
+      {name:`${lead==='A'?A:B} unleashes a decisive combination`,weight:25,actor:lead,climax:true,actionKey:'combination'},
+      {name:`${other==='A'?A:B} survives the combination and retaliates`,weight:22,actor:other,climax:true,actionKey:'survive'},
+      {name:'Both commit to a final exchange',weight:20,actor:'both',climax:true,actionKey:'finalExchange'},
+      {name:'A last-second technique changes the climax',weight:20,actor:other,climax:true,actionKey:'lastSecond'}
+    ];
+    const ultimateSide=clean(a.ultimateJutsu)!=='None'?'A':clean(b.ultimateJutsu)!=='None'?'B':null;
+    if(ultimateSide)c.splice(3,0,{name:`${ultimateSide==='A'?A:B} attempts an Ultimate technique`,weight:13,actor:ultimateSide,climax:true,ultimate:true,actionKey:'ultimate'});
+    return renormalize(c);
+  }
+  if(stage.key==='finish'){
+    const hpA=state.momentum.A-state.injury.A*4+state.stamina.A*.15+power(a)*.18,hpB=state.momentum.B-state.injury.B*4+state.stamina.B*.15+power(b)*.18;
+    const fl=hpA>=hpB?'A':'B',fo=fl==='A'?'B':'A';
+    return[
+      {name:`${fl==='A'?A:B} secures the finish`,weight:28+Math.abs(hpA-hpB)*.10,actor:fl,finish:true,actionKey:'finish'},
+      {name:`${fo==='A'?A:B} escapes the finishing sequence`,weight:18,actor:fo,finish:true,actionKey:'escape'},
+      {name:'The fight ends in a draw after a final clash',weight:12,actor:'draw',finish:true,actionKey:'draw'},
+      {name:'A last-second counter decides the fight',weight:24,actor:fo,finish:true,actionKey:'counterFinish'},
+      {name:'Both fighters collapse from exhaustion',weight:10,actor:'draw',finish:true,actionKey:'exhaustion'},
+      {name:'A desperate final maneuver creates an upset',weight:8,actor:fo,finish:true,actionKey:'upset'}
+    ];
+  }
+  if(state.lastWinner){
+    return[
+      {name:'Victory is recorded',weight:55,actor:state.lastWinner,actionKey:'victory'},
+      {name:'The defeated fighter is left unable to continue',weight:25,actor:state.lastWinner==='A'?'B':'A',actionKey:'unable'},
+      {name:'The victor withdraws after securing the result',weight:10,actor:state.lastWinner,actionKey:'victory'},
+      {name:'The defeated fighter retreats rather than continue',weight:10,actor:state.lastWinner==='A'?'B':'A',actionKey:'unable'}
+    ];
+  }
+  return[
+    {name:'The fighters part after a hard-fought draw',weight:40,actor:'draw',actionKey:'draw'},
+    {name:'The result is too close to call',weight:25,actor:'draw',actionKey:'unclear'},
+    {name:'Both fighters withdraw because neither can safely continue',weight:20,actor:'draw',actionKey:'exhaustion'},
+    {name:'The final exchange leaves both fighters unable to claim victory',weight:15,actor:'draw',actionKey:'draw'}
+  ];
+}
+
+function subwheelOptions(main){
+  const A=state.A?.name||'Fighter A',B=state.B?.name||'Fighter B';
+  const actor=main.actor==='A'||main.actor==='B'?main.actor:null;
+  const other=actor?(actor==='A'?'B':'A'):null, an=actor?(actor==='A'?A:B):A, on=other?(other==='A'?A:B):B;
+  const hasWeapon=n=>n?.weapons?.some(x=>x&&x!=='None');
+  const weaponName=n=>n?.weapons?.find(x=>x&&x!=='None')||'their weapon';
+  const techniques=n=>methodPool(n,false).filter(x=>x.type!=='basic').slice(0,8);
+  const base={
+    initiative:[
+      {name:`${an} closes distance with a sudden burst of speed`,weight:26,actor},
+      {name:`${an} opens with a probing strike, then follows the retreat`,weight:22,actor},
+      {name:`${an} uses a ranged attack to dictate the first exchange`,weight:20,actor},
+      {name:`${an} attacks from an unexpected angle`,weight:18,actor},
+      {name:`${an} combines a feint with a quick follow-up strike`,weight:14,actor}
+    ],
+    probe:[
+      {name:'Both use short attacks to test reactions',weight:30,actor:'both'},
+      {name:'Both circle while watching for a committed attack',weight:25,actor:'none'},
+      {name:'One fighter probes while the other refuses to overcommit',weight:25,actor:'none'},
+      {name:'A brief clash reveals both fighters\' preferred range',weight:20,actor:'both'}
+    ],
+    opening:[
+      {name:`${an} notices the opponent's guard drop and attacks immediately`,weight:28,actor},
+      {name:`${an} forces ${on} to evade, exposing a second attack line`,weight:24,actor},
+      {name:`${an} attacks while ${on} is changing position`,weight:26,actor},
+      {name:`${an} uses the terrain to restrict ${on}'s escape route`,weight:22,actor}
+    ],
+    feint:[
+      {name:`${an} feints high and attacks the exposed lower line`,weight:28,actor},
+      {name:`${an} pretends to retreat, then turns back into the attack`,weight:24,actor},
+      {name:`${an} threatens a jutsu to draw out ${on}'s defensive response`,weight:26,actor},
+      {name:`${an} uses a false opening to make ${on} commit too early`,weight:22,actor}
+    ],
+    pressure:[
+      {name:`${an} chains attacks together so ${on} cannot counter`,weight:28,actor},
+      {name:`${an} targets ${on}'s retreat path and keeps them moving backward`,weight:24,actor},
+      {name:`${an} alternates attack ranges to prevent ${on} from settling`,weight:25,actor},
+      {name:`${an} attacks the same defensive opening repeatedly`,weight:23,actor}
+    ],
+    counter:[
+      {name:`${an} slips past the incoming attack and strikes during recovery`,weight:30,actor},
+      {name:`${an} blocks the attack and immediately returns a combination`,weight:25,actor},
+      {name:`${an} retreats just far enough to make the attack miss, then counters`,weight:25,actor},
+      {name:`${an} uses a substitution or evasive maneuver to attack from behind`,weight:20,actor}
+    ],
+    stalemate:[
+      {name:'Both maintain guard and refuse to give up a clean opening',weight:35,actor:'none'},
+      {name:'Both exchange attacks without either gaining a clear advantage',weight:30,actor:'both'},
+      {name:'Both reposition and wait for the other to commit',weight:20,actor:'none'},
+      {name:'A brief clash ends with both fighters separating',weight:15,actor:'both'}
+    ],
+    defense:[
+      {name:`${an} forces ${on} backward with repeated attacks`,weight:28,actor},
+      {name:`${an} traps ${on}'s escape route and forces a guarded stance`,weight:25,actor},
+      {name:`${an} attacks from two directions before ${on} can reset`,weight:25,actor},
+      {name:`${an} uses a technique to prevent ${on} from safely countering`,weight:22,actor}
+    ],
+    risk:[
+      {name:`${an} commits to a powerful attack and leaves their defense exposed`,weight:28,actor},
+      {name:`${an} rushes inside ${on}'s preferred range to land a heavy strike`,weight:24,actor},
+      {name:`${an} attempts a risky technique before ${on} can interrupt`,weight:24,actor},
+      {name:`${an} sacrifices position to create a chance for a decisive hit`,weight:24,actor}
+    ],
+    reset:[
+      {name:'Both disengage and circle back to neutral positions',weight:35,actor:'none'},
+      {name:'Both use evasive movement to recover their preferred range',weight:28,actor:'none'},
+      {name:'One fighter creates distance while the other refuses to chase',weight:22,actor:'none'},
+      {name:'A long-range exchange replaces the previous close combat',weight:15,actor:'none'}
+    ],
+    clash:[
+      {name:`${A} and ${B} land attacks at nearly the same moment`,weight:30,actor:'both'},
+      {name:`${A} blocks while ${B}'s attack still breaks through the guard`,weight:24,actor:'both'},
+      {name:`Both fighters trade blows before separating`,weight:28,actor:'both'},
+      {name:'A collision of techniques damages both fighters',weight:18,actor:'both'}
+    ],
+    read:[
+      {name:`${an} recognizes a repeated movement and attacks where ${on} must move next`,weight:30,actor},
+      {name:`${an} waits through the opponent's feint and counters the real attack`,weight:26,actor},
+      {name:`${an} identifies a defensive habit and immediately exploits it`,weight:24,actor},
+      {name:`${an} changes tempo after reading the opponent's pattern`,weight:20,actor}
+    ],
+    reversal:[
+      {name:`${an} absorbs the opponent's pressure, then counters during recovery`,weight:28,actor},
+      {name:`${an} changes attack range and catches ${on} during the adjustment`,weight:25,actor},
+      {name:`${an} uses a previously unseen technique to interrupt ${on}'s attack`,weight:25,actor},
+      {name:`${an} turns a defensive movement into an immediate counterattack`,weight:22,actor}
+    ],
+    shutdown:[
+      {name:`${an} anticipates the counter and attacks before it begins`,weight:30,actor},
+      {name:`${an} breaks the opponent's rhythm with a sudden change of pace`,weight:25,actor},
+      {name:`${an} intercepts the counter with a faster technique`,weight:25,actor},
+      {name:`${an} forces ${on} to abandon the counter and defend`,weight:20,actor}
+    ],
+    steal:[
+      {name:`${an} creates an opening and reaches for the tailed-beast chakra directly`,weight:34,actor},
+      {name:`${an} restrains ${on} before attempting to draw out the beast's chakra`,weight:28,actor},
+      {name:`${an} uses a sealing or chakra-control technique to begin the extraction`,weight:23,actor},
+      {name:`${an} attempts the steal during ${on}'s recovery from another attack`,weight:15,actor}
+    ],
+    hidden:[
+      {name:`${an} reveals a technique ${on} has not yet seen and attacks immediately`,weight:32,actor},
+      {name:`${an} conceals the real attack behind a decoy or feint`,weight:26,actor},
+      {name:`${an} combines two abilities in a way ${on} did not anticipate`,weight:24,actor},
+      {name:`${an} changes tactics completely after appearing to retreat`,weight:18,actor}
+    ],
+    retreat:[
+      {name:`${an} retreats just outside striking range, then turns into a counter`,weight:30,actor},
+      {name:`${an} leads ${on} into an exposed position before attacking`,weight:27,actor},
+      {name:`${an} uses terrain to force ${on} into a predictable approach`,weight:23,actor},
+      {name:`${an} gives ground to create enough space for a stronger technique`,weight:20,actor}
+    ],
+    combination:[
+      {name:`${an} begins with a fast attack and finishes with a heavier technique`,weight:30,actor},
+      {name:`${an} uses a feint to make ${on} defend against the wrong attack`,weight:25,actor},
+      {name:`${an} combines a weapon strike with a jutsu before ${on} can recover`,weight:23,actor},
+      {name:`${an} traps ${on}'s movement and unleashes several attacks in succession`,weight:22,actor}
+    ],
+    survive:[
+      {name:`${an} escapes the final attack at the last possible moment and counters`,weight:30,actor},
+      {name:`${an} absorbs part of the attack, protects a vital area, and retaliates`,weight:25,actor},
+      {name:`${an} uses a substitution or evasive technique to avoid the finishing blow`,weight:25,actor},
+      {name:`${an} turns the opponent's overextension into a counterattack`,weight:20,actor}
+    ],
+    finalExchange:[
+      {name:`${A} and ${B} attack simultaneously and collide at close range`,weight:30,actor:'both'},
+      {name:`Both commit to their strongest available attacks`,weight:28,actor:'both'},
+      {name:`One fighter attacks while the other counters at the same moment`,weight:24,actor:'both'},
+      {name:'Both abandon defense for one final exchange',weight:18,actor:'both'}
+    ],
+    ultimate:[
+      {name:`${an} creates enough distance to complete the Ultimate Technique`,weight:30,actor},
+      {name:`${an} forces ${on} into a position where the Ultimate Technique can connect`,weight:27,actor},
+      {name:`${an} uses another attack to conceal the Ultimate Technique's preparation`,weight:23,actor},
+      {name:`${an} attempts the Ultimate Technique while ${on} tries to interrupt it`,weight:20,actor}
+    ],
+    lastSecond:[
+      {name:`${an} changes direction at the last moment and attacks the exposed flank`,weight:30,actor},
+      {name:`${an} uses a last-second substitution to avoid the decisive attack`,weight:26,actor},
+      {name:`${an} turns a failed attack into a second attack before landing`,weight:24,actor},
+      {name:`${an} reveals a previously unused ability at the critical moment`,weight:20,actor}
+    ],
+    finish:[
+      {name:`${an} breaks through ${on}'s guard with a final combination`,weight:30,actor},
+      {name:`${an} lands a decisive technique after forcing ${on} into a predictable defense`,weight:27,actor},
+      {name:`${an} catches ${on} during recovery from their previous attack`,weight:25,actor},
+      {name:`${an} uses the opponent's accumulated injury to create the finishing opening`,weight:18,actor}
+    ],
+    escape:[
+      {name:`${an} uses a substitution or evasive maneuver to escape the finishing blow`,weight:32,actor},
+      {name:`${an} blocks the finishing attack and rolls away before the follow-up`,weight:26,actor},
+      {name:`${an} creates distance with a defensive technique`,weight:22,actor},
+      {name:`${an} sacrifices their position to avoid the decisive hit`,weight:20,actor}
+    ],
+    draw:[
+      {name:`${A} and ${B} land decisive attacks simultaneously`,weight:35,actor:'draw'},
+      {name:'Both attacks collide and neither fighter can continue',weight:30,actor:'draw'},
+      {name:'Both fighters are too exhausted to complete another attack',weight:20,actor:'draw'},
+      {name:'Both recognize that another exchange would be mutually destructive and disengage',weight:15,actor:'draw'}
+    ],
+    counterFinish:[
+      {name:`${an} waits for ${on}'s final attack, then strikes the exposed opening`,weight:34,actor},
+      {name:`${an} redirects or avoids the finishing attack before countering`,weight:27,actor},
+      {name:`${an} uses the opponent's forward momentum against them`,weight:23,actor},
+      {name:`${an} survives the first impact and immediately lands the counter`,weight:16,actor}
+    ],
+    exhaustion:[
+      {name:'Both fighters reach the limit of their stamina after repeated exchanges',weight:35,actor:'draw'},
+      {name:'Both have too little chakra left to safely use another major technique',weight:25,actor:'draw'},
+      {name:'Accumulated injuries prevent either fighter from continuing',weight:25,actor:'draw'},
+      {name:'Both collapse after committing to the final exchange',weight:15,actor:'draw'}
+    ],
+    upset:[
+      {name:`${an} pretends to be finished, then launches one final counterattack`,weight:30,actor},
+      {name:`${an} exploits a moment of overconfidence to reverse the fight`,weight:27,actor},
+      {name:`${an} uses an unexpected technique to bypass ${on}'s defense`,weight:25,actor},
+      {name:`${an} sacrifices their own defense to land the decisive strike first`,weight:18,actor}
+    ],
+    victory:[
+      {name:`${an} wins by maintaining control of the fight through the final exchange`,weight:40,actor},
+      {name:`${an} wins after forcing ${on} into a final defensive mistake`,weight:30,actor},
+      {name:`${an} wins because ${on}'s accumulated injuries prevent another counter`,weight:20,actor},
+      {name:`${an} wins after a final counterattack lands cleanly`,weight:10,actor}
+    ],
+    unable:[
+      {name:`${an} is unable to rise after the final exchange`,weight:35,actor},
+      {name:`${an}'s accumulated injuries prevent them from continuing`,weight:30,actor},
+      {name:`${an} is too exhausted to mount another defense`,weight:20,actor},
+      {name:`${an} retreats because continuing would risk serious injury`,weight:15,actor}
+    ],
+    unclear:[
+      {name:'Both fighters remain standing but neither can safely commit to another attack',weight:35,actor:'draw'},
+      {name:'The final exchange produces no clearly decisive hit',weight:30,actor:'draw'},
+      {name:'Both fighters withdraw before a definitive result can be established',weight:20,actor:'draw'},
+      {name:'The accumulated damage makes the outcome impossible to determine',weight:15,actor:'draw'}
+    ]
+  };
+  let opts=base[main.actionKey]||base.probe;
+  // Technique spotlights get a technique-specific execution subwheel.
+  if(main.method){
+    const m=main.method;
+    const pool=[
+      {name:`${an} lands ${m.name} cleanly and breaks ${on}'s defense`,weight:30,actor},
+      {name:`${on} anticipates ${m.name} and counters before it takes effect`,weight:25,actor:other},
+      {name:`${an} uses ${m.name} to create an opening for a follow-up attack`,weight:25,actor},
+      {name:`${on} partially avoids ${m.name}, reducing its impact`,weight:20,actor:other}
+    ];
+    if(m.type==='weapon' && !hasWeapon(state[actor])) return pool;
+    return pool;
+  }
+  // Never let a subwheel select an actor that cannot logically exist.
+  opts=opts.filter(x=>x.actor==='A'||x.actor==='B'?!!state[x.actor]:true);
+  return opts.length?opts:base.probe;
+}
+
+function applySubResult(stage,main,sub){
+  const actor=sub.actor,other=actor==='A'?'B':actor==='B'?'A':null;
+  if(actor==='A'||actor==='B'){
+    const amount=main.climax?12:main.finish?10:8;
+    applyActor(actor,amount);
+    if(other){
+      state.stamina[other]=clamp(state.stamina[other]-2,0,100);
+      if(/lands|breaks|decisive|damage|injur|hit|connect|strikes|attacks cleanly/i.test(sub.name))state.injury[other]=clamp(state.injury[other]+(main.finish?2:1),0,5);
+    }
+  }
+  if(actor==='both'){
+    state.momentum.A=clamp(state.momentum.A+2,0,100);state.momentum.B=clamp(state.momentum.B+2,0,100);
+    state.injury.A=clamp(state.injury.A+1,0,5);state.injury.B=clamp(state.injury.B+1,0,5);
+    state.stamina.A=clamp(state.stamina.A-6,0,100);state.stamina.B=clamp(state.stamina.B-6,0,100);
+  }
+  if(actor==='draw'){
+    state.stamina.A=clamp(state.stamina.A-3,0,100);state.stamina.B=clamp(state.stamina.B-3,0,100);
+  }
+  if(main.method){
+    const methodActor=main.actor;
+    if(sub.actor===methodActor && sub.name.includes('lands')){
+      const r=resolveTechnique(methodActor,main.method);main.narrative=r;
+    } else {
+      state.chakra[methodActor]=clamp(state.chakra[methodActor]-Math.max(3,main.method.cost/2),0,100);
+      state.stamina[methodActor]=clamp(state.stamina[methodActor]-3,0,100);
+      main.narrative=sub.name;
+    }
+    state.techniqueUsed[methodActor].push(main.method.name);
+  }
+  if(main.steal){
+    const target=state.A&&isJinch(state.A)?'A':state.B&&isJinch(state.B)?'B':null;
+    if(target&&target!==main.actor){
+      const thief=state[main.actor],victim=state[target],chance=clamp(28+(stat(thief,'intelligence')-stat(victim,'willpower'))*.25,8,65);
+      if(Math.random()*100<chance){state.momentum[main.actor]=clamp(state.momentum[main.actor]+12,0,100);main.narrative=`${sub.name} The attempt succeeds enough to create an opening.`}
+      else{state.momentum[target]=clamp(state.momentum[target]+9,0,100);main.narrative=`${sub.name} ${victim.name||'The defender'} rejects the attempt and surges forward.`}
+    }else main.narrative=`${sub.name} No eligible tailed-beast target was present, so the attempt becomes a dangerous feint.`;
+  }
+  if(stage.key==='finish'){
+    if(main.actor==='draw'||sub.actor==='draw')state.lastWinner=null;
+    else if(main.actor==='A'||main.actor==='B')state.lastWinner=main.actor;
+    else if(actor==='A'||actor==='B')state.lastWinner=actor;
+    else state.lastWinner=state.momentum.A>=state.momentum.B?'A':'B';
+  }
+}
+
 function resolveTechnique(actor,method){const defender=actor==='A'?'B':'A',n=state[actor],d=state[defender];let attack=power(n)*.46+avg(n,['battleIQ','speed','chakraControl'])*.22,defense=power(d)*.42+avg(d,['battleIQ','speed','durability'])*.23;if(method.type==='weapon')attack+=stat(n,'weaponSkill')*.25;if(method.type==='dojutsu')attack+=stat(n,'genjutsu')*.16+stat(n,'sensory')*.12;if(method.type==='kekkei')attack+=stat(n,'ninjutsu')*.18+stat(n,'chakraControl')*.12;if(method.type==='ultimate')attack+=18;if(isByakugan(d)&&method.type==='dojutsu'&&isSharingan(n))return `${d.name||'The defender'} reads the Sharingan technique and prevents its intended effect.`;if(isByakugan(d)&&method.type==='jutsu'&&/genjutsu/i.test(method.name))return `${d.name||'The defender'} resists the genjutsu; Byakugan immunity prevents the technique from taking hold.`;const roll=(Math.random()*24-12)+(power(n)-power(d))*.08,success=attack+roll>=defense;state.chakra[actor]=clamp(state.chakra[actor]-method.cost,0,100);state.stamina[actor]=clamp(state.stamina[actor]-(method.type==='ultimate'?18:5),0,100);if(success){state.momentum[actor]=clamp(state.momentum[actor]+(method.type==='ultimate'?16:9),0,100);state.momentum[defender]=clamp(state.momentum[defender]-(method.type==='ultimate'?13:7),0,100);state.injury[defender]=clamp(state.injury[defender]+(method.type==='ultimate'?2:1),0,5);return `${n.name||'Fighter'} lands ${method.name}, breaking through ${d.name||'the opponent'}'s defense.`}state.momentum[defender]=clamp(state.momentum[defender]+5,0,100);state.momentum[actor]=clamp(state.momentum[actor]-4,0,100);return `${n.name||'Fighter'} attempts ${method.name}, but ${d.name||'the opponent'} counters the technique.`;}
 function applyActor(actor,amount=8){const other=actor==='A'?'B':'A';state.momentum[actor]=clamp(state.momentum[actor]+amount,0,100);state.momentum[other]=clamp(state.momentum[other]-amount*.7,0,100);state.stamina[actor]=clamp(state.stamina[actor]-3,0,100);state.stamina[other]=clamp(state.stamina[other]-2,0,100)}
 function applyResult(stage,result){const actor=result.actor;if(actor==='A'||actor==='B')applyActor(actor,stage.key==='climax'?12:8);if(actor==='both'){state.momentum.A=clamp(state.momentum.A+2,0,100);state.momentum.B=clamp(state.momentum.B+2,0,100);state.injury.A=clamp(state.injury.A+1,0,5);state.injury.B=clamp(state.injury.B+1,0,5);state.stamina.A=clamp(state.stamina.A-6,0,100);state.stamina.B=clamp(state.stamina.B-6,0,100)}if(result.method){result.narrative=resolveTechnique(actor,result.method);state.techniqueUsed[actor].push(result.method.name)}if(result.steal){const target=state.A&&isJinch(state.A)?'A':state.B&&isJinch(state.B)?'B':null;if(target&&target!==actor){const thief=state[actor],victim=state[target],chance=clamp(28+(stat(thief,'intelligence')-stat(victim,'willpower'))*.25,8,65);if(Math.random()*100<chance){state.momentum[actor]=clamp(state.momentum[actor]+12,0,100);result.narrative=`${thief.name||'Fighter'} attempts to steal ${victim.name||'the opponent'}'s tailed-beast power and gains a temporary opening.`}else{state.momentum[target]=clamp(state.momentum[target]+9,0,100);result.narrative=`${victim.name||'Fighter'} rejects the tailed-beast steal attempt and surges forward.`}}else result.narrative='No eligible tailed-beast target was present; the fighters exchange a dangerous feint instead.'}if(stage.key==='finish'){if(result.actor==='draw')state.lastWinner=null;else if(result.actor==='A'||result.actor==='B')state.lastWinner=result.actor;else state.lastWinner=state.momentum.A>=state.momentum.B?'A':'B';}}
-function narrative(stage,result){if(result.narrative)return result.narrative;if(stage.key==='aftermath')return state.lastWinner?`${state[state.lastWinner].name||'The victor'} is recorded as the winner. The fight remains independent of the Orb Arena battle history.`:'The fight ends without a winner. Both fighters retain their updated development history outside this wheel.';if(result.actor==='A'||result.actor==='B')return `${state[result.actor].name||'Fighter'} controls the exchange and gains momentum.`;if(result.actor==='draw'||result.actor==='none')return 'The exchange ends without a decisive advantage.';if(result.actor==='both')return 'Both fighters commit to the exchange; each takes damage and loses stamina.';return 'The fighters remain locked in a tactical exchange.';}
-function renderWheel(pool){const svg=el('fightWheelSvg');if(!svg)return;const total=pool.reduce((s,x)=>s+(x.weight||1),0);let a=-Math.PI/2,paths='';pool.forEach((o,i)=>{const da=(o.weight||1)/total*Math.PI*2,b=a+da,x1=150+122*Math.cos(a),y1=150+122*Math.sin(a),x2=150+122*Math.cos(b),y2=150+122*Math.sin(b),large=da>Math.PI?1:0,fill=i%2?'#253a56':'#18283d';paths+=`<path d="M150 150 L ${x1} ${y1} A122 122 0 ${large} 1 ${x2} ${y2} Z" fill="${fill}" stroke="#0a0f17" stroke-width="1.4"><title>${esc(o.name)}</title></path>`;const mid=a+da/2,tx=150+80*Math.cos(mid),ty=150+80*Math.sin(mid);let deg=mid*180/Math.PI+90;if(deg>90&&deg<270)deg+=180;paths+=`<text x="${tx}" y="${ty}" fill="#eef3f9" font-size="${pool.length>5?7.2:8.2}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${deg} ${tx} ${ty})">${esc(o.name.length>24?o.name.slice(0,23)+'…':o.name)}</text>`;a=b});paths+='<circle cx="150" cy="150" r="122" fill="none" stroke="#c5cedd" stroke-width="2" opacity=".35"/>';svg.innerHTML=paths;}
-function drawWheel(){if(!state.A||!state.B)return;const stage=currentStage(),pool=stageOptions(stage);renderWheel(pool);setText('fightWheelStage',`Stage ${state.stage+1} of 9 · ${stage.name}`);setText('fightWheelCenter',stage.name.toUpperCase().replace(/ /g,'\n'));}
+function narrative(stage,result){if(result.narrative)return result.narrative;if(stage.key==='aftermath')return state.lastWinner?`${state[state.lastWinner].name||'The victor'} is recorded as the winner. The fight remains independent of the Orb Arena battle history.`:'The fight ends without a winner. Both fighters retain their updated development history outside this wheel.';if(result.actor==='A'||result.actor==='B')return `${state[result.actor].name||'Fighter'} executes the action and gains momentum.`;if(result.actor==='draw'||result.actor==='none')return 'The exchange ends without a decisive advantage.';if(result.actor==='both')return 'Both fighters commit to the exchange; each takes damage and loses stamina.';return 'The fighters remain locked in a tactical exchange.';}
+function renderWheel(pool){
+  const svg=el('fightWheelSvg');if(!svg)return;
+  const total=pool.reduce((s,x)=>s+(Number(x.weight)||1),0)||1;
+  const colors=[
+    "#e74c3c","#e67e22","#f1c40f","#2ecc71","#1abc9c","#3498db","#9b59b6",
+    "#e91e63","#00bcd4","#8bc34a","#ff7043","#5c6bc0","#26a69a","#ec407a",
+    "#42a5f5","#66bb6a","#ffa726","#ab47bc","#29b6f6","#d4e157"
+  ];
+  const polar=(deg,r)=>{const a=(deg-90)*Math.PI/180;return [150+r*Math.cos(a),150+r*Math.sin(a)]};
+  const escSvg=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  let a=0,paths='';
+  pool.forEach((o,i)=>{
+    const span=(Number(o.weight)||1)/total*360,b=a+span;
+    const [x1,y1]=polar(a,122),[x2,y2]=polar(b,122),large=span>180?1:0;
+    paths+=`<path d="M150 150 L ${x1} ${y1} A122 122 0 ${large} 1 ${x2} ${y2} Z" fill="${colors[i%colors.length]}" stroke="#0d1119" stroke-width="1.2"><title>${escSvg(o.name)}</title></path>`;
+    if(span>=3.5){
+      const mid=a+span/2,lr=span>=30?52:span>=16?58:span>=8?64:70;
+      const [tx,ty]=polar(mid,lr);
+      const maxChars=span>=45?18:span>=28?14:span>=16?10:span>=10?7:span>=6?5:3;
+      const raw=String(o.name||''),label=raw.length<=maxChars?raw:raw.slice(0,Math.max(1,maxChars-1))+'…';
+      let rotation=mid-90;if(mid>90&&mid<270)rotation+=180;
+      const fontSize=span>=36?7.8:span>=22?6.8:span>=12?6:span>=7?5.2:4.4;
+      paths+=`<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" fill="#0b0e14" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" transform="rotate(${rotation.toFixed(2)} ${tx.toFixed(2)} ${ty.toFixed(2)})">${label.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>`;
+    }
+    a=b;
+  });
+  paths+='<circle cx="150" cy="150" r="122" fill="none" stroke="#c5cedd" stroke-width="1.5" opacity=".35"/>';
+  svg.innerHTML=paths;
+}
+function drawWheel(){if(!state.A||!state.B)return;const stage=currentStage();const pool=state.phase==='sub'&&state.pendingMain?subwheelOptions(state.pendingMain):stageOptions(stage);renderWheel(pool);if(state.phase==='sub'&&state.pendingMain){setText('fightWheelStage',`Stage ${state.stage+1} of 9 · How?`);setText('fightWheelStageTitle',`How does this happen?`);setText('fightWheelCenter','SPIN');}else{setText('fightWheelStage',`Stage ${state.stage+1} of 9 · ${stage.name}`);setText('fightWheelStageTitle',stage.name);setText('fightWheelCenter','SPIN');}}
 function selectedByRotation(pool,index){const total=pool.reduce((s,x)=>s+(x.weight||1),0),center=((pool.slice(0,index).reduce((s,x)=>s+(x.weight||1),0)+(pool[index].weight||1)/2)/total*360);return (90-center+360)%360;}
-async function spinFightWheel(){if(state.spinning||state.done||!state.A||!state.B)return;state.spinning=true;const btn=el('fightWheelSpinBtn');if(btn)btn.disabled=true;const stage=currentStage(),pool=stageOptions(stage),result=chooseWeighted(pool),index=Math.max(0,pool.indexOf(result)),target=selectedByRotation(pool,index),wrap=el('fightWheelSvgWrap'),extra=360*(5+Math.floor(Math.random()*3));state.rotation+=extra+(360-target);if(wrap)wrap.style.transform=`rotate(${state.rotation}deg)`;if(!state.skip)await new Promise(r=>setTimeout(r,1750));applyResult(stage,result);setText('fightWheelResult',result.name);setText('fightWheelNarrative',narrative(stage,result));updateMeters();log(`${stage.name}: ${result.name}`);state.history.push({stage:stage.name,result:result.name,actor:result.actor});state.stage++;state.spinning=false;if(stage.key==='aftermath'){state.done=true;setText('fightWheelStage','Fight Complete');setText('fightWheelCenter','COMPLETE');if(btn)btn.disabled=true;log(state.lastWinner?`Winner: ${state[state.lastWinner].name||state.lastWinner}`:'Result: Draw / Inconclusive');return}if(btn)btn.disabled=false;drawWheel();}
+function fightWheelShowOverlay(value){
+  const o=el('fightWheelResultOverlay'),r=el('fightWheelResultValue');
+  if(r)r.textContent=String(value??'—');
+  if(o)o.classList.add('show');
+}
+function fightWheelHideOverlay(){el('fightWheelResultOverlay')?.classList.remove('show')}
+async function spinFightWheel(){
+  if(state.spinning||state.done||!state.A||!state.B)return;
+  state.spinning=true;fightWheelHideOverlay();
+  const btn=el('fightWheelSpinBtn');if(btn)btn.disabled=true;
+  const stage=currentStage();
+  const pool=state.phase==='sub'&&state.pendingMain?subwheelOptions(state.pendingMain):stageOptions(stage);
+  const safePool=pool.length?pool:[{name:'No Result',weight:1,actor:'none',actionKey:'probe'}];
+  const result=chooseWeighted(safePool),index=Math.max(0,safePool.indexOf(result)),target=selectedByRotation(safePool,index),wrap=el('fightWheelSvgWrap');
+  const extra=360*(5+Math.floor(Math.random()*3));state.rotation+=extra+(360-target);
+  if(wrap)wrap.style.transform=`rotate(${state.rotation}deg)`;
+  // Do not reveal the result until the wheel's visual transition has finished.
+  if(!state.skip)await new Promise(r=>setTimeout(r,3200));
+
+  if(state.phase==='main'){
+    state.pendingMain=result;state.phase='sub';
+    setText('fightWheelResult',result.name);setText('fightWheelNarrative','Now press Spin to determine exactly how this action unfolds.');
+    log(`${stage.name}: ${result.name}`);state.history.push({stage:stage.name,phase:'main',result:result.name,actor:result.actor});
+    fightWheelShowOverlay(result.name);
+    if(!state.skip)await new Promise(r=>setTimeout(r,900));
+    fightWheelHideOverlay();
+    // Keep the wheel at its landed rotation. Re-rendering the How? wedges must
+    // never cause a second, automatic rotation.
+    state.spinning=false;
+    setText('fightWheelResult','How?');setText('fightWheelNarrative','Press Spin to determine the specific action, technique, counter, or exchange.');
+    drawWheel();
+    if(btn){btn.disabled=false;btn.textContent='SPIN';}
+    return;
+  }
+
+  const main=state.pendingMain;
+  applySubResult(stage,main,result);
+  setText('fightWheelResult',result.name);setText('fightWheelNarrative',narrative(stage,{...main,narrative:main.narrative||result.name}));updateMeters();
+  log(`How: ${result.name}`);state.history.push({stage:stage.name,phase:'sub',result:result.name,actor:result.actor,for:main.name});
+  fightWheelShowOverlay(result.name);
+  await new Promise(r=>setTimeout(r,state.skip?500:1600));fightWheelHideOverlay();
+  state.pendingMain=null;state.pendingSub=null;state.phase='main';state.stage++;state.spinning=false;
+  if(stage.key==='aftermath'){
+    state.done=true;setText('fightWheelStage','Fight Complete');setText('fightWheelStageTitle','Fight Complete');setText('fightWheelCenter','SPIN');
+    if(btn)btn.disabled=true;log(state.lastWinner?`Winner: ${state[state.lastWinner].name||state.lastWinner}`:'Result: Draw / Inconclusive');return;
+  }
+  if(btn){btn.disabled=false;btn.textContent='SPIN';}drawWheel();
+}
 function fightWheelSkip(){state.skip=!state.skip;const b=document.querySelector('#fightWheelPanel .fw-actions button:nth-child(3)');if(b)b.textContent=state.skip?'ANIMATION ON':'SKIP ANIMATION';}
 window.fightWheelLoadSource=fightWheelLoadSource;window.fightWheelRefreshSources=fightWheelRefreshSources;window.fightWheelReset=fightWheelReset;window.spinFightWheel=spinFightWheel;window.fightWheelSkip=fightWheelSkip;
 populateSources();resetState();
@@ -7892,6 +8579,43 @@ populateSources();resetState();
   ];
 
   let fighters=[],clones=[],particles=[],floating=[],effects=[],projectiles=[],running=false,winner=null,lastTs=0;
+  /* Ambient chakra/dust motes for stage atmosphere — low density, slow drift. */
+  let ambientMotes=[];
+  function ensureAmbientMotes(){
+    if(ambientMotes.length)return;
+    const n=28;
+    for(let i=0;i<n;i++){
+      ambientMotes.push({
+        x:CX+(Math.random()-.5)*ARENA_R*1.9,
+        y:CY+(Math.random()-.5)*ARENA_R*1.9,
+        vx:(Math.random()-.5)*.18,
+        vy:(Math.random()-.5)*.14,
+        r:.8+Math.random()*1.6,
+        a:.08+Math.random()*.14,
+        phase:Math.random()*Math.PI*2
+      });
+    }
+  }
+  function updateAmbientMotes(dt){
+    ensureAmbientMotes();
+    const half=ARENA_R+30;
+    for(const m of ambientMotes){
+      m.x+=m.vx*dt;m.y+=m.vy*dt;m.phase+=.012*dt;
+      if(m.x<CX-half)m.x=CX+half; if(m.x>CX+half)m.x=CX-half;
+      if(m.y<CY-half)m.y=CY+half; if(m.y>CY+half)m.y=CY-half;
+    }
+  }
+  function drawAmbientMotes(){
+    ensureAmbientMotes();
+    ctx.save();
+    for(const m of ambientMotes){
+      const pulse=.55+.45*Math.sin(m.phase);
+      ctx.globalAlpha=m.a*pulse;
+      ctx.fillStyle='#9ec8ff';
+      ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
 
   const el=id=>document.getElementById(id);
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -8060,13 +8784,17 @@ populateSources();resetState();
 
   // Existing Generator weapon metadata is the source of truth for ranged equipment.
   // Consumables/Treasures have already been removed by filterOrbWeapons().
-  function weaponCombatMode(f){
-    const rec=orbWeaponRecord(f.weapon);
+  function isRangedWeaponEntry(weapon){
+    const rec=orbWeaponRecord(weapon);
     const cat=String(rec?.category||'').toLowerCase();
-    const name=String(f.weapon||'').toLowerCase();
-    if(cat.includes('ranged')||cat.includes('thrown')) return 'ranged';
-    if(cat==='kunai'||/shuriken|senbon|fūma shuriken|fuma shuriken/.test(name)) return 'ranged';
-    return 'melee';
+    const name=String(weapon||'').toLowerCase().replace(/[–—]/g,'-');
+    if(cat.includes('ranged')||cat.includes('thrown')) return true;
+    if(cat==='kunai') return true;
+    return /shuriken|f[uū]ma shuriken|senbon|bow(?: & arrow)?|crossbow|blowpipe|launcher|water stream shooter|water stream shooters|flamethrower|wire strings|whip|ray bow|projectile|throwing/.test(name);
+  }
+
+  function weaponCombatMode(f){
+    return isRangedWeaponEntry(f.weapon)?'ranged':'melee';
   }
 
   function isRangedTechnique(name){
@@ -8151,7 +8879,7 @@ populateSources();resetState();
       maxHp:d.hp,hp:d.hp,dmg:d.dmg,speed:d.speed,range:d.range,evade:d.evade,
       r:22,x:CX+Math.cos(angle)*dist,y:CY+Math.sin(angle)*dist,vx:0,vy:0,lastValidX:CX+Math.cos(angle)*dist,lastValidY:CY+Math.sin(angle)*dist,
       weaponAngle:isA?0:Math.PI,prevWeaponAngle:isA?0:Math.PI,weaponSpin:weaponSpinSpeed(wk)*spinDir,weaponReach:weaponLength(wk),
-      weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,bodyHitCooldown:0,moveClock:Math.random()*80,moveSign:(Math.random()<.5?-1:1),dashTimer:30+Math.random()*80,dashCooldown:0,roamX:CX+(Math.random()-.5)*260,roamY:CY+(Math.random()-.5)*180,
+      weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,poof:0,shield:0,bodyHitCooldown:0,moveClock:Math.random()*80,moveSign:(Math.random()<.5?-1:1),dashTimer:30+Math.random()*80,dashCooldown:0,roamX:CX+(Math.random()-.5)*260,roamY:CY+(Math.random()-.5)*180,
       combatMode:weaponCombatMode({weapon}),rangedCooldown:0,rangedPulse:0,
       rangedWeaponOnly:weaponCombatMode({weapon})==='ranged',
       j1Meter:0,j2Meter:0,ultMeter:0,j1Active:0,j2Active:0,ultActive:0,
@@ -8266,13 +8994,26 @@ populateSources();resetState();
         cb.style.width=clamp(pct,0,100)+'%';
         ct.textContent=f.consumableActive>0?`${f.consumable}: ${f.consumableProfile.label} · ${Math.ceil(f.consumableActive/60)}s`:(f.consumableMeter>=100?'READY · '+f.consumable:f.consumable+' charging');
       }else{cb.style.width='0%';ct.textContent='No consumable';}
+      /* Highlight the fighter who is currently "hot" (ability active or just hit). */
+      const card=el('orbHudName'+s)?.closest?.('.orb-hud-card');
+      if(card){
+        const hot=f.alive&&(f.j1Active>0||f.j2Active>0||f.ultActive>0||f.hitFlash>0||f.ultMeter>=100);
+        card.classList.toggle('active-fighter',!!hot);
+      }
     }
   }
 
   function spawnParticles(x,y,color,n=12,speed=3.5,life=26){
-    for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,sp=1+Math.random()*speed;particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:life*(.7+Math.random()*.6),color,r:1.5+Math.random()*3})}
+    /* Prefer fewer, intentional particles; callers already pass sensible counts. */
+    const count=Math.min(22,Math.max(1,Math.round(n)));
+    for(let i=0;i<count;i++){
+      const a=Math.random()*Math.PI*2,sp=1+Math.random()*speed;
+      particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:life*(.7+Math.random()*.6),color,r:1.6+Math.random()*3.2});
+    }
   }
-  function floatText(x,y,text,color='#fff'){floating.push({x,y,text,color,life:42,vy:-1.15})}
+  function floatText(x,y,text,color='#fff'){
+    floating.push({x,y,text,color,life:48,vy:-1.25,scale:1});
+  }
   function techniqueSignature(name){
     const t=String(name||'None');
     let h=0;
@@ -8357,12 +9098,14 @@ populateSources();resetState();
     return'chakra';
   }
 
+  const ORB_DAMAGE_MULTIPLIER=1.25; // Global Orb Arena attack-damage increase
+
   function spawnRangedProjectile(f,name,kind,slot){
     const foe=f.side==='A'?fighters[1]:fighters[0];
     if(!foe||!foe.alive)return;
     const ang=Math.atan2(foe.y-f.y,foe.x-f.x);
     const speed=slot==='ult'?4.8:4.1;
-    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015);
+    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015)*ORB_DAMAGE_MULTIPLIER;
     projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false});
   }
 
@@ -8386,7 +9129,7 @@ populateSources();resetState();
     const p={
       id:'puppet_'+Date.now()+'_'+Math.random().toString(36).slice(2),parent:f,side:f.side,name:`${f.name}'s Puppet`,kind:puppetKindForFighter(f),
       alive:true,hp,maxHp:hp,r:19,x:f.x+Math.cos(ang)*42,y:f.y+Math.sin(ang)*42,vx:0,vy:0,
-      weapon:'Small Dagger',weaponType:'dagger',weaponReach:Math.max(12,weaponLength('dagger')*.72),weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(f.side==='A'?1:-1)*weaponSpinSpeed('dagger')*1.65,
+      weapon:'Small Dagger',weaponType:'dagger',weaponReach:Math.max(12,weaponLength('dagger')*.72),weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(Math.abs(Number(f.weaponSpin))||weaponSpinSpeed('dagger'))*(f.side==='A'?1:-1),
       damage:Math.max(5,f.dmg*.62),dmg:Math.max(5,f.dmg*.62),speed:f.speed,ninja:f.ninja,color:'#a8dcff',cooldown:0,weaponClashCooldown:0,shield:0,hitFlash:0,poof:0,age:0,attackFlash:0
     };
     f.puppet=p;f.puppetRespawnFlash=28;
@@ -8435,10 +9178,11 @@ populateSources();resetState();
     }
     spawnParticles(p.x,p.y,source?.color||'#a8dcff',7,3,16);floatText(p.x,p.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
     if(p.hp<=0){
-      p.hp=0;p.alive=false;p.poof=30;spawnCloneSmoke(p.x,p.y,'#9edcff');
+      defeatEntity(p,'#9edcff',0.95);
       log(`${p.parent.name}'s puppet is destroyed.`);
     }
   }
+  // Puppet movement/rotation are based on the previously working combat loop; the 25% boost is applied without changing target selection or attack cadence.
   function updatePuppets(dt){
     for(const f of fighters){
       const p=f.puppet;
@@ -8462,21 +9206,30 @@ populateSources();resetState();
       p.prevWeaponAngle=p.weaponAngle;
       const dx=foe.x-p.x,dy=foe.y-p.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
       const ideal=p.r+foe.r+p.weaponReach*.62;
+      const attackRange=ideal+18;
       let ax=0,ay=0;
-      if(d>ideal+12){ax=nx;ay=ny}else if(d<ideal-12){ax=-nx;ay=-ny}else{const side=p.side==='A'?1:-1;ax=-ny*side;ay=nx*side}
-      p.vx+=ax*.22*dt;p.vy+=ay*.22*dt;p.vx*=.91;p.vy*=.91;
-      const sp=len(p.vx,p.vy),maxSp=1.95*parentSpeed(f);if(sp>maxSp){p.vx=p.vx/sp*maxSp;p.vy=p.vy/sp*maxSp}
+      if(d>attackRange){ax=nx;ay=ny}else if(d<ideal-12){ax=-nx;ay=-ny}else{const side=p.side==='A'?1:-1;ax=-ny*side;ay=nx*side}
+      p.vx+=ax*.275*dt;p.vy+=ay*.275*dt;p.vx*=.91;p.vy*=.91;
+      const sp=len(p.vx,p.vy),maxSp=1.95*parentSpeed(f)*1.25;if(sp>maxSp){p.vx=p.vx/sp*maxSp;p.vy=p.vy/sp*maxSp}
       p.x+=p.vx*dt;p.y+=p.vy*dt;applyCloneBounds(p);
-      p.weaponAngle+=p.weaponSpin*dt*1.35;
-      const diff=Math.atan2(dy,dx)-p.weaponAngle;p.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.18*dt;
-      if(d<=ideal+12&&p.cooldown<=0){
+      // Summon weapons must rotate continuously at the same rate as the
+      // generated fighter's weapon.  A small amount of target tracking is
+      // retained for combat alignment, but it is deliberately the same tiny
+      // correction used by ordinary fighters so it cannot cancel the spin.
+      if(!Number.isFinite(p.weaponSpin)||Math.abs(p.weaponSpin)<.1){
+        const parentSpin=Math.abs(Number(f.weaponSpin)||0);
+        p.weaponSpin=(parentSpin>=.1?parentSpin:weaponSpinSpeed(p.weaponType||weaponKind(p.weapon)))*(f.side==='A'?1:-1);
+      }
+      p.weaponAngle+=p.weaponSpin*dt;
+      const diff=Math.atan2(dy,dx)-p.weaponAngle;p.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.012*dt;
+      if(d<=attackRange&&p.cooldown<=0){
         const tip=tipAt(p,p.weaponAngle);
         const prevTip=tipAt(p,p.prevWeaponAngle);
         const contactRadius=orbContactRadius(foe)+weaponContactRadius(p);
         const contactDist=Math.min(Math.hypot(tip.x-foe.x,tip.y-foe.y),Math.hypot(prevTip.x-foe.x,prevTip.y-foe.y),distPointSeg(foe.x,foe.y,prevTip.x,prevTip.y,tip.x,tip.y));
         if(contactDist>contactRadius)continue;
         p.attackFlash=10;p.cooldown=18+Math.random()*8;
-        let dmg=p.damage*(.78+Math.random()*.25);if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
+        let dmg=p.damage*(.78+Math.random()*.25)*ORB_DAMAGE_MULTIPLIER;if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
         foe.hp-=dmg;foe.hitFlash=8;foe.invuln=12;
         // Puppet attacks are extensions of the Puppet Master's combat actions.
         // Damage dealt by the puppet must charge the master's Jutsu/Ultimate
@@ -8488,7 +9241,7 @@ populateSources();resetState();
         reverseWeaponSpin(p,'hit');
         const [kx,ky]=norm(foe.x-p.x);foe.vx+=kx*(4+dmg*.12);foe.vy+=ky*(4+dmg*.12);
         spawnParticles(foe.x,foe.y,'#a8dcff',7,3,18);floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
-        if(foe.hp<=0){foe.hp=0;foe.alive=false;running=false;winner=f;showBanner(`${f.name} wins!`,2400);log(`${f.name}'s puppet defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
+        if(foe.hp<=0){defeatEntity(foe,foe.color,1.15);running=false;winner=f;showBanner(`${f.name} wins!`,2400);log(`${f.name}'s puppet defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
       }
     }
   }
@@ -8515,9 +9268,44 @@ populateSources();resetState();
     return'shadow';
   }
   function spawnCloneSmoke(x,y,color='#dfe7f2'){
-    spawnParticles(x,y,'#f4f6fa',18,4.5,28);
-    spawnParticles(x,y,color,9,3,24);
-    for(let i=0;i<5;i++) particles.push({x:x+(Math.random()-.5)*8,y:y+(Math.random()-.5)*8,vx:(Math.random()-.5)*1.7,vy:-1-Math.random()*2,life:30+Math.random()*16,color:'#f7f8fb',r:4+Math.random()*5});
+    /* Cute Naruto-style poof: soft expanding smoke puffs that rise and fade. */
+    spawnDefeatPoof(x,y,color,1);
+  }
+  function spawnDefeatPoof(x,y,color='#dfe7f2',scale=1){
+    const n=Math.round(10+scale*8);
+    /* Soft white outer puffs */
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2,sp=.6+Math.random()*2.2*scale;
+      particles.push({
+        x:x+(Math.random()-.5)*6*scale,y:y+(Math.random()-.5)*6*scale,
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.7-1.1-Math.random()*1.6,
+        life:32+Math.random()*22,color:'#f7f8fb',r:(5+Math.random()*7)*scale,poof:true
+      });
+    }
+    /* Tinted inner puffs matching the entity */
+    for(let i=0;i<Math.round(6+scale*4);i++){
+      const a=Math.random()*Math.PI*2,sp=.4+Math.random()*1.6*scale;
+      particles.push({
+        x:x+(Math.random()-.5)*4*scale,y:y+(Math.random()-.5)*4*scale,
+        vx:Math.cos(a)*sp,vy:Math.sin(a)*sp*.55-.8-Math.random()*1.2,
+        life:26+Math.random()*18,color,r:(3.5+Math.random()*5)*scale,poof:true
+      });
+    }
+    /* Tiny bright core flash particles */
+    for(let i=0;i<5;i++){
+      const a=Math.random()*Math.PI*2,sp=1.2+Math.random()*2.5;
+      particles.push({
+        x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-1,
+        life:14+Math.random()*10,color:'#ffffff',r:1.5+Math.random()*2.5,poof:true
+      });
+    }
+  }
+  function defeatEntity(entity,color,scale=1){
+    if(!entity)return;
+    entity.alive=false;
+    entity.hp=0;
+    entity.poof=Math.max(entity.poof||0,34+scale*6);
+    spawnDefeatPoof(entity.x,entity.y,color||entity.color||'#dfe7f2',scale);
   }
   function spawnClones(parent,name,slot){
     const count=cloneCountForTechnique(name,slot),kind=cloneKindForTechnique(name);
@@ -8534,7 +9322,7 @@ populateSources();resetState();
         parent,side:parent.side,name:`${parent.name} Clone`,kind,alive:true,hp,maxHp:hp,
         r:17,x:parent.x+Math.cos(a)*d,y:parent.y+Math.sin(a)*d,vx:0,vy:0,
         weapon:parent.weapon,weaponType:parent.weaponType,weaponReach:Math.max(16,parent.weaponReach*.82),
-        weaponAngle:a,weaponSpin:(parent.side==='A'?1:-1)*weaponSpinSpeed(parent.weaponType)*.9,
+        weaponAngle:a,weaponSpin:(Math.abs(Number(parent.weaponSpin))||weaponSpinSpeed(parent.weaponType))*(parent.side==='A'?1:-1),
         damage:Math.max(4,parent.dmg*.48),cooldown:0,hitFlash:0,poof:0,atkPulse:0,age:0
       };
       clones.push(c);spawnCloneSmoke(c.x,c.y,c.kind==='wood'?'#6dbb58':c.kind==='water'?'#77dfff':'#e8edf7');
@@ -8550,9 +9338,13 @@ populateSources();resetState();
   function cloneAttack(c,foe){
     if(!c.alive||!foe||!foe.alive||c.cooldown>0)return;
     const d=Math.hypot(foe.x-c.x,foe.y-c.y);
-    if(d>c.r+foe.r+c.weaponReach*.72+8)return;
-    const a=Math.atan2(foe.y-c.y,foe.x-c.x);c.weaponAngle=a;c.atkPulse=12;c.cooldown=24+Math.random()*12;
-    let dmg=c.damage*(.82+Math.random()*.3);
+    if(d>c.r+foe.r+c.weaponReach*.82+12)return;
+    // Do not snap the weapon to the opponent when a clone attacks.  Snapping
+    // the angle here was cancelling the visible orbit and made the weapon
+    // appear stationary.  The continuously rotating weapon now supplies the
+    // attack contact through the normal swept-tip collision check.
+    c.atkPulse=12;c.cooldown=24+Math.random()*12;
+    let dmg=c.damage*(.82+Math.random()*.3)*ORB_DAMAGE_MULTIPLIER;
     const evasion=stat(foe.ninja,'speed')*.003+stat(foe.ninja,'stealth')*.0015+stat(foe.ninja,'battleIQ')*.001;
     if(Math.random()<Math.min(.22,evasion*.1)){spawnParticles(foe.x,foe.y,'#d9e9ff',5,2.5,16);return;}
     if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);return;}
@@ -8560,8 +9352,9 @@ populateSources();resetState();
     const [nx,ny]=norm(foe.x-c.x,foe.y-c.y);foe.vx+=nx*(5+dmg*.16);foe.vy+=ny*(5+dmg*.16);
     spawnParticles(foe.x,foe.y,c.kind==='water'?'#8be9ff':c.kind==='wood'?'#8bd16c':'#dbe6f5',7,3,18);
     floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#d7e8ff');
-    if(foe.hp<=0){foe.hp=0;foe.alive=false;running=false;winner=c.parent;showBanner(`${c.parent.name} wins!`,2400);log(`${c.parent.name}'s clone defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
+    if(foe.hp<=0){defeatEntity(foe,foe.color,1.15);running=false;winner=c.parent;showBanner(`${c.parent.name} wins!`,2400);log(`${c.parent.name}'s clone defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
   }
+  // Clones actively close on the opponent and retain their normal attack loop, with a 25% movement/rotation boost.
   function updateClones(dt){
     for(const c of clones){
       if(!c.alive){c.poof-=dt;continue;}
@@ -8569,14 +9362,22 @@ populateSources();resetState();
       const foe=cloneTarget(c);if(!foe)continue;
       const dx=foe.x-c.x,dy=foe.y-c.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
       const ideal=c.r+foe.r+c.weaponReach*.58;
+      const attackRange=ideal+18;
       let ax=0,ay=0;
-      if(d>ideal+10){ax=nx;ay=ny}else if(d<ideal-10){ax=-nx;ay=-ny}else{ax=-ny*(c.side==='A'?1:-1);ay=nx*(c.side==='A'?1:-1)}
-      c.vx+=ax*.12*dt;c.vy+=ay*.12*dt;c.vx*=.94;c.vy*=.94;
-      const sp=len(c.vx,c.vy),maxSp=1.45*parentSpeed(c.parent);
+      if(d>attackRange){ax=nx;ay=ny}else if(d<ideal-10){ax=-nx;ay=-ny}else{ax=-ny*(c.side==='A'?1:-1);ay=nx*(c.side==='A'?1:-1)}
+      c.vx+=ax*.15*dt;c.vy+=ay*.15*dt;c.vx*=.94;c.vy*=.94;
+      const sp=len(c.vx,c.vy),maxSp=1.45*parentSpeed(c.parent)*1.25;
       if(sp>maxSp){c.vx=c.vx/sp*maxSp;c.vy=c.vy/sp*maxSp}
       c.x+=c.vx*dt;c.y+=c.vy*dt;applyCloneBounds(c);
+      // Match the generated fighter's continuous weapon rotation.  Target
+      // tracking is only a small correction and can no longer overpower the
+      // weapon's actual spin rate.
+      if(!Number.isFinite(c.weaponSpin)||Math.abs(c.weaponSpin)<.1){
+        const parentSpin=Math.abs(Number(c.parent?.weaponSpin)||0);
+        c.weaponSpin=(parentSpin>=.1?parentSpin:weaponSpinSpeed(c.weaponType||weaponKind(c.weapon)))*(c.side==='A'?1:-1);
+      }
       c.weaponAngle+=c.weaponSpin*dt;
-      const diff=Math.atan2(dy,dx)-c.weaponAngle;c.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.08*dt;
+      const diff=Math.atan2(dy,dx)-c.weaponAngle;c.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.012*dt;
       cloneAttack(c,foe);
     }
     clones=clones.filter(c=>c.alive||c.poof>0);
@@ -8597,7 +9398,7 @@ populateSources();resetState();
     // earns the normal Jutsu/Ultimate gauge credit for the successful hit.
     awardDamageGauges(sourceFighter(source),dmg);
     spawnParticles(c.x,c.y,source?.color||'#dbe6f5',6,3,16);floatText(c.x,c.y-20,`-${dmg.toFixed(1)}`,'#d7e8ff');
-    if(c.hp<=0){c.hp=0;c.alive=false;c.poof=24;spawnCloneSmoke(c.x,c.y,c.kind==='wood'?'#6dbb58':c.kind==='water'?'#77dfff':'#e8edf7');log(`${c.name} disperses.`)}
+    if(c.hp<=0){defeatEntity(c,c.kind==='wood'?'#6dbb58':c.kind==='water'?'#77dfff':c.kind==='lightning'?'#c7f8ff':'#e8edf7',0.85);log(`${c.name} disperses.`)}
   }
 
   function isDefensiveTechnique(name){
@@ -8751,7 +9552,7 @@ populateSources();resetState();
        Their lower per-shot damage and slower cadence leave room for melee,
        taijutsu, jutsu and other builds to close distance and retaliate. */
     const damage=a.dmg*(.94+Math.random()*.22)*
-      (.88+consumableStat(a,'weaponSkill')*.0025+consumableStat(a,'speed')*.0005);
+      (.88+consumableStat(a,'weaponSkill')*.0025+consumableStat(a,'speed')*.0005)*ORB_DAMAGE_MULTIPLIER;
 
     projectiles.push({
       f:a,name,kind:'weapon',
@@ -8760,9 +9561,15 @@ populateSources();resetState();
       life:82,r:4.5,damage,hit:false,weapon:true
     });
 
-    /* Deliberately half-rate versus the previous ranged firing cadence. */
-    a.rangedCooldown=68-Math.min(20,stat(a.ninja,'speed')*.15);
-    a.rangedPulse=12;
+    /* Brief muzzle / energy discharge so the shot origin is readable. */
+    spawnParticles(a.x+Math.cos(ang)*(a.r+6),a.y+Math.sin(ang)*(a.r+6),'#dff6ff',7,2.8,14);
+    a.rangedPulse=14;
+
+    /* Reduce the current ranged firing rate to about 80% of its present rate.
+       The entire existing cooldown is scaled by 1.25, preserving the same
+       speed-based adjustment while making shots roughly 20% less frequent.
+       Projectile speed, damage, and all other ranged rules remain unchanged. */
+    a.rangedCooldown=(23-Math.min(7,stat(a.ninja,'speed')*.05))*1.25;
     a.stamina=clamp(a.stamina-.35,0,100);
     return true;
   }
@@ -8808,7 +9615,7 @@ populateSources();resetState();
   }
 
   function weaponClashCheck(a,b){
-    if(!a||!b||!a.alive||!b.alive||hasActivePuppet(a)||hasActivePuppet(b)||a.combatMode==='ranged'||b.combatMode==='ranged')return false;
+    if(!a||!b||!a.alive||!b.alive||a.combatMode==='ranged'||b.combatMode==='ranged')return false;
     if((a.weaponClashCooldown||0)>0||(b.weaponClashCooldown||0)>0)return false;
     const aw=weaponBase(a),at=weaponTip(a),bw=weaponBase(b),bt=weaponTip(b);
     if(segmentDistance(aw,at,bw,bt)>4.5)return false;
@@ -8837,7 +9644,7 @@ populateSources();resetState();
   }
 
   function weaponHitCheck(a,b){
-    if(a.combatMode==='ranged'||hasActivePuppet(a))return false;
+    if(a.combatMode==='ranged')return false;
     if(!a.alive||!b.alive||b.invuln>0)return false;
     if(a.weaponClashedThisFrame)return false;
     /* Only the striking end of the weapon can damage an orb. The swept tip
@@ -8846,7 +9653,7 @@ populateSources();resetState();
     if(!weaponTipContact(a,b))return false;
     const toX=b.x-a.x,toY=b.y-a.y,align=(toX*Math.cos(a.weaponAngle)+toY*Math.sin(a.weaponAngle))/len(toX,toY);
     if(align<-.18 && a.atkPulse<4)return false;
-    let dmg=a.dmg*(.94+Math.random()*.38);
+    let dmg=a.dmg*(.94+Math.random()*.38)*ORB_DAMAGE_MULTIPLIER;
     if(a.j1Active>0)dmg*=1.18;
     if(a.j2Active>0)dmg*=1.26;
     if(a.ultActive>0)dmg*=1.5;
@@ -8866,12 +9673,12 @@ populateSources();resetState();
     const [nx,ny]=norm(b.x-a.x,b.y-a.y),knock=Math.min(12,8+dmg*.16);
     b.vx+=nx*knock;b.vy+=ny*knock*.9;a.vx-=nx*knock*.55;a.vy-=ny*knock*.55;
     spawnParticles(b.x,b.y,a.color,10,4,24);floatText(b.x,b.y-25,`-${dmg.toFixed(1)}`,'#ffb3b3');
-    if(b.hp<=0){b.hp=0;b.alive=false;running=false;winner=a;showBanner(`${a.name} wins!`,2400);log(`${a.name} defeats ${b.name}.`);el('orbFightBtn').disabled=false}
+    if(b.hp<=0){defeatEntity(b,b.color,1.15);running=false;winner=a;showBanner(`${a.name} wins!`,2400);log(`${a.name} defeats ${b.name}.`);el('orbFightBtn').disabled=false}
     return true;
   }
 
   function weaponClashPuppetCheck(a){
-    if(!a||!a.alive||hasActivePuppet(a)||a.combatMode==='ranged')return false;
+    if(!a||!a.alive||a.combatMode==='ranged')return false;
     const aw=weaponBase(a),at=weaponTip(a);
     for(const owner of fighters){
       const p=owner&&owner.puppet;
@@ -8892,11 +9699,11 @@ populateSources();resetState();
   }
 
   function weaponHitPuppetCheck(a){
-    if(a.combatMode==='ranged'||!a.alive||hasActivePuppet(a))return false;
+    if(a.combatMode==='ranged'||!a.alive)return false;
     const targets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side!==a.side);
     for(const p of targets){
       if(!weaponTipContact(a,p))continue;
-      let dmg=a.dmg*(.50+Math.random()*.24);dmg*=.74+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
+      let dmg=a.dmg*(.50+Math.random()*.24)*ORB_DAMAGE_MULTIPLIER;dmg*=.74+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
       damagePuppet(p,dmg,a);a.atkPulse=11;reverseWeaponSpin(a,'hit');return true;
     }
     return false;
@@ -8909,7 +9716,7 @@ populateSources();resetState();
       if(!weaponTipContact(a,c))continue;
       const toX=c.x-a.x,toY=c.y-a.y,align=(toX*Math.cos(a.weaponAngle)+toY*Math.sin(a.weaponAngle))/Math.max(1,len(toX,toY));
       if(align<-.18&&a.atkPulse<4)continue;
-      let dmg=a.dmg*(.42+Math.random()*.22);dmg*=.72+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
+      let dmg=a.dmg*(.42+Math.random()*.22)*ORB_DAMAGE_MULTIPLIER;dmg*=.72+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
       damageClone(c,dmg,a);a.atkPulse=14;reverseWeaponSpin(a,'hit');return true;
     }
     return false;
@@ -8929,7 +9736,11 @@ populateSources();resetState();
     return !!(f&&f.puppet&&f.puppet.alive);
   }
   function combatTargetFor(f,foe){
-    if(foe&&foe.alive&&hasActivePuppet(foe))return foe.puppet;
+    /* The fighter itself remains the primary target for the fighter's own
+       movement and weapon system. Enemy puppets/clones are additional combat
+       bodies, not substitutes for the opposing ninja. This prevents a Puppet
+       Master or clone caster from having their own weapon collision disabled
+       or redirected away from the actual opponent. */
     return foe;
   }
 
@@ -8957,15 +9768,18 @@ populateSources();resetState();
     if(f.j1Prep>0||f.j2Prep>0||f.ultPrep>0)prepareAbility(f,dt);
     maybeActivate(f);
 
-    /* An active puppet is the Puppet Master's frontline combat body. The
-       master stops personally swinging the weapon while the puppet is alive. */
-    const target= combatTargetFor(f,foe);
+    /* Puppet Masters and clone casters remain full combatants. Their summons
+       add another attack body; they do not disable the caster's own weapon.
+       This keeps the normal weapon-contact, rotation, clash, and hit rules
+       identical to every other generated ninja. */
+    /*
+     * The opposing ninja is always the fighter's primary melee target.
+     * Summons never replace or shield that fighter; they are checked as
+     * additional collision targets after the normal fighter-vs-fighter hit.
+     */
+    const target=foe;
     const puppetActive=hasActivePuppet(f);
     f.prevWeaponAngle=f.weaponAngle;
-    /* Puppet Masters do not attack with their dagger, but the dagger remains
-       visibly animated so the Puppet Master's orb still has the same active
-       spinning presentation as other fighters. Attack/collision checks below
-       remain suppressed while the puppet is alive. */
     f.weaponAngle+=f.weaponSpin*dt*(f.ultActive>0?1.6:1);
     const dx=target.x-f.x,dy=target.y-f.y,dist=len(dx,dy),[nx,ny]=norm(dx,dy);
     /* Keep combat spread across the arena. Ranged fighters naturally create more
@@ -9031,28 +9845,54 @@ populateSources();resetState();
     const sp=len(f.vx,f.vy),maxSp=2.65*f.speed*maxMul*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel;
     if(sp>maxSp){f.vx=f.vx/sp*maxSp;f.vy=f.vy/sp*maxSp}
     f.x+=f.vx*dt;f.y+=f.vy*dt;stabilizeFighter(f);
-    if(!puppetActive){
-      let diff=Math.atan2(dy,dx)-f.weaponAngle;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
-      f.weaponAngle+=diff*.012*dt;
-      if(Math.abs(f.weaponSpin)<.1)f.weaponSpin=(f.side==='A'?1:-1)*.1;
-      if(f.combatMode==='ranged' && dist>=82 && f.rangedCooldown<=0) rangedWeaponAttack(f,foe,dt);
-    }
+    /* All generated fighters, including Puppet Masters and clone casters,
+       use the same weapon-angle correction and ranged firing rules. The
+       summon's presence never suppresses the caster's weapon animation. */
+    let diff=Math.atan2(dy,dx)-f.weaponAngle;while(diff>Math.PI)diff-=Math.PI*2;while(diff<-Math.PI)diff+=Math.PI*2;
+    f.weaponAngle+=diff*.012*dt;
+    if(Math.abs(f.weaponSpin)<.1)f.weaponSpin=(f.side==='A'?1:-1)*.1;
+    if(f.combatMode==='ranged' && dist>=82 && f.rangedCooldown<=0) rangedWeaponAttack(f,foe,dt);
   }
 
   function updateProjectiles(dt){
     for(const p of projectiles){
       p.x+=p.vx*dt;p.y+=p.vy*dt;p.life-=dt;
       const enemySide=p.f.side==='A'?'B':'A';
+      const fighterTarget=enemySide==='A'?fighters[0]:fighters[1];
       const liveClones=clones.filter(c=>c.alive&&c.side===enemySide);
       const livePuppets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side===enemySide);
-      const fighterTarget=enemySide==='A'?fighters[0]:fighters[1];
-      /* Active puppets are the frontline target. Ranged/jutsu projectiles
-         should not randomly bypass the puppet and hit its master first. */
-      const target=livePuppets.length
-        ? livePuppets[0]
-        : (liveClones.length && Math.random()<.62 ? liveClones[Math.floor(Math.random()*liveClones.length)] : fighterTarget);
-      if(!target||!target.alive||target.invuln>0)continue;
-      if(Math.hypot(target.x-p.x,target.y-p.y)<=target.r+p.r){
+
+      /*
+       * Summons are additional combatants, NOT bodyguards.
+       * Previously this code selected an active puppet before the opposing
+       * fighter, which meant a puppet/clone could intercept essentially every
+       * projectile and make its caster appear immune to ranged attacks.
+       *
+       * Build one physical target list instead.  The projectile may hit the
+       * caster, a puppet, or a clone.  We select the closest valid entity to
+       * the projectile at the instant of contact, so the caster is always a
+       * legitimate damage target unless an actual temporary defensive state
+       * (shield, Susanoo, invulnerability frames, etc.) protects them.
+       */
+      const candidates=[
+        fighterTarget,
+        ...livePuppets,
+        ...liveClones
+      ].filter(t=>t&&t.alive&&(t.invuln||0)<=0);
+
+      if(!candidates.length)continue;
+
+      let target=null;
+      let targetDist=Infinity;
+      for(const candidate of candidates){
+        const cd=Math.hypot(candidate.x-p.x,candidate.y-p.y);
+        if(cd<=candidate.r+p.r && cd<targetDist){
+          target=candidate;
+          targetDist=cd;
+        }
+      }
+      if(!target)continue;
+      {
         let dmg=unarmedDamageTaken(target,p.damage);if(target.shield>0){spawnParticles(target.x,target.y,'#9eeeff',7,3,16);p.life=0;continue;}
         const baseEvasion=stat(target.ninja,'speed')*.0035+stat(target.ninja,'stealth')*.0015+stat(target.ninja,'battleIQ')*.001;
         /* Weapon shots are physical projectiles, so speed/stealth/battle IQ
@@ -9090,7 +9930,7 @@ populateSources();resetState();
         target.vx+=(p.vx/pl)*(knockBase+dmg*knockScale);
         target.vy+=(p.vy/pl)*(knockBase+dmg*knockScale);
         spawnParticles(target.x,target.y,p.f.color,p.weapon?9:14,p.weapon?3.5:5,24);floatText(target.x,target.y-25,`-${dmg.toFixed(1)}`,p.weapon?'#ffe09a':'#ffb3b3');p.life=0;
-        if(target.hp<=0){target.hp=0;target.alive=false;running=false;winner=owner;showBanner(`${owner.name} wins!`,2400);log(`${owner.name} defeats ${target.name}.`);el('orbFightBtn').disabled=false}
+        if(target.hp<=0){defeatEntity(target,target.color||'#dfe7f2',target.parent?0.9:1.15);running=false;winner=owner;showBanner(`${owner.name} wins!`,2400);log(`${owner.name} defeats ${target.name}.`);el('orbFightBtn').disabled=false}
       }
       if(p.x<CX-ARENA_R-40||p.x>CX+ARENA_R+40||p.y<CY-ARENA_R-40||p.y>CY+ARENA_R+40)p.life=0;
     }
@@ -9209,35 +10049,42 @@ populateSources();resetState();
   }
 
   function drawWeapon(f){
-    /* Ranged weapons are represented by their fired projectiles only; never draw a weapon orbiting the orb. */
-    if(f.combatMode==='ranged')return;
-    if(f.unarmed){return;} 
-    if(f.hasConsumable){
-      const pulse=1+Math.sin((performance.now()/110)+(f.side==='A'?0:1))*0.12;
-      ctx.save();ctx.translate(f.x+Math.cos(f.weaponAngle)*12,f.y+Math.sin(f.weaponAngle)*12);ctx.rotate(f.weaponAngle);ctx.scale(pulse,pulse);
-      ctx.font='24px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#f1f5ff';ctx.shadowColor='#8de7ff';ctx.shadowBlur=10;ctx.fillText('✊',0,0);ctx.restore();
-      return;
-    }
-    const base=weaponBase(f),tip=weaponTip(f),a=f.weaponAngle,L=tip.reach;
-    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
-    const stroke=f.hitFlash>0?'#fff':'#e8eef8';
-    ctx.strokeStyle=stroke;ctx.fillStyle=stroke;
-    const line=(w,col=stroke)=>{ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.strokeStyle=col;ctx.lineWidth=w;ctx.stroke()};
-    const tipShape=(pts,fill=stroke)=>{ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.restore()};
-    const glow=(col,r=10)=>{ctx.shadowBlur=14;ctx.shadowColor=col;ctx.fillStyle=col;ctx.beginPath();ctx.arc(tip.x,tip.y,r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0};
+    /* Ranged weapons are represented by fired projectiles only; never draw a weapon orbiting the orb.
+       Armor, consumables, and treasure tools fight unarmed — no visible item silhouette. */
+    if(f.combatMode==='ranged'||isRangedWeaponEntry(f.weapon))return;
+    if(f.unarmed||f.hasConsumable)return;
 
-    // Enhanced cinematic swing arc + velocity streak for contact animations
-    if(f.atkPulse>0){
+    const base=weaponBase(f),tip=weaponTip(f),a=f.weaponAngle,L=tip.reach;
+    const attacking=f.atkPulse>0;
+    /* Resting weapons are slightly dimmer/thinner; attacking ones brighten. */
+    const restAlpha=attacking?1:.72;
+    const restWidthMul=attacking?1:.88;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=restAlpha;
+    const stroke=f.hitFlash>0?'#fff':(attacking?'#f4f8ff':'#c8d2e0');
+    ctx.strokeStyle=stroke;ctx.fillStyle=stroke;
+    const line=(w,col=stroke)=>{ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.strokeStyle=col;ctx.lineWidth=w*restWidthMul;ctx.stroke()};
+    const tipShape=(pts,fill=stroke)=>{ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=fill;ctx.fill();ctx.restore()};
+    const glow=(col,r=10)=>{ctx.shadowBlur=attacking?16:10;ctx.shadowColor=col;ctx.fillStyle=col;ctx.beginPath();ctx.arc(tip.x,tip.y,r*(attacking?1.15:1),0,Math.PI*2);ctx.fill();ctx.shadowBlur=0};
+
+    // Enhanced cinematic swing arc + velocity streak + contact sparks
+    if(attacking){
       const swing=clamp(f.atkPulse/14,0,1);
-      ctx.save();ctx.globalAlpha=.28+.48*swing;ctx.strokeStyle=f.hitFlash>0?'#ffffff':f.color;
-      ctx.lineWidth=f.hitFlash>0?5:3.2;ctx.shadowBlur=14;ctx.shadowColor=f.color;
+      ctx.save();ctx.globalAlpha=.32+.55*swing;ctx.strokeStyle=f.hitFlash>0?'#ffffff':f.color;
+      ctx.lineWidth=(f.hitFlash>0?6:3.8);ctx.shadowBlur=16;ctx.shadowColor=f.color;
       ctx.beginPath();ctx.arc(base.x,base.y,L*.78,a-.82-swing*.32,a+.22+swing*.48);ctx.stroke();
-      // Multi-layer velocity streaks
       for(let i=0;i<4;i++){
         const rr=L*(.32+i*.15),aa=a-.62+i*.14;
-        ctx.globalAlpha*=.7;ctx.lineWidth=2.2-i*.3;
+        ctx.globalAlpha*=.7;ctx.lineWidth=2.4-i*.3;
         ctx.beginPath();ctx.moveTo(base.x+Math.cos(aa)*rr,base.y+Math.sin(aa)*rr);
         ctx.lineTo(base.x+Math.cos(aa)*Math.max(10,rr-22),base.y+Math.sin(aa)*Math.max(10,rr-22));ctx.stroke();
+      }
+      /* Small contact sparks near the tip on hit */
+      if(f.hitFlash>0||swing>.55){
+        for(let i=0;i<3;i++){
+          const sa=a+(i-1)*.35,sd=4+i*5;
+          ctx.globalAlpha=.55*swing;ctx.fillStyle='#fff8e0';
+          ctx.beginPath();ctx.arc(tip.x+Math.cos(sa)*sd,tip.y+Math.sin(sa)*sd,1.8+i*.4,0,Math.PI*2);ctx.fill();
+        }
       }
       ctx.restore();
     }
@@ -9287,36 +10134,55 @@ populateSources();resetState();
       case 'samehada':
         line(8,'#6d7380');
         ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle='#3e4653';ctx.beginPath();ctx.moveTo(24,0);ctx.quadraticCurveTo(5,-16,-12,-11);ctx.quadraticCurveTo(-3,0,-12,11);ctx.quadraticCurveTo(6,16,24,0);ctx.fill();
-        for(let i=-4;i<=5;i++){ctx.beginPath();ctx.moveTo(i*5.5,-6);ctx.lineTo(i*5.5+5,0);ctx.lineTo(i*5.5,6);ctx.strokeStyle='#9aa4b4';ctx.lineWidth=2.2;ctx.stroke()}
-        ctx.restore();glow('#87b9d8',6);break;
+        for(let i=-4;i<=5;i++){ctx.beginPath();ctx.moveTo(i*5.5,-6);ctx.lineTo(i*5.5+5,0);ctx.lineTo(i*5.5,6);ctx.strokeStyle=attacking?'#c5d8e8':'#9aa4b4';ctx.lineWidth=2.2;ctx.stroke()}
+        ctx.restore();glow(attacking?'#a8d8ff':'#87b9d8',attacking?8:6);break;
       case 'kubikiribocho':
         line(9,'#777f8c');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle='#9ca4ae';
         ctx.beginPath();ctx.moveTo(24,0);ctx.lineTo(6,-18);ctx.lineTo(-28,-18);ctx.lineTo(-34,-9);ctx.lineTo(-34,9);ctx.lineTo(-28,18);ctx.lineTo(6,18);ctx.closePath();ctx.fill();
-        ctx.fillStyle='#29313c';ctx.beginPath();ctx.arc(-10,-11,6,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(-10,11,8,0,Math.PI*2);ctx.fill();ctx.restore();break;
+        ctx.fillStyle='#29313c';ctx.beginPath();ctx.arc(-10,-11,6,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(-10,11,8,0,Math.PI*2);ctx.fill();ctx.restore();
+        if(attacking){ctx.save();ctx.globalAlpha=.55;ctx.strokeStyle='#ff8a8a';ctx.lineWidth=2;ctx.shadowBlur=10;ctx.shadowColor='#ff5a5a';
+          ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.restore()}
+        break;
       case 'hiramekarei':
         line(8,'#7c8491');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle='#aeb8c4';
         ctx.beginPath();ctx.moveTo(24,0);ctx.quadraticCurveTo(4,-20,-24,-14);ctx.quadraticCurveTo(-32,0,-24,14);ctx.quadraticCurveTo(4,20,24,0);ctx.fill();
-        ctx.strokeStyle='#dbe9ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-24,-8);ctx.lineTo(22,-8);ctx.moveTo(-24,8);ctx.lineTo(22,8);ctx.stroke();ctx.restore();break;
+        ctx.strokeStyle='#dbe9ff';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(-24,-8);ctx.lineTo(22,-8);ctx.moveTo(-24,8);ctx.lineTo(22,8);ctx.stroke();ctx.restore();
+        if(attacking||f.j1Active>0||f.j2Active>0){ctx.save();ctx.globalAlpha=.5;ctx.strokeStyle='#9eeaff';ctx.lineWidth=4;ctx.shadowBlur=14;ctx.shadowColor='#6edfff';
+          ctx.beginPath();ctx.arc(tip.x,tip.y,16+Math.sin(performance.now()/90)*3,a-1,a+1);ctx.stroke();ctx.restore()}
+        break;
       case 'kabutowari':
         line(5,'#6c7480');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle='#b0b7c1';ctx.fillRect(-4,-26,26,15);ctx.fillStyle='#5c6570';ctx.fillRect(-4,-3,7,28);ctx.restore();
         ctx.setLineDash([4,4]);ctx.strokeStyle='#b4bdc9';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(tip.x+Math.cos(a)*34,tip.y+Math.sin(a)*34);ctx.stroke();ctx.setLineDash([]);break;
       case 'kiba':
         for(const off of [-6,6]){const bx=base.x-Math.sin(a)*off,by=base.y+Math.cos(a)*off,tx=tip.x-Math.sin(a)*off,ty=tip.y+Math.cos(a)*off;
           ctx.beginPath();ctx.moveTo(bx,by);ctx.lineTo(tx,ty);ctx.strokeStyle='#bcecff';ctx.lineWidth=5;ctx.shadowBlur=12;ctx.shadowColor='#6de5ff';ctx.stroke();ctx.shadowBlur=0}
+        /* Occasional arc snap between the dual blades */
+        if(attacking||Math.random()<.12){ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='#a8f0ff';ctx.lineWidth=1.5;ctx.shadowBlur=8;ctx.shadowColor='#6de5ff';
+          const mx=(base.x+tip.x)/2,my=(base.y+tip.y)/2;
+          ctx.beginPath();ctx.moveTo(mx-Math.sin(a)*6,my+Math.cos(a)*6);ctx.lineTo(mx+Math.sin(a)*6,my-Math.cos(a)*6);ctx.stroke();ctx.restore()}
         break;
       case 'nuibari':
         line(3.5,'#d9e0e8');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();ctx.moveTo(20,0);ctx.lineTo(-11,-4);ctx.lineTo(-11,4);ctx.closePath();ctx.fillStyle='#e8eef8';ctx.fill();ctx.restore();
         ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.lineTo(tip.x-Math.cos(a)*50,tip.y-Math.sin(a)*50);ctx.strokeStyle='#b8c3d4';ctx.lineWidth=1.8;ctx.stroke();ctx.setLineDash([]);break;
       case 'shibuki':
         line(7,'#8f98a5');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.fillStyle='#b5bdc8';ctx.fillRect(-5,-13,30,26);
-        for(let i=0;i<5;i++){ctx.fillStyle='#e94b4b';ctx.fillRect(2+i*5.5,-18,3.5,5);ctx.fillRect(2+i*5.5,13,3.5,5)}ctx.restore();break;
+        for(let i=0;i<5;i++){ctx.fillStyle='#e94b4b';ctx.fillRect(2+i*5.5,-18,3.5,5);ctx.fillRect(2+i*5.5,13,3.5,5)}ctx.restore();
+        if(attacking){for(let i=0;i<3;i++){const aa=a+(i-1)*.4,dd=8+i*5;ctx.fillStyle='rgba(233,75,75,.7)';ctx.beginPath();ctx.arc(tip.x+Math.cos(aa)*dd,tip.y+Math.sin(aa)*dd,2.5,0,Math.PI*2);ctx.fill()}}
+        break;
       case 'gunbai': case 'bashosen': case 'fan':
         line(6,'#707887');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,28,-1.15,1.15);ctx.closePath();
-        ctx.fillStyle=f.weaponType==='gunbai'?'#2c3340':f.weaponType==='bashosen'?'#d4a65f':f.color;ctx.fill();ctx.strokeStyle='#d7dce4';ctx.lineWidth=2.5;ctx.stroke();ctx.restore();break;
+        ctx.fillStyle=f.weaponType==='gunbai'?'#2c3340':f.weaponType==='bashosen'?'#d4a65f':f.color;ctx.fill();ctx.strokeStyle='#d7dce4';ctx.lineWidth=2.5;ctx.stroke();ctx.restore();
+        if(attacking){ctx.save();ctx.globalAlpha=.35;ctx.strokeStyle='#c8e0ff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(tip.x,tip.y,34,a-1.2,a+1.2);ctx.stroke();ctx.restore()}
+        break;
       case 'kusanagi':
-        line(4.5,'#d8dde5');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();ctx.moveTo(22,0);ctx.quadraticCurveTo(0,-5,-11,-3);ctx.quadraticCurveTo(2,0,-11,3);ctx.quadraticCurveTo(0,5,22,0);ctx.fillStyle='#eef3fa';ctx.fill();ctx.restore();break;
+        line(4.5,'#d8dde5');ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a);ctx.beginPath();ctx.moveTo(22,0);ctx.quadraticCurveTo(0,-5,-11,-3);ctx.quadraticCurveTo(2,0,-11,3);ctx.quadraticCurveTo(0,5,22,0);ctx.fillStyle='#eef3fa';ctx.fill();ctx.restore();
+        if(attacking){ctx.save();ctx.globalAlpha=.5;ctx.strokeStyle='#e8f0ff';ctx.lineWidth=2;ctx.shadowBlur=10;ctx.shadowColor='#a8c8ff';
+          ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.restore()}
+        break;
       case 'shuriken':
-        ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a+f.weaponSpin*10);ctx.beginPath();for(let i=0;i<8;i++){const ang=i*Math.PI/4,r=i%2?6:18;ctx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r)}ctx.closePath();ctx.fillStyle=stroke;ctx.fill();ctx.strokeStyle='#9ea8b8';ctx.stroke();ctx.restore();line(1.8,'#8791a0');break;
+        ctx.save();ctx.translate(tip.x,tip.y);ctx.rotate(a+f.weaponSpin*10);ctx.beginPath();for(let i=0;i<8;i++){const ang=i*Math.PI/4,r=i%2?6:18;ctx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r)}ctx.closePath();ctx.fillStyle=stroke;ctx.fill();ctx.strokeStyle='#9ea8b8';ctx.stroke();
+        if(attacking){ctx.globalAlpha=.35;ctx.beginPath();for(let i=0;i<8;i++){const ang=i*Math.PI/4+.15,r=i%2?8:22;ctx.lineTo(Math.cos(ang)*r,Math.sin(ang)*r)}ctx.closePath();ctx.strokeStyle='#c8d8f0';ctx.stroke()}
+        ctx.restore();line(1.8,'#8791a0');break;
       case 'bow':
         line(3,'#b6a07c');ctx.beginPath();ctx.arc(tip.x,tip.y,22,a-Math.PI/2,a+Math.PI/2);ctx.strokeStyle=f.color;ctx.lineWidth=3.5;ctx.stroke();
         ctx.beginPath();ctx.moveTo(tip.x-Math.cos(a)*22,tip.y-Math.sin(a)*22);ctx.lineTo(tip.x+Math.cos(a)*22,tip.y+Math.sin(a)*22);ctx.strokeStyle='#e5e9ef';ctx.lineWidth=1.8;ctx.stroke();break;
@@ -9393,15 +10259,25 @@ populateSources();resetState();
       ctx.restore();
     }
     if(age>.52){
-      const impact=clamp((age-.52)/.48,0,1),ir=(10+sig.scale*16)*ultMul + impact*(e.slot==='ult'?62:38);
-      ctx.save();ctx.globalAlpha*=.55*(1-impact*.4);ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?5:2.5;
-      ctx.shadowBlur=e.slot==='ult'?26:12;ctx.shadowColor=cinematicColor;
-      // Double shockwave rings
+      const impact=clamp((age-.52)/.48,0,1),ir=(10+sig.scale*16)*ultMul + impact*(e.slot==='ult'?68:42);
+      ctx.save();ctx.globalAlpha*=.58*(1-impact*.35);ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?5.5:2.8;
+      ctx.shadowBlur=e.slot==='ult'?28:14;ctx.shadowColor=cinematicColor;
+      // Triple shockwave rings for stronger residual presence
       ctx.beginPath();ctx.arc(tx,ty,ir,0,Math.PI*2);ctx.stroke();
-      ctx.globalAlpha*=.7;ctx.lineWidth=e.slot==='ult'?3:1.5;
-      ctx.beginPath();ctx.arc(tx,ty,ir*0.65,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha*=.7;ctx.lineWidth=e.slot==='ult'?3.2:1.6;
+      ctx.beginPath();ctx.arc(tx,ty,ir*0.68,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha*=.75;ctx.lineWidth=e.slot==='ult'?2:1.2;
+      ctx.beginPath();ctx.arc(tx,ty,ir*0.4,0,Math.PI*2);ctx.stroke();
       // Arc segments for energy feel
-      ctx.globalAlpha*=.8;ctx.beginPath();ctx.arc(tx,ty,Math.max(3,ir*.48),sig.phase+impact*5,sig.phase+impact*5+2.1);ctx.stroke();
+      ctx.globalAlpha*=.85;ctx.beginPath();ctx.arc(tx,ty,Math.max(3,ir*.5),sig.phase+impact*5,sig.phase+impact*5+2.2);ctx.stroke();
+      // Residual mote scatter on late impact
+      if(impact>.4){
+        for(let i=0;i<(e.slot==='ult'?8:5);i++){
+          const aa=sig.phase+i*1.1+impact*2,rr=ir*(.3+impact*.5);
+          ctx.globalAlpha=fade*(.35-impact*.2);ctx.fillStyle=cinematicColor;
+          ctx.beginPath();ctx.arc(tx+Math.cos(aa)*rr,ty+Math.sin(aa)*rr,2+(i%3),0,Math.PI*2);ctx.fill();
+        }
+      }
       ctx.restore();
     }
 
@@ -9825,31 +10701,38 @@ populateSources();resetState();
     ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
     ctx.strokeStyle='#72cfff';ctx.lineWidth=1.8;ctx.shadowBlur=4;
     ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
-    // Subtle energy beads along the thread
+    // Travelling energy beads along the chakra thread
     const dx=p.x-f.x,dy=p.y-f.y,len=Math.hypot(dx,dy)||1;
-    for(let i=1;i<5;i++){
-      const q=i/5,px=f.x+dx*q,py=f.y+dy*q;
-      ctx.fillStyle='rgba(180,240,255,.7)';ctx.beginPath();ctx.arc(px,py,1.8,0,Math.PI*2);ctx.fill();
+    const t=performance.now()/900;
+    for(let i=0;i<5;i++){
+      const q=((i/5)+t)%1,px=f.x+dx*q,py=f.y+dy*q;
+      ctx.fillStyle='rgba(180,240,255,.85)';ctx.beginPath();ctx.arc(px,py,2.0,0,Math.PI*2);ctx.fill();
     }
     ctx.shadowBlur=0;ctx.restore();
   }
   function drawPuppet(p){
     if(!p||(!p.alive&&p.poof<=0))return;
-    const fade=p.alive?1:clamp(p.poof/30,0,1),pulse=p.hitFlash>0?2:0;
-    ctx.save();ctx.globalAlpha=.9*fade;
+    const fade=p.alive?1:clamp(p.poof/36,0,1),pulse=p.hitFlash>0?2:0;
     const ring='#8fdcff';
     if(!p.alive){
-      for(let i=0;i<8;i++){const a=i*.78+p.age*.25,r=8+(1-fade)*28+i*2;ctx.fillStyle='#a8dcff';ctx.beginPath();ctx.arc(p.x+Math.cos(a)*r,p.y+Math.sin(a)*r,3+i%3,0,Math.PI*2);ctx.fill()}
-      ctx.restore();return;
+      ctx.save();
+      ctx.globalAlpha=fade*.5;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.4+fade*.6),0,Math.PI*2);ctx.fillStyle='#58758e';ctx.fill();
+      ctx.restore();
+      drawDefeatPoofCloud(p.x,p.y,fade,'#9edcff',p.r+4);
+      return;
     }
+    /* Subtle idle bob so puppets feel alive */
+    const bob=Math.sin((p.age||0)*.12)*2.2;
+    ctx.save();ctx.globalAlpha=.9;ctx.translate(0,bob);
     ctx.beginPath();ctx.arc(p.x,p.y,p.r+pulse,0,Math.PI*2);ctx.fillStyle='#58758e';ctx.fill();
     if(p.shield>0){ctx.save();ctx.globalAlpha=.78;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12+Math.sin(p.age*.25)*2,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=3;ctx.shadowBlur=12;ctx.shadowColor='#54dfff';ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
     ctx.strokeStyle=ring;ctx.lineWidth=3;ctx.stroke();
     ctx.beginPath();ctx.arc(p.x,p.y,p.r+6+Math.sin(p.age*.18)*2,0,Math.PI*2);ctx.strokeStyle='rgba(143,220,255,.35)';ctx.lineWidth=2;ctx.stroke();
-    if(p.kind==='red'){ctx.strokeStyle='#e87979';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.stroke()}
-    else if(p.kind==='water'){ctx.fillStyle='rgba(120,225,255,.35)';ctx.beginPath();ctx.arc(p.x,p.y,p.r+3,0,Math.PI*2);ctx.fill()}
+    if(p.kind==='red'){ctx.strokeStyle='#e87979';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.25;ctx.fillStyle='#e87979';ctx.beginPath();ctx.arc(p.x,p.y,p.r-2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.9}
+    else if(p.kind==='water'){ctx.fillStyle='rgba(120,225,255,.35)';ctx.beginPath();ctx.arc(p.x,p.y,p.r+3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(180,240,255,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r*.6,p.age*.2,p.age*.2+2);ctx.stroke()}
     else {ctx.strokeStyle='#b7e9ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-9,p.y-10);ctx.lineTo(p.x+9,p.y+10);ctx.moveTo(p.x+9,p.y-10);ctx.lineTo(p.x-9,p.y+10);ctx.stroke()}
-    if(p.attackFlash>0){ctx.strokeStyle='#d8f5ff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y,p.r+10,0,Math.PI*2);ctx.stroke()}
+    if(p.attackFlash>0){ctx.strokeStyle='#d8f5ff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y,p.r+10,0,Math.PI*2);ctx.stroke();spawnParticles(p.x,p.y,'#d8f5ff',2,2,10)}
     drawCloneWeapon(p);
     ctx.fillStyle='#d9f2ff';ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.fillText('PUPPET',p.x,p.y-p.r-8);
     ctx.globalAlpha=.8;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(p.x-16,p.y+p.r+5,32,4);ctx.fillStyle=ring;ctx.fillRect(p.x-16,p.y+p.r+5,32*clamp(p.hp/p.maxHp,0,1),4);
@@ -9858,19 +10741,24 @@ populateSources();resetState();
 
   function drawClone(c){
     if(!c.alive && c.poof<=0)return;
-    const fade=c.alive?1:clamp(c.poof/24,0,1),pulse=c.hitFlash>0?2:0;
-    ctx.save();ctx.globalAlpha=.88*fade;
+    const fade=c.alive?1:clamp(c.poof/34,0,1),pulse=c.hitFlash>0?2:0;
     const ring=c.kind==='water'?'#7de5ff':c.kind==='wood'?'#76c65d':c.kind==='lightning'?'#c7f8ff':c.kind==='ink'?'#a8b1c2':'#dce5f2';
     if(!c.alive){
-      for(let i=0;i<7;i++){const a=i*.9+c.age*.25,r=8+(1-fade)*24+i*2;ctx.fillStyle=ring;ctx.globalAlpha*=.8;ctx.beginPath();ctx.arc(c.x+Math.cos(a)*r,c.y+Math.sin(a)*r,3+i%3,0,Math.PI*2);ctx.fill()}
-      ctx.restore();return;
+      ctx.save();
+      ctx.globalAlpha=fade*.5;
+      ctx.beginPath();ctx.arc(c.x,c.y,c.r*(.35+fade*.65),0,Math.PI*2);ctx.fillStyle=(c.parent&&c.parent.color)||ring;ctx.fill();
+      ctx.restore();
+      drawDefeatPoofCloud(c.x,c.y,fade,ring,c.r+3);
+      return;
     }
+    ctx.save();ctx.globalAlpha=.88;
     // Clones are deliberately smaller and visually subordinate to the original orb.
     ctx.beginPath();ctx.arc(c.x,c.y,c.r+pulse,0,Math.PI*2);ctx.fillStyle=c.parent.color;ctx.fill();
     ctx.strokeStyle=ring;ctx.lineWidth=2;ctx.stroke();
-    if(c.kind==='water'){ctx.globalAlpha=.32;ctx.fillStyle='#8de9ff';ctx.beginPath();ctx.arc(c.x,c.y,c.r+5,0,Math.PI*2);ctx.fill()}
+    if(c.kind==='water'){ctx.globalAlpha=.32;ctx.fillStyle='#8de9ff';ctx.beginPath();ctx.arc(c.x,c.y,c.r+5,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.88;ctx.strokeStyle='rgba(160,230,255,.55)';ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(c.x,c.y,c.r*.55,c.age*.25,c.age*.25+1.8);ctx.stroke()}
     if(c.kind==='wood'){ctx.strokeStyle='#79c85e';ctx.lineWidth=3;for(let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(c.x-10+i*8,c.y-10);ctx.lineTo(c.x-4+i*7,c.y+10);ctx.stroke()}}
-    if(c.kind==='lightning'){ctx.strokeStyle='#d8ffff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(c.x-10,c.y);ctx.lineTo(c.x-3,c.y-5);ctx.lineTo(c.x+2,c.y+4);ctx.lineTo(c.x+10,c.y-2);ctx.stroke()}
+    if(c.kind==='lightning'){ctx.strokeStyle='#d8ffff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(c.x-10,c.y);ctx.lineTo(c.x-3,c.y-5);ctx.lineTo(c.x+2,c.y+4);ctx.lineTo(c.x+10,c.y-2);ctx.stroke();if(Math.random()<.08){ctx.strokeStyle='rgba(200,255,255,.7)';ctx.beginPath();ctx.moveTo(c.x-6,c.y-4);ctx.lineTo(c.x+6,c.y+3);ctx.stroke()}}
+    if(c.kind==='ink'){ctx.fillStyle='rgba(40,45,55,.35)';ctx.beginPath();ctx.arc(c.x+3,c.y+c.r*.6,2.5,0,Math.PI*2);ctx.fill()}
     drawCloneWeapon(c);
     const face=Math.atan2(c.vy,c.vx)||c.weaponAngle;const ex=c.x+Math.cos(face)*5,ey=c.y+Math.sin(face)*5;
     ctx.fillStyle='#0b1020';ctx.beginPath();ctx.arc(ex-Math.sin(face)*3,ey+Math.cos(face)*3,1.8,0,Math.PI*2);ctx.arc(ex+Math.sin(face)*3,ey-Math.cos(face)*3,1.8,0,Math.PI*2);ctx.fill();
@@ -9880,53 +10768,187 @@ populateSources();resetState();
     ctx.restore();
   }
   function drawCloneWeapon(c){
-    /* A clone inherits its parent's ranged weapon behavior. Ranged weapons
-       are projectile-only, so clones must not visually swing an orbiting copy. */
-    if(c.parent?.combatMode==='ranged'||weaponCombatMode({weapon:c.weapon})==='ranged')return;
-    if(!c.weapon||c.weapon==='None')return;
-    const a=c.weaponAngle,base={x:c.x+Math.cos(a)*6,y:c.y+Math.sin(a)*6},tip={x:c.x+Math.cos(a)*(c.r+c.weaponReach),y:c.y+Math.sin(a)*(c.r+c.weaponReach)};
-    ctx.save();ctx.lineCap='round';ctx.strokeStyle='#dce6f2';ctx.lineWidth=c.atkPulse>0?4:2.5;
-    if(c.weaponType==='kiba'||c.kind==='lightning'){ctx.shadowBlur=8;ctx.shadowColor='#7de9ff';ctx.strokeStyle='#a9f4ff'}
-    ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.shadowBlur=0;ctx.restore();
+    /* Summon weapons must use the same visual renderer as ordinary melee
+       fighters, but summons do not carry the full fighter state object.
+       Build a small fighter-shaped view so drawWeapon can render the weapon
+       normally without accidentally inheriting the parent's ranged/unarmed
+       state. A clone of a ranged fighter remains projectile-only; a clone
+       of a melee fighter gets the same orbiting weapon presentation. */
+    if(!c||!c.alive||!c.weapon||c.weapon==='None')return;
+    const parent=c.parent||{};
+    if(parent.combatMode==='ranged'||isRangedWeaponEntry(c.weapon)||weaponCombatMode({weapon:c.weapon})==='ranged')return;
+    const view={
+      ...c,
+      combatMode:'melee',
+      rangedWeaponOnly:false,
+      unarmed:false,
+      hasConsumable:false,
+      weaponType:c.weaponType||weaponKind(c.weapon),
+      weaponReach:c.weaponReach||weaponLength(c.weaponType||weaponKind(c.weapon)),
+      color:parent.color||'#dce6f4',
+      atkPulse:c.atkPulse||0,
+      hitFlash:c.hitFlash||0,
+      ultActive:0,
+      j1Active:0,
+      j2Active:0,
+      weaponSpin:(Math.abs(Number(c.weaponSpin))||weaponSpinSpeed(c.weaponType||weaponKind(c.weapon)))*(c.side==='A'?1:-1)
+    };
+    drawWeapon(view);
   }
 
   function drawSusanooTransformation(f){
     if(!f?.susanooActive)return;
     ctx.save();
-    const r=f.r+20+Math.sin(performance.now()/180)*1.5;
-    ctx.globalAlpha=.20;
-    ctx.fillStyle='#b78cff';ctx.shadowColor='#a66cff';ctx.shadowBlur=24;
+    const t=performance.now()/180;
+    const r=f.r+20+Math.sin(t)*1.5;
+    /* Soft aura fill */
+    ctx.globalAlpha=.18;
+    ctx.fillStyle='#b78cff';ctx.shadowColor='#a66cff';ctx.shadowBlur=26;
     ctx.beginPath();ctx.arc(f.x,f.y,r,0,Math.PI*2);ctx.fill();
+    /* Outer energy ring */
     ctx.globalAlpha=.82;ctx.strokeStyle='#d8bcff';ctx.lineWidth=3;
     ctx.setLineDash([10,6]);ctx.beginPath();ctx.arc(f.x,f.y,r,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
     ctx.globalAlpha=.38;ctx.strokeStyle='#f0e3ff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,r-7,0,Math.PI*2);ctx.stroke();
-    ctx.restore();
+    /* Faint skeletal ribcage / arm silhouette for presence */
+    ctx.globalAlpha=.32;ctx.strokeStyle='#e8d4ff';ctx.lineWidth=1.8;ctx.shadowBlur=8;ctx.shadowColor='#9c5dff';
+    const ribR=f.r+8;
+    for(let i=-2;i<=2;i++){
+      const yy=f.y+i*5.5;
+      ctx.beginPath();ctx.moveTo(f.x-ribR*.55,yy);ctx.quadraticCurveTo(f.x,yy+2,f.x+ribR*.55,yy);ctx.stroke();
+    }
+    /* Simple arm suggestions */
+    ctx.beginPath();ctx.moveTo(f.x-ribR*.35,f.y-4);ctx.lineTo(f.x-ribR*.95,f.y+10);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(f.x+ribR*.35,f.y-4);ctx.lineTo(f.x+ribR*.95,f.y+10);ctx.stroke();
+    ctx.shadowBlur=0;ctx.restore();
   }
 
   function drawTailedBeastTransformation(f){
     if(!f.transformActive||!f.tailCount)return;
     ctx.save();
     const base=f.r+4, count=f.tailCount;
+    const now=performance.now();
     for(let i=0;i<count;i++){
       const spread=(i-(count-1)/2)*0.20;
-      const ang=-Math.PI/2+spread+Math.sin(performance.now()/260+i)*0.05;
+      /* Independent sway per tail for a living feel */
+      const sway=Math.sin(now/240+i*1.7)*.09+Math.sin(now/410+i)*.04;
+      const ang=-Math.PI/2+spread+sway;
       const lenTail=34+count*7+(i%3)*6;
       const sx=f.x+Math.cos(ang)*base,sy=f.y+Math.sin(ang)*base;
+      const mx=f.x+Math.cos(ang+.16+sway*.5)*lenTail*.62;
+      const my=f.y+Math.sin(ang+.16+sway*.5)*lenTail*.62;
       const ex=f.x+Math.cos(ang)*lenTail,ey=f.y+Math.sin(ang)*lenTail;
-      ctx.strokeStyle='#ff9b3d';ctx.shadowColor='#ff6a22';ctx.shadowBlur=10;ctx.lineWidth=5+Math.max(0,7-count)*.25;
-      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(f.x+Math.cos(ang+.18)*lenTail*.72,f.y+Math.sin(ang+.18)*lenTail*.72,ex,ey);ctx.stroke();
+      /* Flame-like gradient stroke: outer soft → bright core */
+      ctx.strokeStyle='rgba(255,100,30,.35)';ctx.lineWidth=9+Math.max(0,6-count)*.3;ctx.shadowColor='#ff6a22';ctx.shadowBlur=14;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(mx,my,ex,ey);ctx.stroke();
+      ctx.strokeStyle='#ffb347';ctx.lineWidth=5+Math.max(0,5-count)*.25;ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(mx,my,ex,ey);ctx.stroke();
+      ctx.strokeStyle='#ffe09a';ctx.lineWidth=2.2;ctx.shadowBlur=0;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(mx,my,ex,ey);ctx.stroke();
     }
     ctx.shadowBlur=0;ctx.restore();
   }
 
+  function drawDefeatPoofCloud(x,y,fade,color,baseR){
+    /* Soft cartoon smoke cloud that expands as the entity disappears. */
+    const t=1-fade;
+    ctx.save();
+    for(let i=0;i<7;i++){
+      const a=i*(Math.PI*2/7)+t*1.2;
+      const dist=(baseR*.4+i*3.2)*t*1.35;
+      const rr=(baseR*.55+i*1.8)*(0.55+t*0.9);
+      ctx.globalAlpha=fade*(.55-i*.05);
+      ctx.fillStyle=i%2?'#f5f7fb':color;
+      ctx.beginPath();ctx.arc(x+Math.cos(a)*dist,y+Math.sin(a)*dist-t*8,rr,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=fade*.4;
+    ctx.fillStyle='#ffffff';
+    ctx.beginPath();ctx.arc(x,y-t*6,baseR*(.7+t*.5),0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
   function drawFighter(f){
-    if(!f.alive)ctx.globalAlpha=.28;
+    /* Defeat poof: orb shrinks into a cute smoke cloud then vanishes. */
+    if(!f.alive){
+      if((f.poof||0)<=0)return;
+      const fade=clamp(f.poof/40,0,1);
+      const shrink=0.35+fade*0.65;
+      ctx.save();
+      ctx.globalAlpha=fade*.55;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r*shrink,0,Math.PI*2);ctx.fillStyle=f.color;ctx.fill();
+      ctx.restore();
+      drawDefeatPoofCloud(f.x,f.y,fade,f.color,f.r+6);
+      return;
+    }
     drawSusanooTransformation(f);
     drawTailedBeastTransformation(f);
     drawWeapon(f);
+
+    const now=performance.now();
+    /* Breathing energy ring (color-matched). Brightens when abilities are active. */
+    const ringPulse=1+Math.sin(now/320+(f.side==='A'?0:1.2))*0.04;
+    const abilityBoost=(f.j1Active>0||f.j2Active>0||f.ultActive>0)?1.35:1;
+    const ringR=(f.r+5.5)*ringPulse;
+    ctx.save();
+    ctx.globalAlpha=.22*abilityBoost;
+    ctx.strokeStyle=f.color;ctx.lineWidth=2.5;ctx.shadowBlur=10;ctx.shadowColor=f.color;
+    ctx.beginPath();ctx.arc(f.x,f.y,ringR,0,Math.PI*2);ctx.stroke();
+    ctx.globalAlpha=.12*abilityBoost;
+    ctx.beginPath();ctx.arc(f.x,f.y,ringR+4,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+
+    /* Unarmed fighters: slightly larger soft outer glow so the orb reads as the weapon. */
+    if(f.unarmed){
+      ctx.save();
+      const ug=1+Math.sin(now/180)*.06+(f.bodyHitCooldown>0?.12:0);
+      ctx.globalAlpha=.18;ctx.fillStyle=f.color;ctx.shadowBlur=18;ctx.shadowColor=f.color;
+      ctx.beginPath();ctx.arc(f.x,f.y,(f.r+6)*ug,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+
+    /* Core orb */
     ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle=f.color;ctx.fill();
-    if(f.j1Active>0||f.j2Active>0||f.ultActive>0){ctx.beginPath();ctx.arc(f.x,f.y,f.r+8,0,Math.PI*2);ctx.strokeStyle=f.ultActive>0?'#ffd86b':'#8ce8ff';ctx.lineWidth=3;ctx.stroke()}
-    if(f.shield>0){ctx.save();ctx.globalAlpha=.78;const br=f.r+15+Math.sin(performance.now()/70)*3;ctx.beginPath();ctx.arc(f.x,f.y,br,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=f.ultActive>0?5:3;ctx.shadowBlur=16;ctx.shadowColor='#54dfff';ctx.setLineDash([8,5]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(88,211,255,.08)';ctx.beginPath();ctx.arc(f.x,f.y,br-2,0,Math.PI*2);ctx.fill();ctx.restore()}
+
+    /* Hit feedback: bright rim + short radial shockwave */
+    if(f.hitFlash>0){
+      const hf=clamp(f.hitFlash/14,0,1);
+      ctx.save();
+      ctx.globalAlpha=.55*hf;
+      ctx.strokeStyle='#ffffff';ctx.lineWidth=3+hf*2;ctx.shadowBlur=12;ctx.shadowColor='#fff';
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+1+hf*3,0,Math.PI*2);ctx.stroke();
+      ctx.globalAlpha=.28*hf;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+8+hf*10,0,Math.PI*2);ctx.stroke();
+      ctx.restore();
+    }
+
+    if(f.j1Active>0||f.j2Active>0||f.ultActive>0){
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+8,0,Math.PI*2);
+      ctx.strokeStyle=f.ultActive>0?'#ffd86b':'#8ce8ff';ctx.lineWidth=3;ctx.stroke();
+    }
+
+    /* Crystalline / hexagonal energy shield with shimmer */
+    if(f.shield>0){
+      ctx.save();
+      const br=f.r+15+Math.sin(now/70)*2.5;
+      const sides=6;
+      ctx.globalAlpha=.72;
+      ctx.strokeStyle='#9feeff';ctx.lineWidth=f.ultActive>0?5:3.2;
+      ctx.shadowBlur=16;ctx.shadowColor='#54dfff';
+      ctx.beginPath();
+      for(let i=0;i<=sides;i++){
+        const a=(i/sides)*Math.PI*2-Math.PI/2+now/1800;
+        const px=f.x+Math.cos(a)*br,py=f.y+Math.sin(a)*br;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.closePath();ctx.stroke();
+      ctx.globalAlpha=.12;
+      ctx.fillStyle='rgba(88,211,255,.35)';ctx.fill();
+      /* Inner shimmer ring */
+      ctx.globalAlpha=.4;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);
+      ctx.beginPath();ctx.arc(f.x,f.y,br-5,now/400,now/400+Math.PI*1.4);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     const face=Math.atan2(f.vy,f.vx)||f.weaponAngle,ex=f.x+Math.cos(face)*6,ey=f.y+Math.sin(face)*6;
     ctx.fillStyle='#0b1020';ctx.beginPath();ctx.arc(ex-Math.sin(face)*4,ey+Math.cos(face)*4,2.2,0,Math.PI*2);ctx.arc(ex+Math.sin(face)*4,ey-Math.cos(face)*4,2.2,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;ctx.fillStyle='rgba(232,238,248,.92)';ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.fillText(f.name,f.x,f.y-f.r-12);
@@ -9935,43 +10957,91 @@ populateSources();resetState();
     if(f.genjutsuStun>0){
       ctx.save();ctx.globalAlpha=.75;ctx.strokeStyle='#d8a8ff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(f.x,f.y,f.r+9+Math.sin(f.genjutsuStun*.35)*3,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(125,72,190,.16)';ctx.beginPath();ctx.arc(f.x,f.y,f.r+5,0,Math.PI*2);ctx.fill();ctx.restore();
     }
-
   }
 
   function drawArena(){
     ctx.clearRect(0,0,W,H);
     const s=ARENA_R,x0=CX-s,y0=CY-s,sz=s*2;
-    /* Outer glow frame */
-    ctx.strokeStyle='rgba(78,161,255,.22)';ctx.lineWidth=8;
-    ctx.strokeRect(x0-6,y0-6,sz+12,sz+12);
-    /* Square training floor */
-    const floor=ctx.createLinearGradient(x0,y0,x0+sz,y0+sz);
-    floor.addColorStop(0,'rgba(18,28,44,.72)');floor.addColorStop(.5,'rgba(14,22,36,.78)');floor.addColorStop(1,'rgba(18,28,44,.72)');
-    ctx.fillStyle=floor;ctx.fillRect(x0,y0,sz,sz);
-    ctx.strokeStyle='rgba(180,200,230,.38)';ctx.lineWidth=2.5;ctx.strokeRect(x0,y0,sz,sz);
-    /* Subtle grid + center mark for readability on mobile */
-    ctx.save();ctx.strokeStyle='rgba(120,150,190,.08)';ctx.lineWidth=1;
-    for(let i=1;i<4;i++){
-      const g=sz*i/4;
-      ctx.beginPath();ctx.moveTo(x0+g,y0);ctx.lineTo(x0+g,y0+sz);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(x0,y0+g);ctx.lineTo(x0+sz,y0+g);ctx.stroke();
-    }
-    ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(CX-18,CY);ctx.lineTo(CX+18,CY);ctx.moveTo(CX,CY-18);ctx.lineTo(CX,CY+18);ctx.stroke();
-    ctx.beginPath();ctx.arc(CX,CY,6,0,Math.PI*2);ctx.stroke();
+
+    /* Soft double-stroke outer frame (intentional boundary, not hard crop) */
+    ctx.save();
+    ctx.strokeStyle='rgba(20,30,48,.9)';ctx.lineWidth=12;
+    ctx.strokeRect(x0-4,y0-4,sz+8,sz+8);
+    ctx.strokeStyle='rgba(78,161,255,.18)';ctx.lineWidth=5;
+    ctx.strokeRect(x0-2,y0-2,sz+4,sz+4);
     ctx.restore();
+
+    /* Square training floor with radial vignette for depth */
+    const floor=ctx.createRadialGradient(CX,CY,s*.15,CX,CY,s*1.15);
+    floor.addColorStop(0,'rgba(22,34,52,.88)');
+    floor.addColorStop(.55,'rgba(14,22,36,.82)');
+    floor.addColorStop(1,'rgba(8,12,20,.92)');
+    ctx.fillStyle=floor;ctx.fillRect(x0,y0,sz,sz);
+
+    /* Soft concentric training rings (dojo feel) */
+    ctx.save();
+    ctx.strokeStyle='rgba(120,160,210,.07)';ctx.lineWidth=1.2;
+    for(let i=1;i<=4;i++){
+      const rr=s*(i/4.6);
+      ctx.beginPath();ctx.arc(CX,CY,rr,0,Math.PI*2);ctx.stroke();
+    }
+    /* Very faint radial spokes */
+    ctx.strokeStyle='rgba(120,160,210,.045)';
+    for(let i=0;i<8;i++){
+      const a=i*Math.PI/4;
+      ctx.beginPath();ctx.moveTo(CX+Math.cos(a)*18,CY+Math.sin(a)*18);
+      ctx.lineTo(CX+Math.cos(a)*s*.92,CY+Math.sin(a)*s*.92);ctx.stroke();
+    }
+    ctx.restore();
+
+    /* Floor edge */
+    ctx.strokeStyle='rgba(180,200,230,.32)';ctx.lineWidth=2;
+    ctx.strokeRect(x0,y0,sz,sz);
+
+    /* Center mark */
+    ctx.save();
+    ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(CX-16,CY);ctx.lineTo(CX+16,CY);ctx.moveTo(CX,CY-16);ctx.lineTo(CX,CY+16);ctx.stroke();
+    ctx.beginPath();ctx.arc(CX,CY,5,0,Math.PI*2);ctx.stroke();
+    ctx.restore();
+
+    /* Ambient dust / chakra motes (behind combatants) */
+    drawAmbientMotes();
+
     for(const e of effects)drawEffect(e);
     drawProjectiles();
-    for(const p of particles){ctx.globalAlpha=clamp(p.life/28,0,1);ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();ctx.globalAlpha=1}
+    for(const p of particles){
+      const lifeA=clamp(p.life/(p.poof?40:28),0,1);
+      ctx.globalAlpha=p.poof?lifeA*.55:lifeA;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color;ctx.fill();
+      if(p.poof){
+        ctx.globalAlpha=lifeA*.25;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r*1.35,0,Math.PI*2);ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    }
     for(const f of fighters)drawPuppetStrings(f);
     for(const c of clones)drawClone(c);
     for(const f of fighters)drawPuppet(f.puppet);
     for(const f of fighters)drawFighter(f);
-    for(const t of floating){ctx.globalAlpha=clamp(t.life/42,0,1);ctx.fillStyle=t.color;ctx.font='800 13px system-ui';ctx.textAlign='center';ctx.fillText(t.text,t.x,t.y);ctx.globalAlpha=1}
+    for(const t of floating){
+      const lifeA=clamp(t.life/48,0,1);
+      ctx.globalAlpha=lifeA;
+      ctx.fillStyle=t.color;
+      ctx.font=`800 ${13+Math.round((1-lifeA)*2)}px system-ui`;
+      ctx.textAlign='center';
+      ctx.fillText(t.text,t.x,t.y);
+      ctx.globalAlpha=1;
+    }
   }
 
-  // Unarmed fighters are a dedicated close-range archetype. They trade weapon
-  // reach for improved survivability, faster ability cycling, and stronger contact payoff.
+  // Unarmed fighters and ranged fighters both retain a physical orb-contact
+  // attack. Ranged fighters still prioritize their ranged weapon/projectiles;
+  // the orb attack is a close-contact fallback if an opponent reaches them.
+  function orbContactAttackEnabled(f){
+    return !!(f && (f.unarmed || f.combatMode==='ranged'));
+  }
+
   function unarmedDamageTaken(f,dmg){
     let out=Math.max(0,dmg);
     if(f?.unarmed) out*=.78; // 22% damage reduction while unarmed
@@ -9984,7 +11054,7 @@ populateSources();resetState();
 
   function bodyCollisionDamage(a,b){
     if(!a||!b||!a.alive||!b.alive)return;
-    let dmg=Math.max(3,a.dmg*(1.05+stat(a.ninja,'strength')*.0052+stat(a.ninja,'taijutsu')*.0042));
+    let dmg=Math.max(3,a.dmg*(1.05+stat(a.ninja,'strength')*.0052+stat(a.ninja,'taijutsu')*.0042))*ORB_DAMAGE_MULTIPLIER;
     if(b.shield>0){
       spawnParticles(b.x,b.y,'#9eeeff',9,3,18);floatText(b.x,b.y-b.r-18,'BLOCKED','#a9efff');
       a.bodyHitCooldown=10;return;
@@ -10001,12 +11071,18 @@ populateSources();resetState();
     if(a.unarmed){a.vx-=nx*knock*.18;a.vy-=ny*knock*.18;}
     spawnParticles(b.x,b.y,a.color,12,4.5,24);floatText(b.x,b.y-25,`-${dmg.toFixed(1)}`,'#ffcf9b');
     log(`${a.name}'s orb collides with ${b.name} for ${dmg.toFixed(1)} damage.`);
-    if(b.hp<=0){b.hp=0;b.alive=false;running=false;winner=a;showBanner(`${a.name} wins!`,2400);log(`${a.name} defeats ${b.name}.`);el('orbFightBtn').disabled=false;}
+    if(b.hp<=0){defeatEntity(b,b.color,1.15);running=false;winner=a;showBanner(`${a.name} wins!`,2400);log(`${a.name} defeats ${b.name}.`);el('orbFightBtn').disabled=false;}
   }
 
   function step(dt){
-    for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.96;p.vy*=.96;p.life-=dt}
+    updateAmbientMotes(dt);
+    for(const p of particles){
+      p.x+=p.vx*dt;p.y+=p.vy*dt;
+      if(p.poof){p.vx*=.94;p.vy*=.94;p.r+=(dt*.12);p.life-=dt*.85;}
+      else{p.vx*=.96;p.vy*=.96;p.life-=dt;}
+    }
     particles=particles.filter(p=>p.life>0);
+    for(const f of fighters){if(!f.alive&&f.poof>0)f.poof-=dt;}
     for(const t of floating){t.y+=t.vy*dt;t.life-=dt}
     floating=floating.filter(t=>t.life>0);
     for(const e of effects)e.life-=dt;
@@ -10021,25 +11097,28 @@ populateSources();resetState();
     for(const f of fighters)f.weaponClashedThisFrame=false;
     for(const f of fighters){
       const foe=f.side==='A'?b:a;
-      const target=combatTargetFor(f,foe);
       updateFighter(f,foe,dt);
       if(f.alive){
         if(f.side==='A') weaponClashCheck(a,b);
-        if(!hasActivePuppet(f)) weaponClashPuppetCheck(f);
-        if(!f.weaponClashedThisFrame&&!hasActivePuppet(f)){
-          if(target===foe) weaponHitCheck(f,foe);
+        /* Summons are additional combat bodies. They never suppress the
+           caster's normal weapon collision rules. */
+        weaponClashPuppetCheck(f);
+        if(!f.weaponClashedThisFrame){
+          weaponHitCheck(f,foe);
           weaponHitPuppetCheck(f);
           weaponHitCloneCheck(f);
         }
         stabilizeFighter(f);
       }
     }
-    // body collision: armored/consumable/tool-only ninjas are deliberately unarmed.
-    // Their orb itself is the weapon and deals contact damage on physical impact.
+    // Physical orb contact is a secondary attack for ranged fighters and the
+    // primary attack for unarmed fighters. Ranged weapons/projectiles remain
+    // the preferred attack because ranged fighters continue to maintain their
+    // normal long-distance engagement spacing whenever possible.
     const dx=b.x-a.x,dy=b.y-a.y,d=len(dx,dy);
     if(d<a.r+b.r){
-      if(a.unarmed && a.bodyHitCooldown<=0 && b.invuln<=0) bodyCollisionDamage(a,b);
-      if(b.unarmed && b.bodyHitCooldown<=0 && a.invuln<=0) bodyCollisionDamage(b,a);
+      if(orbContactAttackEnabled(a) && a.bodyHitCooldown<=0 && b.invuln<=0) bodyCollisionDamage(a,b);
+      if(orbContactAttackEnabled(b) && b.bodyHitCooldown<=0 && a.invuln<=0) bodyCollisionDamage(b,a);
       const[nx,ny]=norm(dx,dy),push=(a.r+b.r-d)/2;
       a.x-=nx*push;a.y-=ny*push;b.x+=nx*push;b.y+=ny*push;
       a.vx-=nx*.18;a.vy-=ny*.18;b.vx+=nx*.18;b.vy+=ny*.18;
@@ -10056,6 +11135,7 @@ populateSources();resetState();
 
   function orbResetArena(logIt=true){
     running=false;winner=null;clones=[];particles=[];floating=[];effects=[];projectiles=[];
+    ambientMotes=[]; /* reseed on next draw with current arena size */
     const na=currentNinja('A'),nb=currentNinja('B');
     fighters=[];
     if(na)fighters.push(makeFighter('A',na));
@@ -10070,7 +11150,7 @@ populateSources();resetState();
     const na=currentNinja('A'),nb=currentNinja('B');
     if(!na||!nb){alert('Load a Ninja Generator character for both fighters first.');return}
     fighters=[makeFighter('A',na),makeFighter('B',nb)];
-    clones=[];particles=[];floating=[];effects=[];projectiles=[];winner=null;running=true;lastTs=0;
+    clones=[];particles=[];floating=[];effects=[];projectiles=[];ambientMotes=[];winner=null;running=true;lastTs=0;
     /* Puppet Masters deploy their puppet before the opening movement begins. */
     for(const f of fighters){ if(f.isPuppetUser) spawnPuppet(f,true); }
     el('orbFightBtn').disabled=true;
