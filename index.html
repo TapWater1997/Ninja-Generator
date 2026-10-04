@@ -9565,11 +9565,12 @@ populateSources();resetState();
     spawnParticles(a.x+Math.cos(ang)*(a.r+6),a.y+Math.sin(ang)*(a.r+6),'#dff6ff',7,2.8,14);
     a.rangedPulse=14;
 
-    /* Reduce the current ranged firing rate to about 80% of its present rate.
-       The entire existing cooldown is scaled by 1.25, preserving the same
-       speed-based adjustment while making shots roughly 20% less frequent.
-       Projectile speed, damage, and all other ranged rules remain unchanged. */
-    a.rangedCooldown=(23-Math.min(7,stat(a.ninja,'speed')*.05))*1.25;
+    /* Ranged weapon cadence is deliberately slower than before.
+       The previous build used a 1.25x cooldown. We now make the firing
+       frequency about 60% of that current rate by multiplying that cooldown
+       by 1.6667. Projectile speed, damage, and all other ranged rules remain
+       unchanged. */
+    a.rangedCooldown=(23-Math.min(7,stat(a.ninja,'speed')*.05))*1.25*1.6667;
     a.stamina=clamp(a.stamina-.35,0,100);
     return true;
   }
@@ -9815,24 +9816,32 @@ populateSources();resetState();
       }
     }
     else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){ax=nx;ay=ny;acc=2.0;maxMul=1.9}
-    else if(dist>ideal+22){ax=nx;ay=ny}
-    else if(dist<ideal-24){ax=-nx;ay=-ny}
+    else if(dist>ideal+10){ax=nx;ay=ny}
+    else if(dist<ideal-18){ax=-nx;ay=-ny}
     else{
       const side=(f.side==='A'?1:-1)*f.moveSign;
       ax=-ny*side;ay=nx*side;
-      /* Add a gentle pull toward a changing roam point. This makes fighters
-         sweep through different quadrants instead of tracing one tiny circle. */
+
+      /* Stronger engagement pressure: fighters still circle at their preferred
+         range, but they now lean substantially toward the opponent. This keeps
+         both orbs actively seeking each other instead of settling into parallel
+         orbit paths and creating long middle-of-arena standstills. */
+      const pursuitBias=f.combatMode==='ranged'?0.72:0.62;
+      ax+=nx*pursuitBias;ay+=ny*pursuitBias;
+
+      /* Keep the quadrant-roaming behavior, but make it secondary to pursuit. */
       const rx=f.roamX-f.x,ry=f.roamY-f.y,rd=Math.hypot(rx,ry);
-      if(rd>70){ax+=rx/rd*.9;ay+=ry/rd*.9;}
-      if(Math.random()<.025){ax+=nx*.8;ay+=ny*.8;}
+      if(rd>90){ax+=rx/rd*.42;ay+=ry/rd*.42;}
+      if(Math.random()<.055){ax+=nx*1.0;ay+=ny*1.0;}
     }
     const masterMoveMul=puppetActive?.82:1;
     const unarmedMoveMul=f.unarmed?1.16:1;
-    /* Ranged users give up some mobility while firing/retreating. Fighters
-       trying to close on a ranged user receive a modest pursuit advantage. */
+    /* Ranged users give up some mobility while firing, but every fighter gets
+       a stronger pursuit response so opponents keep re-engaging. */
     const rangedMobilityMul=f.combatMode==='ranged'?.92:((foe.combatMode==='ranged'&&!f.unarmed)?1.10:1);
-    const rangedPursuitAccel=(foe.combatMode==='ranged'&&f.combatMode!=='ranged')?1.10:1;
-    const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel;
+    const rangedPursuitAccel=(foe.combatMode==='ranged'&&f.combatMode!=='ranged')?1.28:1;
+    const engagementAccel=1.12;
+    const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel;
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.972;f.vy*=.972;
     if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>ideal*.72&&Math.random()<.72){
