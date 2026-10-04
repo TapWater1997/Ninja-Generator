@@ -9799,54 +9799,48 @@ populateSources();resetState();
     }
     let ax=0,ay=0,acc=1,maxMul=1;
     if(f.ultPrep>0||f.j1Prep>0||f.j2Prep>0){
-      /*
-       * Preparation used to force a retreat regardless of distance. When both
-       * fighters entered a preparation state, they could therefore accelerate
-       * away from one another and appear to "run away" from the fight.
-       * Preparation now uses the same distance-aware positioning as normal
-       * combat: close distance if too far away, create space only if too close,
-       * otherwise circle the opponent.
-       */
+      /* Melee and unarmed fighters do NOT disengage while preparing an ability.
+         They continue driving straight at the opponent and accept incoming
+         damage. Only ranged fighters preserve a spacing behavior. */
       acc=1.8;maxMul=1.6;
-      if(dist>ideal+18){ax=nx;ay=ny}
-      else if(dist<ideal-6){
-        if(f.combatMode==='ranged'){ax=-nx*.14;ay=-ny*.14}
-        else if(!f.unarmed){ax=-nx*.18;ay=-ny*.18}
-        else{ax=-nx;ay=-ny}
-      }
-      else{
-        const side=f.side==='A'?1:-1;
-        ax=-ny*side;ay=nx*side;
+      if(f.combatMode==='ranged'){
+        if(dist>ideal+18){ax=nx;ay=ny}
+        else if(dist<ideal-6){ax=-nx*.14;ay=-ny*.14}
+        else{const side=f.side==='A'?1:-1;ax=-ny*side;ay=nx*side;}
+      }else{
+        ax=nx;ay=ny;
+        acc=f.unarmed?2.25:2.45;
+        maxMul=f.unarmed?1.95:2.10;
       }
     }
-    else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){ax=nx;ay=ny;acc=2.0;maxMul=1.9}
-    else if(dist>ideal+10){ax=nx;ay=ny}
-    else if(dist<ideal-(f.combatMode==='ranged'?12:(f.unarmed?18:6))){
-      /* Ranged fighters give ground only when the opponent is actually
-         inside their preferred range. The retreat force is deliberately
-         mild so a melee fighter can continue closing the gap. */
-      if(f.combatMode==='ranged'){ax=-nx*.14;ay=-ny*.14}
-      else if(!f.unarmed){ax=-nx*.18;ay=-ny*.18}
-      else{ax=-nx;ay=-ny}
+    else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){
+      ax=nx;ay=ny;acc=f.combatMode==='ranged'?2.0:2.45;maxMul=f.combatMode==='ranged'?1.9:2.1;
+    }
+    else if(f.combatMode==='ranged'){
+      /* Ranged fighters retain their spacing logic. */
+      if(dist>ideal+10){ax=nx;ay=ny}
+      else if(dist<ideal-12){ax=-nx*.14;ay=-ny*.14}
+      else{
+        const side=(f.side==='A'?1:-1)*f.moveSign;
+        ax=-ny*side;ay=nx*side;
+        ax+=nx*.92;ay+=ny*.92;
+        const rx=f.roamX-f.x,ry=f.roamY-f.y,rd=Math.hypot(rx,ry);
+        if(rd>90){ax+=rx/rd*.42;ay+=ry/rd*.42;}
+      }
     }
     else{
-      const side=(f.side==='A'?1:-1)*f.moveSign;
-      ax=-ny*side;ay=nx*side;
-
-      /* Stronger engagement pressure: fighters still circle at their preferred
-         range, but they now lean substantially toward the opponent. This keeps
-         both orbs actively seeking each other instead of settling into parallel
-         orbit paths and creating long middle-of-arena standstills. */
-      const pursuitBias=f.combatMode==='ranged'?0.92:(f.unarmed?1.35:1.75);
+      /* MELEE/UNARMED AGGRESSION MODE:
+         Once engaged, never deliberately back away. The opponent is the
+         movement target at all times. A small lateral component keeps the
+         approach visually dynamic without creating the old run-away orbit. */
+      const lateral=(f.unarmed?.16:.10)*(f.side==='A'?1:-1)*f.moveSign;
+      ax=nx+(-ny*lateral);ay=ny+(nx*lateral);
+      const pursuitBias=f.unarmed?2.35:2.65;
       ax+=nx*pursuitBias;ay+=ny*pursuitBias;
-
-      /* Keep the quadrant-roaming behavior, but make it secondary to pursuit. */
-      const rx=f.roamX-f.x,ry=f.roamY-f.y,rd=Math.hypot(rx,ry);
-      if(rd>90){const roamBias=f.combatMode==='ranged'?.42:(f.unarmed?.10:.05);ax+=rx/rd*roamBias;ay+=ry/rd*roamBias;}
-      if(Math.random()<.055){ax+=nx*1.0;ay+=ny*1.0;}
+      if(Math.random()<.18){ax+=nx*1.25;ay+=ny*1.25;}
     }
     const masterMoveMul=puppetActive?.82:1;
-    const unarmedMoveMul=f.unarmed?1.16:1;
+    const unarmedMoveMul=f.unarmed?1.30:1;
     /* Ranged users give up some mobility while firing, but every fighter gets
        a stronger pursuit response so opponents keep re-engaging. */
     const rangedMobilityMul=f.combatMode==='ranged'?.63:((foe.combatMode==='ranged'&&!f.unarmed)?1.375:1.25);
@@ -9854,15 +9848,15 @@ populateSources();resetState();
     /* Melee weapon users close distance 40% faster, but only while they are
        actually approaching the opposing orb. Ranged and unarmed fighters
        retain their existing approach speed. */
-    const meleeWeaponApproachMul=(!f.unarmed&&f.combatMode!=='ranged'&&dist>ideal)?2.05:1;
-    const engagementAccel=f.combatMode==='ranged'?1.0:(f.unarmed?1.38:1.52);
+    const meleeWeaponApproachMul=(!f.unarmed&&f.combatMode!=='ranged')?2.35:1;
+    const engagementAccel=f.combatMode==='ranged'?1.0:(f.unarmed?1.65:1.80);
     const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel*meleeWeaponApproachMul;
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.972;f.vy*=.972;
-    const dashRangeFloor=f.combatMode==='ranged'?ideal*1.08:(f.unarmed?ideal*.58:ideal*.48);
-    const dashChance=f.combatMode==='ranged'?.32:(f.unarmed?.86:.96);
+    const dashRangeFloor=f.combatMode==='ranged'?ideal*1.08:(f.unarmed?ideal*.42:ideal*.36);
+    const dashChance=f.combatMode==='ranged'?.32:(f.unarmed?.98:1.0);
     if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>dashRangeFloor&&Math.random()<dashChance){
-      const side=(Math.random()<.5?-1:1),tx=-ny*side+nx*.78,ty=nx*side+ny*.78;
+      const side=(Math.random()<.5?-1:1),tx=-ny*side+nx*1.10,ty=nx*side+ny*1.10;
       const tl=Math.max(.01,Math.hypot(tx,ty));
       f.vx+=tx/tl*(2.4+f.speed*1.5);f.vy+=ty/tl*(2.4+f.speed*1.5);
       f.dashTimer=75+Math.random()*120;f.dashCooldown=30;
