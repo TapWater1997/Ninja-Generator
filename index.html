@@ -9570,7 +9570,7 @@ populateSources();resetState();
        frequency about 60% of that current rate by multiplying that cooldown
        by 1.6667. Projectile speed, damage, and all other ranged rules remain
        unchanged. */
-    a.rangedCooldown=(23-Math.min(7,stat(a.ninja,'speed')*.05))*1.25*1.6667;
+    a.rangedCooldown=(23-Math.min(7,stat(a.ninja,'speed')*.05))*1.25*2.7778;
     a.stamina=clamp(a.stamina-.35,0,100);
     return true;
   }
