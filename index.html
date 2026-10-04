@@ -9837,12 +9837,12 @@ populateSources();resetState();
          range, but they now lean substantially toward the opponent. This keeps
          both orbs actively seeking each other instead of settling into parallel
          orbit paths and creating long middle-of-arena standstills. */
-      const pursuitBias=f.combatMode==='ranged'?0.92:(f.unarmed?0.78:1.18);
+      const pursuitBias=f.combatMode==='ranged'?0.92:(f.unarmed?1.35:1.75);
       ax+=nx*pursuitBias;ay+=ny*pursuitBias;
 
       /* Keep the quadrant-roaming behavior, but make it secondary to pursuit. */
       const rx=f.roamX-f.x,ry=f.roamY-f.y,rd=Math.hypot(rx,ry);
-      if(rd>90){const roamBias=f.combatMode==='ranged'?.42:(f.unarmed?.22:.12);ax+=rx/rd*roamBias;ay+=ry/rd*roamBias;}
+      if(rd>90){const roamBias=f.combatMode==='ranged'?.42:(f.unarmed?.10:.05);ax+=rx/rd*roamBias;ay+=ry/rd*roamBias;}
       if(Math.random()<.055){ax+=nx*1.0;ay+=ny*1.0;}
     }
     const masterMoveMul=puppetActive?.82:1;
@@ -9854,15 +9854,15 @@ populateSources();resetState();
     /* Melee weapon users close distance 40% faster, but only while they are
        actually approaching the opposing orb. Ranged and unarmed fighters
        retain their existing approach speed. */
-    const meleeWeaponApproachMul=(!f.unarmed&&f.combatMode!=='ranged'&&dist>ideal)?1.65:1;
-    const engagementAccel=f.combatMode==='ranged'?1.0:(f.unarmed?1.12:1.24);
+    const meleeWeaponApproachMul=(!f.unarmed&&f.combatMode!=='ranged'&&dist>ideal)?2.05:1;
+    const engagementAccel=f.combatMode==='ranged'?1.0:(f.unarmed?1.38:1.52);
     const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel*meleeWeaponApproachMul;
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.972;f.vy*=.972;
-    const dashRangeFloor=f.combatMode==='ranged'?ideal*1.08:(f.unarmed?ideal*.72:ideal*.58);
-    const dashChance=f.combatMode==='ranged'?.32:(f.unarmed?.72:.88);
+    const dashRangeFloor=f.combatMode==='ranged'?ideal*1.08:(f.unarmed?ideal*.58:ideal*.48);
+    const dashChance=f.combatMode==='ranged'?.32:(f.unarmed?.86:.96);
     if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>dashRangeFloor&&Math.random()<dashChance){
-      const side=(Math.random()<.5?-1:1),tx=-ny*side+nx*.55,ty=nx*side+ny*.55;
+      const side=(Math.random()<.5?-1:1),tx=-ny*side+nx*.78,ty=nx*side+ny*.78;
       const tl=Math.max(.01,Math.hypot(tx,ty));
       f.vx+=tx/tl*(2.4+f.speed*1.5);f.vy+=ty/tl*(2.4+f.speed*1.5);
       f.dashTimer=75+Math.random()*120;f.dashCooldown=30;
