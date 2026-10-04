@@ -9844,7 +9844,7 @@ populateSources();resetState();
     const unarmedMoveMul=f.unarmed?1.16:1;
     /* Ranged users give up some mobility while firing, but every fighter gets
        a stronger pursuit response so opponents keep re-engaging. */
-    const rangedMobilityMul=f.combatMode==='ranged'?.84:((foe.combatMode==='ranged'&&!f.unarmed)?1.10:1);
+    const rangedMobilityMul=f.combatMode==='ranged'?.63:((foe.combatMode==='ranged'&&!f.unarmed)?1.375:1.25);
     const rangedPursuitAccel=(foe.combatMode==='ranged'&&f.combatMode!=='ranged')?1.28:1;
     /* Melee weapon users close distance 40% faster, but only while they are
        actually approaching the opposing orb. Ranged and unarmed fighters
