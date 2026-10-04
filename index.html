@@ -9840,8 +9840,12 @@ populateSources();resetState();
        a stronger pursuit response so opponents keep re-engaging. */
     const rangedMobilityMul=f.combatMode==='ranged'?.92:((foe.combatMode==='ranged'&&!f.unarmed)?1.10:1);
     const rangedPursuitAccel=(foe.combatMode==='ranged'&&f.combatMode!=='ranged')?1.28:1;
+    /* Melee weapon users close distance 40% faster, but only while they are
+       actually approaching the opposing orb. Ranged and unarmed fighters
+       retain their existing approach speed. */
+    const meleeWeaponApproachMul=(!f.unarmed&&f.combatMode!=='ranged'&&dist>ideal)?1.40:1;
     const engagementAccel=1.12;
-    const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel;
+    const accel=.19*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*engagementAccel*meleeWeaponApproachMul;
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.972;f.vy*=.972;
     if(f.dashTimer<=0&&f.dashCooldown<=0&&dist>ideal*.72&&Math.random()<.72){
@@ -9851,7 +9855,7 @@ populateSources();resetState();
       f.dashTimer=75+Math.random()*120;f.dashCooldown=30;
       spawnParticles(f.x,f.y,f.color,5,2.4,14);
     }
-    const sp=len(f.vx,f.vy),maxSp=2.65*f.speed*maxMul*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel;
+    const sp=len(f.vx,f.vy),maxSp=2.65*f.speed*maxMul*masterMoveMul*unarmedMoveMul*rangedMobilityMul*rangedPursuitAccel*meleeWeaponApproachMul;
     if(sp>maxSp){f.vx=f.vx/sp*maxSp;f.vy=f.vy/sp*maxSp}
     f.x+=f.vx*dt;f.y+=f.vy*dt;stabilizeFighter(f);
     /* All generated fighters, including Puppet Masters and clone casters,
