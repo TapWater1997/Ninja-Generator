@@ -2232,10 +2232,36 @@ function exportJSON(){
 =============================================================================== */
 
 const CANON = {
-  /* Local/embedded registry only. No network catalogue loading is used. */
-  catalogues:{clans:[],jutsu:[],canonJutsu:[],tools:[],dojutsu:[],kinjutsu:[],kekkeiGenkai:[],kekkeiTota:[],kekkeiMora:[],summons:[]},
-  jutsuMetadata:[],
-  loaded:true
+  sourceBase:"https://naruto.fandom.com/wiki/",
+  api:"https://naruto.fandom.com/api.php",
+  sources:{
+    clans:{type:"category",title:"Category:Clans"},
+    jutsu:{type:"category",title:"Category:Jutsu"},
+    /* Concept:Jutsu/Canon is an SMW concept page; its results are not in static HTML.
+       Category:Jutsu (~3000 named techniques) is the reliable source. */
+    canonJutsu:{type:"category",title:"Category:Jutsu"},
+    tools:{type:"category",title:"Category:Tools"},
+    /* English Narutopedia has no Category:Dōjutsu / Category:Kinjutsu.
+       Dōjutsu are listed on the Dōjutsu article; Kinjutsu are tagged via
+       the SMW property Jutsu classification. */
+    dojutsu:{type:"article",title:"Dōjutsu"},
+    kinjutsu:{type:"smw",query:"[[Jutsu classification::Kinjutsu]]"},
+    kekkeiGenkai:{type:"category",title:"Category:Kekkei_Genkai"},
+    /* Category:Kekkei_Tōta only contains the nature page "Dust Release".
+       Techniques are tagged via SMW Jutsu classification. Merge both. */
+    kekkeiTota:{type:"smw",query:"[[Jutsu classification::Kekkei Tōta]]"},
+    kekkeiMora:{type:"category",title:"Category:Kekkei_Mōra"},
+    summons:{type:"article",title:"Summoning Technique"}
+  },
+  // Backward-compatible alias for code that expects categories.
+  categories:{
+    clans:"Category:Clans", jutsu:"Category:Jutsu", canonJutsu:"Category:Jutsu",
+    tools:"Category:Tools",
+    kekkeiGenkai:"Category:Kekkei_Genkai", kekkeiTota:"Category:Kekkei_Tōta",
+    kekkeiMora:"Category:Kekkei_Mōra"
+  },
+  catalogues:{clans:[],jutsu:[],canonJutsu:[],tools:[],dojutsu:[],kinjutsu:[],kekkeiGenkai:[],kekkeiTota:[],kekkeiMora:[],summons:[]},jutsuMetadata:[],
+  loaded:false
 };
 
 /* Offline jutsu catalogue — user-curated. Signature / specialty wheels use this only. */
@@ -2731,8 +2757,253 @@ CANON.catalogues.clans = [
 "Ōtsutsuki Clan"
 ];
 
-/* External Narutopedia catalogue retrieval has intentionally been removed.
-   All generator/catalogue data used at runtime is embedded in this HTML. */
+async function loadCategoryMembers(category){
+  let cmcontinue="";
+  const all=[];
+  do{
+    const u=new URL(CANON.api);
+    u.searchParams.set("action","query");
+    u.searchParams.set("list","categorymembers");
+    u.searchParams.set("cmtitle",category);
+    u.searchParams.set("cmlimit","500");
+    u.searchParams.set("cmtype","page"); // articles only
+    u.searchParams.set("format","json");
+    u.searchParams.set("origin","*");
+    if(cmcontinue)u.searchParams.set("cmcontinue",cmcontinue);
+    const r=await fetch(u);
+    if(!r.ok)throw new Error("Narutopedia API returned "+r.status);
+    const j=await r.json();
+    (j.query?.categorymembers||[]).forEach(x=>all.push({
+      name:x.title.replace(/^Category:/,""), pageid:x.pageid, ns:x.ns,
+      url:CANON.sourceBase+encodeURIComponent(x.title.replace(/ /g,"_"))
+    }));
+    cmcontinue=j.continue?.cmcontinue||"";
+  }while(cmcontinue);
+  return all;
+}
+
+async function loadArticleLinks(title, sectionPattern=null){
+  const u=new URL(CANON.api);
+  u.searchParams.set("action","parse"); u.searchParams.set("page",title);
+  u.searchParams.set("prop","text"); u.searchParams.set("format","json");
+  u.searchParams.set("origin","*");
+  const r=await fetch(u); if(!r.ok)throw new Error("Narutopedia API returned "+r.status);
+  const j=await r.json();
+  const html=j.parse?.text?.["*"]||"";
+  const doc=new DOMParser().parseFromString(html,"text/html");
+  let root=doc.body;
+  if(sectionPattern){
+    const heads=[...doc.querySelectorAll("h2,h3,h4")];
+    const h=heads.find(x=>sectionPattern.test(x.textContent||""));
+    if(h){
+      const holder=doc.createElement("div");
+      let n=h.nextElementSibling;
+      while(n && !/^H[234]$/.test(n.tagName)){holder.appendChild(n.cloneNode(true)); n=n.nextElementSibling;}
+      root=holder;
+    }
+  }
+  const out=[]; const seen=new Set();
+  root.querySelectorAll("a[href*='/wiki/']").forEach(a=>{
+    const href=a.getAttribute("href")||"", name=(a.textContent||"").trim();
+    if(!name || href.includes(":"))return;
+    const path=href.split("/wiki/")[1]; if(!path)return;
+    const decoded=decodeURIComponent(path).replace(/_/g," ");
+    if(!decoded || seen.has(decoded))return; seen.add(decoded);
+    out.push({name:decoded,url:CANON.sourceBase+encodeURIComponent(decoded.replace(/ /g,"_"))});
+  });
+  return out;
+}
+
+async function loadSMWAsk(query, limitPerPage=50){
+  // Paginate Semantic MediaWiki ask results (used for Kinjutsu etc.)
+  const all=[]; const seen=new Set();
+  let offset=0;
+  for(;;){
+    const u=new URL(CANON.api);
+    u.searchParams.set("action","ask");
+    u.searchParams.set("query", `${query}|limit=${limitPerPage}|offset=${offset}`);
+    u.searchParams.set("format","json");
+    u.searchParams.set("origin","*");
+    const r=await fetch(u);
+    if(!r.ok)throw new Error("SMW ask returned "+r.status);
+    const j=await r.json();
+    const results=j.query?.results||{};
+    const keys=Object.keys(results);
+    if(!keys.length) break;
+    for(const name of keys){
+      if(seen.has(name)) continue;
+      seen.add(name);
+      const fullurl=results[name].fullurl||(CANON.sourceBase+encodeURIComponent(name.replace(/ /g,"_")));
+      all.push({name, url:fullurl, pageid:results[name].exists?undefined:undefined});
+    }
+    const next=j["query-continue-offset"];
+    if(next===undefined || next===null || next<=offset) break;
+    offset=next;
+    if(offset>5000) break; // safety
+  }
+  return all;
+}
+
+async function loadDojutsuCatalogue(){
+  // English Narutopedia has no Category:Dōjutsu. Named eyes are listed as
+  // section headings (and "Main article" links) under Known / Other Dōjutsu.
+  const u=new URL(CANON.api);
+  u.searchParams.set("action","parse");
+  u.searchParams.set("page","Dōjutsu");
+  u.searchParams.set("prop","text");
+  u.searchParams.set("format","json");
+  u.searchParams.set("origin","*");
+  const r=await fetch(u);
+  if(!r.ok)throw new Error("Narutopedia API returned "+r.status);
+  const j=await r.json();
+  const html=j.parse?.text?.["*"]||"";
+  const doc=new DOMParser().parseFromString(html,"text/html");
+  const out=[]; const seen=new Set();
+  const add=(name)=>{
+    name=(name||"").replace(/\[\s*edit\s*\]/gi,"").replace(/\[\s*\]/g,"").trim();
+    if(!name || /^Dōjutsu$/i.test(name) || /^Other /i.test(name) || /^Known /i.test(name)) return;
+    if(seen.has(name)) return;
+    seen.add(name);
+    out.push({name, url:CANON.sourceBase+encodeURIComponent(name.replace(/ /g,"_"))});
+  };
+  // Collect from h3 headings under Known / Other Dōjutsu sections
+  const heads=[...doc.querySelectorAll("h2,h3,h4")];
+  let inSection=false;
+  for(const h of heads){
+    const text=(h.textContent||"").replace(/\[\s*edit\s*\]/gi,"").replace(/\[\s*\]/g,"").trim();
+    if(/^h2$/i.test(h.tagName)){
+      inSection=/^(Known Dōjutsu|Other Dōjutsu)/i.test(text);
+      continue;
+    }
+    if(inSection && /^h3$/i.test(h.tagName)) add(text);
+  }
+  // Also pick up explicit "Main article: X" links
+  doc.querySelectorAll("a[href*='/wiki/']").forEach(a=>{
+    const href=a.getAttribute("href")||"";
+    if(href.includes(":")) return;
+    const path=href.split("/wiki/")[1]; if(!path) return;
+    const name=decodeURIComponent(path).replace(/_/g," ");
+    // Only keep known eye-type names if we already found some via headings;
+    // if headings failed, keep main-article style targets from the page body.
+  });
+  // Fallback curated list if parsing yielded nothing
+  if(!out.length){
+    ["Byakugan","Jōgan","Ketsuryūgan","Kokugan","Mangekyō Sharingan","Ranmaru's Kekkei Genkai",
+     "Rinne Sharingan","Rinnegan","Senrigan","Sharingan","Tenseigan","Shion's Dōjutsu","Yome's Dōjutsu"
+    ].forEach(add);
+  }
+  return out;
+}
+
+async function loadSummoningCatalogue(){
+  /* The Summoning Technique article only lists "Known Summoning Domains"
+     (Mount Myōboku, Ryūchi Cave, etc.) — locations, not creatures.
+     Named summons are characters tagged with SMW property Species::*.
+     We query the major summonable species and merge unique names. */
+  const speciesList=[
+    "Toad","Snake","Slug","Dog","Ninken","Hawk","Monkey","Crow","Cat",
+    "Ox","Turtle","Spider","Bird","Centipede","Weasel","Clam","Shark",
+    "Salamander","Bee","Rhino","Baku","Nue","Fish","Falcon","Rabbit"
+  ];
+  const all=[]; const seen=new Set();
+  const add=(name,url)=>{
+    if(!name || seen.has(name)) return;
+    seen.add(name);
+    all.push({name, url:url||(CANON.sourceBase+encodeURIComponent(name.replace(/ /g,"_")))});
+  };
+  // Species-level contract types (what the generator typically rolls)
+  for(const sp of ["Toad","Snake","Slug","Monkey","Dog / Hound","Hawk / Bird","Turtle","Insect"]){
+    add(sp+" (contract species)");
+  }
+  for(const sp of speciesList){
+    try{
+      const members=await loadSMWAsk(`[[Species::${sp}]]`, 50);
+      for(const m of members) add(m.name, m.url);
+    }catch(e){ console.warn("Species query failed for", sp, e); }
+  }
+  // Curated fallback of well-known named summons if SMW returned little
+  if(all.length < 15){
+    [
+      "Gamabunta","Gamakichi","Gamatatsu","Gamaken","Gamahiro","Fukasaku","Shima","Gerotora","Gamamaru",
+      "Manda","Manda II","Aoda","Tagorihime","Tagitsuhime","Ichikishimahime",
+      "Katsuyu",
+      "Enma","Monkey King Enma",
+      "Pakkun","Bull","Urushi","Shiba","Bisuke","Akino","Guruko",
+      "Garuda",
+      "Ibuse","Baku","Nue","Ningame","Kamatari"
+    ].forEach(n=>add(n));
+  }
+  all.sort((a,b)=>a.name.localeCompare(b.name));
+  return all;
+}
+
+async function loadCompleteNarutopedia(){
+  const btn=document.getElementById("loadCanonBtn");
+  const status=document.getElementById("canonStatus");
+  btn.disabled=true; status.textContent="Loading Narutopedia catalogues…";
+  try{
+    for(const [key,source] of Object.entries(CANON.sources)){
+      status.textContent=`Loading ${key} (${source.type})…`;
+      if(source.type==="category"){
+        // Keep local jutsu catalogue authoritative — do not overwrite canonJutsu from wiki
+        if(key==="canonJutsu" && LOCAL_JUTSU_CATALOG && LOCAL_JUTSU_CATALOG.length){
+          CANON.catalogues.canonJutsu = LOCAL_JUTSU_CATALOG.map(j=>({name:j.name,url:null,local:true,meta:j}));
+        } else {
+          const members=await loadCategoryMembers(source.title);
+          CANON.catalogues[key]=members.filter(x=>!x.ns || x.ns===0);
+        }
+      }
+      else if(source.type==="smw"){
+        CANON.catalogues[key]=await loadSMWAsk(source.query);
+      }
+      else if(source.type==="article" && key==="dojutsu") CANON.catalogues[key]=await loadDojutsuCatalogue();
+      else if(source.type==="article" && key==="summons") CANON.catalogues[key]=await loadSummoningCatalogue();
+    }
+    // Enrich Kekkei Tōta: SMW + category nature page + documented techniques.
+    // Canon only documents Dust Release (earth+wind+fire) as a true kekkei tōta.
+    {
+      const seen=new Set();
+      const merged=[];
+      const add=(name,url)=>{
+        if(!name || seen.has(name)) return;
+        seen.add(name);
+        merged.push({name, url:url||(CANON.sourceBase+encodeURIComponent(name.replace(/ /g,"_")))});
+      };
+      for(const x of (CANON.catalogues.kekkeiTota||[])) add(x.name, x.url);
+      try{
+        for(const x of await loadCategoryMembers("Category:Kekkei_Tōta")) add(x.name, x.url);
+      }catch(e){}
+      // Documented Dust Release techniques (and the nature itself)
+      [
+        "Dust Release",
+        "Dust Release: Detachment of the Primitive World Technique",
+        "Dust Release: Detachment of the Primitive World Technique Area",
+        "Dust Release: Split Detachment of the Primitive World Technique"
+      ].forEach(n=>add(n));
+      // Also try alternate SMW spelling without macron
+      try{
+        for(const x of await loadSMWAsk("[[Jutsu classification::Kekkei Tota]]")) add(x.name, x.url);
+      }catch(e){}
+      merged.sort((a,b)=>a.name.localeCompare(b.name));
+      CANON.catalogues.kekkeiTota=merged;
+    }
+    CANON.loaded=true;
+    const counts={
+      canonJutsu:(CANON.catalogues.canonJutsu||[]).length,
+      dojutsu:(CANON.catalogues.dojutsu||[]).length,
+      kinjutsu:(CANON.catalogues.kinjutsu||[]).length,
+      summons:(CANON.catalogues.summons||[]).length,
+      kekkeiTota:(CANON.catalogues.kekkeiTota||[]).length
+    };
+    status.textContent=`Catalogues loaded — canonJutsu: ${counts.canonJutsu}, dōjutsu: ${counts.dojutsu}, kinjutsu: ${counts.kinjutsu}, summons: ${counts.summons}, kekkeiTōta: ${counts.kekkeiTota}.`;
+    renderCanonTables();
+  }catch(e){
+    status.textContent="Catalogue load failed: "+e.message+". The local dependency/prerequisite rules remain available.";
+    console.error(e);
+    renderCanonTables();
+  }finally{btn.disabled=false}
+}
+
 
 /* Canon prerequisite engine.
    These are hard gates, not weights. The rules intentionally err toward
@@ -3669,9 +3940,16 @@ function renderCanonTables(){
   const keys=["clans","canonJutsu","tools","dojutsu","kinjutsu","kekkeiGenkai","kekkeiTota","kekkeiMora","summons"];
   el.innerHTML=keys.map(k=>{
     const arr=CANON.catalogues[k]||[];
-    const names=arr.map(x=>typeof x==="string"?x:(x.name||x.technique||"?"));
-    const links=names.map(name=>`<span>${escapeHtml(name)}</span>`).join("");
-    return `<div class="canonBox"><b>${k}</b><span>${arr.length} embedded entries</span>
+    const links=arr.map(x=>{
+      if(typeof x==="string"){
+        const url=CANON.sourceBase+encodeURIComponent(x.replace(/ /g,"_"));
+        return `<a href="${url}" target="_blank" rel="noopener">${escapeHtml(x)}</a>`;
+      }
+      const name=x.name||x.technique||"?";
+      const url=x.url||(CANON.sourceBase+encodeURIComponent(name.replace(/ /g,"_")));
+      return `<a href="${url}" target="_blank" rel="noopener">${escapeHtml(name)}</a>`;
+    }).join("");
+    return `<div class="canonBox"><b>${k}</b><span>${arr.length} named entries</span>
       <details><summary>View names</summary><div class="nameList">${links||"<em>empty</em>"}</div></details></div>`;
   }).join("");
 }
@@ -4507,8 +4785,65 @@ function applyLocalPrerequisiteMetadata(rec){
     rec.requiredDojutsu=p.requires.filter(x=>["Sharingan","Mangekyō Sharingan","Rinnegan"].includes(x));
   return rec;
 }
-/* Network-based jutsu metadata retrieval removed: runtime uses embedded metadata only. */
-
+async function fetchJutsuMetadataBatch(items){
+  const records=[];
+  for(let i=0;i<items.length;i+=50){
+    const batch=items.slice(i,i+50),u=new URL(CANON.api);
+    u.searchParams.set("action","query");u.searchParams.set("prop","revisions");
+    u.searchParams.set("rvprop","content");u.searchParams.set("rvslots","main");
+    u.searchParams.set("titles",batch.map(x=>x.name).join("|"));
+    u.searchParams.set("format","json");u.searchParams.set("origin","*");
+    const response=await fetch(u);
+    if(!response.ok)throw new Error("API "+response.status);
+    const data=await response.json();
+    for(const p of Object.values(data.query?.pages||{})){
+      if(p.missing!==undefined || p.invalid!==undefined) continue;
+      const src=items.find(x=>x.name===p.title);
+      const wt=p.revisions?.[0]?.slots?.main?.["*"]||"";
+      const r=emptyJutsuRecord(p.title,src?.url||CANON.sourceBase+encodeURIComponent(String(p.title||"").replace(/ /g,"_")));
+      // Narutopedia Infobox/Jutsu uses: jutsu rank, jutsu classification, jutsu type, users
+      r.jutsuType=normalizeTypes(parseWikiField(wt,[
+        "jutsu classification","Classification","Type","Classification(s)"
+      ]));
+      r.rank=normalizeRank(parseWikiField(wt,[
+        "jutsu rank","Rank","Ranks","Jutsu Rank"
+      ]));
+      r.chakraNature=inferNature(parseWikiField(wt,[
+        "jutsu type","Nature Type","Nature Type(s)","Nature Transformation","Nature"
+      ]));
+      r.knownUsers=splitWikiList(parseWikiField(wt,[
+        "users","Users","Known Users","User"
+      ]));
+      records.push(applyLocalPrerequisiteMetadata(r));
+    }
+    const pct=Math.min(100,Math.round((i+batch.length)/items.length*100));
+    const s=document.getElementById("jutsuMetaSummary")||document.getElementById("canonStatus");
+    if(s)s.textContent=`Reading structured jutsu metadata… ${pct}% (${records.length} so far)`;
+    await new Promise(r=>setTimeout(r,40));
+  }
+  return records;
+}
+async function loadCompleteJutsuMetadata(){
+  const btn=document.getElementById("loadJutsuMetaBtn");
+  const status=document.getElementById("jutsuMetaSummary")||document.getElementById("canonStatus");
+  btn.disabled=true;
+  try{
+    if(!CANON.catalogues.canonJutsu?.length){
+      if(status)status.textContent="Loading Category:Jutsu member list first…";
+      const catTitle=CANON.categories.canonJutsu||CANON.categories.jutsu||"Category:Jutsu";
+      CANON.catalogues.canonJutsu=await loadCategoryMembers(catTitle);
+    }
+    if(!CANON.catalogues.canonJutsu.length)throw new Error("Category:Jutsu returned 0 members (network/CORS?).");
+    if(status)status.textContent=`Found ${CANON.catalogues.canonJutsu.length} techniques. Fetching page metadata…`;
+    CANON.jutsuMetadata=await fetchJutsuMetadataBatch(CANON.catalogues.canonJutsu);
+    if(status)status.textContent=`Structured metadata loaded for ${CANON.jutsuMetadata.length} named canon techniques.`;
+    renderJutsuMetadataSummary();
+    renderCanonTables();
+  }catch(e){
+    console.error(e);
+    if(status)status.textContent="Jutsu metadata load failed: "+e.message;
+  }finally{btn.disabled=false}
+}
 function renderJutsuMetadataSummary(){
   const a=CANON.jutsuMetadata||[],counts={E:0,D:0,C:0,B:0,A:0,S:0,Unranked:0};
   let withNature=0, withType=0, withUsers=0;
@@ -7417,6 +7752,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
           <option value="jutsu">Jutsu</option>
           <option value="ultimate">Ultimate Jutsu</option>
           <option value="summon">Summoning Contract</option>
+          <option value="puppet">Puppet</option>
         </select>
         <label class="small" for="animationPreviewItem">Animation</label>
         <select id="animationPreviewItem"><option value="">Loading animations…</option></select>
@@ -9029,44 +9365,100 @@ populateSources();resetState();
   }
 
 
-  function puppetKindForFighter(f){
-    const n=f?.ninja||{};
-    const w=String(n.weapon||'').toLowerCase();
-    const j=[f?.jutsu1,f?.jutsu2,f?.ult].filter(Boolean).join(' ').toLowerCase();
-    if(/sasori|red secret|hundred puppets|human puppet/.test(j))return'red';
-    if(/water/.test(j))return'water';
-    if(/wood/.test(j))return'wood';
-    if(/black secret/.test(j))return'black';
-    if(/puppet/.test(w))return'puppet';
-    return'puppet';
+  /* Exact weapon-driven puppet profiles.  The weapon/tool identity is the
+     authoritative source for puppet behavior; jutsu names are no longer used
+     to guess which puppet is present. */
+  const ORB_PUPPET_PROFILES={
+    'Chikamatsu Collection':{key:'chikamatsu',count:6,label:'CHIKAMATSU',radius:14,hp:.48,speed:1.16,damage:.18,defense:1,projectile:false},
+    'Hiruko':{key:'hiruko',count:1,label:'HIRUKO',radius:22,hp:.78,speed:.72,damage:.18,defense:.72,poison:true,projectile:false},
+    'Hundred Puppet Army':{key:'hundred',count:10,label:'HUNDRED',radius:11,hp:.12,speed:1.16,damage:.025,defense:1,projectile:false},
+    'Mother and Father (puppet)':{key:'motherFather',count:2,labels:['MOTHER','FATHER'],radius:22,hp:.72,speed:.82,damage:.50,defense:.88,projectile:false},
+    'Sasori (puppet)':{key:'sasori',count:1,label:'SASORI',radius:19,hp:.30,speed:1.28,damage:1.18,defense:1.12,projectile:false},
+    'Third Kazekage (puppet)':{key:'thirdKazekage',count:1,label:'THIRD KAZEKAGE',radius:24,hp:1.05,speed:1.22,damage:1.18,defense:.95,projectile:false},
+    'Water-Firing Puppets':{key:'waterFiring',count:2,labels:['WATER PUPPET','WATER PUPPET'],radius:15,hp:.38,speed:1.02,damage:.48,defense:1.16,projectile:true},
+    'Ōtsutsuki Clan Puppets':{key:'otsutsuki',count:2,labels:['ŌTSUTSUKI','ŌTSUTSUKI'],radius:22,hp:.72,speed:1.02,damage:.78,defense:.90,projectile:false}
+  };
+  const GENERIC_PUPPET_PROFILE={key:'generic',count:1,label:'PUPPET',radius:19,hp:1,speed:1,damage:1,defense:1,projectile:false};
+
+  function exactPuppetProfile(f){
+    const name=String(f?.ninja?.weapon||'').trim();
+    return ORB_PUPPET_PROFILES[name]||GENERIC_PUPPET_PROFILE;
   }
-  function spawnPuppet(f,force=false){
-    if(!f||!f.isPuppetUser||(!force&&f.puppet&&f.puppet.alive))return f?.puppet||null;
-    const foe=f.side==='A'?fighters[1]:fighters[0];
-    const ang=foe&&foe.alive?Math.atan2(foe.y-f.y,foe.x-f.x):0;
-    const hp=Math.max(1,f.maxHp*ORB_TUNING.summons.puppetMaxHpPercent);
-    const p={
-      id:'puppet_'+Date.now()+'_'+Math.random().toString(36).slice(2),parent:f,side:f.side,name:`${f.name}'s Puppet`,kind:puppetKindForFighter(f),
-      alive:true,hp,maxHp:hp,r:19,x:f.x+Math.cos(ang)*42,y:f.y+Math.sin(ang)*42,vx:0,vy:0,
-      weapon:'Small Dagger',weaponType:'dagger',weaponReach:Math.max(12,weaponLength('dagger')*.72),weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(Math.abs(Number(f.weaponSpin))||weaponSpinSpeed('dagger'))*(f.side==='A'?1:-1),
-      damage:Math.max(5,f.dmg*.62),dmg:Math.max(5,f.dmg*.62),speed:f.speed,ninja:f.ninja,color:'#a8dcff',cooldown:0,weaponClashCooldown:0,shield:0,hitFlash:0,poof:0,age:0,attackFlash:0
-    };
-    f.puppet=p;f.puppetRespawnFlash=28;
-    spawnCloneSmoke(p.x,p.y,'#a8dcff');
-    floatText(f.x,f.y-f.r-40,'PUPPET', '#a8dcff');
-    log(`${f.name} deploys a puppet.`);
-    return p;
+  function puppetKindForFighter(f){return exactPuppetProfile(f).key}
+  function puppetProfileForEntity(p){
+    return p?.profile||GENERIC_PUPPET_PROFILE;
   }
-  function puppetTarget(p){
-    const foes=fighters.filter(f=>f.side!==p.side&&f.alive);
-    return foes[0]||null;
-  }
-  function ensurePuppetForTechnique(f,name){
-    /* Puppet Masters channel every generated jutsu through their puppet. If
-       the puppet was defeated, the next ready jutsu redeploys it first. */
+  function spawnPuppet(f,force=false,countOverride=null){
     if(!f||!f.isPuppetUser)return null;
-    if(!f.puppet||!f.puppet.alive)spawnPuppet(f,true);
-    return f.puppet&&f.puppet.alive?f.puppet:null;
+    const profile=exactPuppetProfile(f);
+    if(!Array.isArray(f.puppets))f.puppets=[];
+    const live=f.puppets.filter(p=>p&&p.alive);
+    if(live.length&&!force)return live[0];
+    if(force){
+      /* A fresh fight may create the configured starting group.  During combat,
+         the group is only recreated by the next jutsu activation after every
+         member of the previous group has been defeated. */
+      f.puppets=[];
+      f.puppet=null;
+    }
+    const foe=f.side==='A'?fighters[1]:fighters[0];
+    const baseAng=foe&&foe.alive?Math.atan2(foe.y-f.y,foe.x-f.x):0;
+    const count=countOverride==null?(profile.count||1):Math.max(1,Math.floor(countOverride));
+    const created=[];
+    for(let i=0;i<count;i++){
+      const spread=count>1?((i-(count-1)/2)*.22):0;
+      const ang=baseAng+spread;
+      const hp=Math.max(1,f.maxHp*ORB_TUNING.summons.puppetMaxHpPercent*profile.hp);
+      const label=profile.labels?.[i]||profile.label||'PUPPET';
+      const p={
+        id:'puppet_'+Date.now()+'_'+i+'_'+Math.random().toString(36).slice(2),parent:f,side:f.side,name:label,displayName:label,
+        exactWeapon:String(f.ninja?.weapon||''),profile,kind:profile.key,variantIndex:i,entityType:'puppet',alive:true,hp,maxHp:hp,r:profile.radius,
+        x:f.x+Math.cos(ang)*(42+i*5),y:f.y+Math.sin(ang)*(42+i*5),vx:0,vy:0,
+        weapon:'Small Dagger',weaponType:'dagger',weaponReach:Math.max(12,weaponLength('dagger')*.72),weaponAngle:ang,prevWeaponAngle:ang,
+        weaponSpin:(Math.abs(Number(f.weaponSpin))||weaponSpinSpeed('dagger'))*(f.side==='A'?1:-1),
+        damage:Math.max(5,f.dmg*.62*profile.damage),dmg:Math.max(5,f.dmg*.62*profile.damage),speed:f.speed*profile.speed,
+        ninja:f.ninja,color:'#a8dcff',cooldown:0,weaponClashCooldown:0,shield:0,hitFlash:0,poof:0,age:0,attackFlash:0,
+        projectileCooldown:0,poisonCooldown:0,bodyHitCooldown:0
+      };
+      f.puppets.push(p);created.push(p);
+    }
+    f.puppet=created[0]||null;
+    f.puppetRespawnFlash=28;
+    for(const p of created){
+      spawnCloneSmoke(p.x,p.y,'#a8dcff');
+      floatText(p.x,p.y-p.r-18,p.name,'#a8dcff');
+    }
+    log(`${f.name} deploys ${created.length>1?`${created.length} ${profile.label||profile.key} puppets`:created[0]?.name||'a puppet'}.`);
+    return created[0]||null;
+  }
+  function livePuppetsFor(f){return Array.isArray(f?.puppets)?f.puppets.filter(p=>p&&p.alive):((f?.puppet&&f.puppet.alive)?[f.puppet]:[])}
+  function allConfiguredPuppetsDefeated(f){return f&&!livePuppetsFor(f).length}
+  function summonCombatTargets(side){
+    return [
+      ...fighters.filter(f=>f.alive&&f.side!==side),
+      ...fighters.flatMap(f=>livePuppetsFor(f)).filter(x=>x&&x.alive&&x.side!==side),
+      ...clones.filter(x=>x.alive&&x.side!==side),
+      ...dogs.filter(x=>x.alive&&x.side!==side),
+      ...summons.filter(x=>x.alive&&x.side!==side)
+    ];
+  }
+  function nearestSummonCombatTarget(entity){
+    const list=summonCombatTargets(entity.side);
+    let best=null,bestD=Infinity;
+    for(const t of list){const d=Math.hypot(t.x-entity.x,t.y-entity.y);if(d<bestD){best=t;bestD=d;}}
+    return best;
+  }
+  function puppetTarget(p){return nearestSummonCombatTarget(p)}
+  function ensurePuppetForTechnique(f,name){
+    if(!f||!f.isPuppetUser)return null;
+    const live=livePuppetsFor(f);
+    if(live.length)return live[0];
+    /* Once every active puppet has been defeated, the next jutsu activation
+       restores only one third of the original deployment, rounded down, with
+       a minimum of one puppet. The initial deployment remains unchanged. */
+    const profile=exactPuppetProfile(f);
+    const respawnCount=Math.max(1,Math.floor((profile.count||1)/3));
+    return spawnPuppet(f,true,respawnCount);
   }
   function awardDamageGauges(attacker,dmg){
     if(!attacker||!attacker.ninja)return;
@@ -9083,95 +9475,127 @@ populateSources();resetState();
   }
   function damagePuppet(p,dmg,source){
     if(!p||!p.alive)return;
-    p.hp-=Math.max(0,dmg);p.hitFlash=10;
-    // The attacker earns gauge progress for successfully damaging a puppet,
-    // just as they do when striking the opposing ninja.
-    awardDamageGauges(sourceFighter(source),dmg);
-    // A puppet being struck is still a meaningful combat interaction for its
-    // controller, so it contributes a smaller amount of gauge progress.
+    const profile=puppetProfileForEntity(p);
+    const adjusted=Math.max(0,dmg*profile.defense);
+    p.hp-=adjusted;p.hitFlash=10;
+    awardDamageGauges(sourceFighter(source),adjusted);
     const owner=p.parent;
     if(owner){
-      owner.j1Meter=clamp((owner.j1Meter||0)+unarmedGaugeGain(owner,2.5+dmg*.10),0,100);
-      owner.j2Meter=clamp((owner.j2Meter||0)+unarmedGaugeGain(owner,2+dmg*.08),0,100);
-      owner.ultMeter=clamp((owner.ultMeter||0)+unarmedGaugeGain(owner,1.2+dmg*.045),0,100);
+      owner.j1Meter=clamp((owner.j1Meter||0)+unarmedGaugeGain(owner,2.5+adjusted*.10),0,100);
+      owner.j2Meter=clamp((owner.j2Meter||0)+unarmedGaugeGain(owner,2+adjusted*.08),0,100);
+      owner.ultMeter=clamp((owner.ultMeter||0)+unarmedGaugeGain(owner,1.2+adjusted*.045),0,100);
     }
-    spawnParticles(p.x,p.y,source?.color||'#a8dcff',7,3,16);floatText(p.x,p.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
+    spawnParticles(p.x,p.y,source?.color||'#a8dcff',7,3,16);floatText(p.x,p.y-22,`-${adjusted.toFixed(1)}`,'#bfe9ff');
     if(p.hp<=0){
       defeatEntity(p,'#9edcff',0.95);
-      log(`${p.parent.name}'s puppet is destroyed.`);
+      if(owner&&Array.isArray(owner.puppets)){
+        const remaining=owner.puppets.filter(x=>x&&x.alive);
+        owner.puppet=remaining[0]||null;
+      }
+      log(`${p.parent.name}'s ${p.name||'puppet'} is destroyed.`);
     }
   }
-  // Puppet movement/rotation are based on the previously working combat loop; the 25% boost is applied without changing target selection or attack cadence.
+  function damagePuppetPoisonTarget(p,target){
+    if(!p||!target||!target.alive)return;
+    target.puppetPoison={timer:95,damage:Math.max(1,p.parent?.dmg*.035||1),source:p.parent};
+    floatText(target.x,target.y-target.r-18,'POISON','#b7ff7a');
+    spawnParticles(target.x,target.y,'#9fe36a',9,3,20);
+    log(`${p.name} poisons ${target.name}.`);
+  }
+  function summonEntityType(e){return e?.entityType||((e?.profile)?'puppet':null)}
+  function summonMeleeDamage(attacker,target,rawDamage,color){
+    if(!attacker||!target||!target.alive)return false;
+    const dmg=Math.max(0,rawDamage);
+    if(target.shield>0){spawnParticles(target.x,target.y,'#9eeeff',7,3,16);return true;}
+    const type=summonEntityType(target);
+    if(type==='puppet')damagePuppet(target,dmg,attacker);
+    else if(type==='clone')damageClone(target,dmg,attacker);
+    else if(type==='dog')damageDog(target,dmg,attacker);
+    else if(target.entityType==='contractSummon')damageSummon(target,dmg,attacker);
+    else return false;
+    target.hitFlash=Math.max(target.hitFlash||0,9);
+    const [nx,ny]=norm(target.x-attacker.x,target.y-attacker.y);
+    target.vx+=nx*(4+dmg*.12);target.vy+=ny*(4+dmg*.12);
+    attacker.vx-=nx*(1.2+dmg*.035);attacker.vy-=ny*(1.2+dmg*.035);
+    spawnParticles(target.x,target.y,color||attacker.color||'#dbe6f5',7,3,18);
+    return true;
+  }
+
+  function updatePuppetPoison(dt){
+    for(const f of fighters){
+      const poison=f.puppetPoison;if(!poison||!f.alive)continue;
+      poison.timer-=dt;
+      const tick=Math.max(0,poison.damage)*dt/12;
+      if(tick>0){f.hp-=tick;fighterDamageGaugeGain(f,tick);}
+      if(poison.timer<=0||f.hp<=0){f.puppetPoison=null;if(f.hp<=0){defeatEntity(f,f.color,1.15);running=false;winner=poison.source;showBanner(`${poison.source?.name||'Puppet'} wins!`,2400);el('orbFightBtn').disabled=false;}}
+    }
+  }
+  function firePuppetProjectile(p,target){
+    if(!p||!target||!target.alive)return;
+    const ang=Math.atan2(target.y-p.y,target.x-p.x);
+    const speed=4.1;
+    const damage=p.damage*(.78+Math.random()*.18)*ORB_TUNING.combat.damageMultiplier;
+    projectiles.push({f:p,casterOwner:p.parent,name:p.name+' Water Shot',kind:'water',slot:'puppet',x:p.x+Math.cos(ang)*(p.r+8),y:p.y+Math.sin(ang)*(p.r+8),vx:Math.cos(ang)*speed*p.speed/1.05,vy:Math.sin(ang)*speed*p.speed/1.05,life:100,r:5,damage,hit:false,weapon:false,puppetProjectile:true});
+    p.attackFlash=8;
+  }
   function updatePuppets(dt){
     for(const f of fighters){
-      const p=f.puppet;
-      if(!p)continue;
-      if(!p.alive){p.poof-=dt;continue;}
-      p.age+=dt;if(p.cooldown>0)p.cooldown-=dt;if(p.weaponClashCooldown>0)p.weaponClashCooldown-=dt;if(p.shield>0)p.shield-=dt;if(p.hitFlash>0)p.hitFlash-=dt;if(p.attackFlash>0)p.attackFlash-=dt;
-      /* Puppets are physically tethered to their master. The chakra thread is
-         cosmetic but unbreakable: the puppet can never drift arbitrarily far
-         from its caster or acquire an unstable velocity. */
-      const tetherMax=225;
-      const pdx=f.x-p.x,pdy=f.y-p.y,pdist=Math.hypot(pdx,pdy);
-      if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isFinite(p.vx)||!Number.isFinite(p.vy)){
-        p.x=Number.isFinite(f.x)?f.x:CX;p.y=Number.isFinite(f.y)?f.y:CY;p.vx=0;p.vy=0;
-      }
-      if(pdist>tetherMax){
-        const tx=pdx/(pdist||1),ty=pdy/(pdist||1);
-        p.x=f.x-tx*tetherMax;p.y=f.y-ty*tetherMax;
-        p.vx*=.25;p.vy*=.25;
-      }
-      const foe=puppetTarget(p);if(!foe)continue;
-      p.prevWeaponAngle=p.weaponAngle;
-      const dx=foe.x-p.x,dy=foe.y-p.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
-      /* Puppet minimum spacing is a direct center-to-center target.  Do not
-         hide the slider behind orb radius/weapon-reach calculations; those
-         belong to collision/attack geometry, not the spacing control. */
-      const ideal=Math.max(1,ORB_TUNING.spacing.puppetIdealMin);
-      const attackRange=ideal+18;
-      let ax=0,ay=0;
-      if(d>attackRange){ax=nx;ay=ny}
-      else if(d<ideal){
-        const deficit=clamp((ideal-d)/Math.max(ideal,1),0,1);
-        ax=-nx*(.55+deficit*.9);ay=-ny*(.55+deficit*.9);
-      }else{
-        const side=p.side==='A'?1:-1;ax=-ny*side;ay=nx*side;
-      }
-      p.vx+=ax*ORB_TUNING.summons.puppetAcceleration*ORB_TUNING.summons.puppetMoveMultiplier*dt;p.vy+=ay*ORB_TUNING.summons.puppetAcceleration*ORB_TUNING.summons.puppetMoveMultiplier*dt;p.vx*=ORB_TUNING.summons.puppetDamping;p.vy*=ORB_TUNING.summons.puppetDamping;
-      const sp=len(p.vx,p.vy),maxSp=1.95*parentSpeed(f)*ORB_TUNING.summons.puppetMaxSpeedMultiplier;if(sp>maxSp){p.vx=p.vx/sp*maxSp;p.vy=p.vy/sp*maxSp}
-      p.x+=p.vx*dt;p.y+=p.vy*dt;applyCloneBounds(p);
-      // Summon weapons must rotate continuously at the same rate as the
-      // generated fighter's weapon.  A small amount of target tracking is
-      // retained for combat alignment, but it is deliberately the same tiny
-      // correction used by ordinary fighters so it cannot cancel the spin.
-      if(!Number.isFinite(p.weaponSpin)||Math.abs(p.weaponSpin)<.1){
-        const parentSpin=Math.abs(Number(f.weaponSpin)||0);
-        p.weaponSpin=(parentSpin>=.1?parentSpin:weaponSpinSpeed(p.weaponType||weaponKind(p.weapon)))*(f.side==='A'?1:-1);
-      }
-      p.weaponAngle+=p.weaponSpin*dt*ORB_TUNING.weapons.weaponSpinMultiplier;
-      const diff=Math.atan2(dy,dx)-p.weaponAngle;p.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.012*dt;
-      if(d<=attackRange&&p.cooldown<=0){
-        const tip=tipAt(p,p.weaponAngle);
-        const prevTip=tipAt(p,p.prevWeaponAngle);
-        const contactRadius=orbContactRadius(foe)+weaponContactRadius(p);
-        const contactDist=Math.min(Math.hypot(tip.x-foe.x,tip.y-foe.y),Math.hypot(prevTip.x-foe.x,prevTip.y-foe.y),distPointSeg(foe.x,foe.y,prevTip.x,prevTip.y,tip.x,tip.y));
-        if(contactDist>contactRadius)continue;
-        p.attackFlash=10;p.cooldown=18+Math.random()*8;
-        let dmg=p.damage*(.78+Math.random()*.25)*ORB_TUNING.combat.damageMultiplier;if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
-        foe.hp-=dmg;fighterDamageGaugeGain(foe,dmg);foe.hitFlash=8;foe.invuln=12;
-        // Puppet attacks are extensions of the Puppet Master's combat actions.
-        // Damage dealt by the puppet must charge the master's Jutsu/Ultimate
-        // gauges, otherwise deploying a puppet removes the normal gauge loop.
-        const owner=p.parent||f;
-        owner.j1Meter=clamp((owner.j1Meter||0)+unarmedGaugeGain(owner,8+dmg*.50+stat(owner.ninja,'chakraControl')*.022),0,100);
-        owner.j2Meter=clamp((owner.j2Meter||0)+unarmedGaugeGain(owner,6+dmg*.40+stat(owner.ninja,'chakraControl')*.016),0,100);
-        owner.ultMeter=clamp((owner.ultMeter||0)+unarmedGaugeGain(owner,4+dmg*.24+stat(owner.ninja,'chakraQuantity')*.012),0,100);
-        reverseWeaponSpin(p,'hit');
-        const [kx,ky]=norm(foe.x-p.x);foe.vx+=kx*(4+dmg*.12);foe.vy+=ky*(4+dmg*.12);
-        spawnParticles(foe.x,foe.y,'#a8dcff',7,3,18);floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
-        if(foe.hp<=0){defeatEntity(foe,foe.color,1.15);running=false;winner=f;showBanner(`${f.name} wins!`,2400);log(`${f.name}'s puppet defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
+      const list=livePuppetsFor(f);
+      if(!list.length)continue;
+      for(const p of list){
+        p.age+=dt;p.cooldown=Math.max(0,p.cooldown-dt);p.bodyHitCooldown=Math.max(0,(p.bodyHitCooldown||0)-dt);p.weaponClashCooldown=Math.max(0,p.weaponClashCooldown-dt);p.shield=Math.max(0,p.shield-dt);p.hitFlash=Math.max(0,p.hitFlash-dt);p.attackFlash=Math.max(0,p.attackFlash-dt);p.projectileCooldown=Math.max(0,(p.projectileCooldown||0)-dt);
+        const tetherMax=225;
+        const pdx=f.x-p.x,pdy=f.y-p.y,pdist=Math.hypot(pdx,pdy);
+        if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isFinite(p.vx)||!Number.isFinite(p.vy)){p.x=Number.isFinite(f.x)?f.x:CX;p.y=Number.isFinite(f.y)?f.y:CY;p.vx=0;p.vy=0;}
+        if(pdist>tetherMax){const tx=pdx/(pdist||1),ty=pdy/(pdist||1);p.x=f.x-tx*tetherMax;p.y=f.y-ty*tetherMax;p.vx*=.25;p.vy*=.25;}
+        const foe=puppetTarget(p);if(!foe)continue;
+        p.prevWeaponAngle=p.weaponAngle;
+        const dx=foe.x-p.x,dy=foe.y-p.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
+        const profile=puppetProfileForEntity(p);
+        const ideal=Math.max(1,ORB_TUNING.spacing.puppetIdealMin);
+        const attackRange=ideal+18;
+        let ax=nx,ay=ny;
+        if(d<ideal){ax=-nx*.35;ay=-ny*.35;}
+        if(profile.key==='hiruko'){ax*=.72;ay*=.72;}
+        else if(profile.key==='sasori'||profile.key==='thirdKazekage'){ax*=1.18;ay*=1.18;}
+        else if(profile.key==='chikamatsu'||profile.key==='hundred'){ax*=1.08;ay*=1.08;}
+        p.vx+=ax*ORB_TUNING.summons.puppetAcceleration*ORB_TUNING.summons.puppetMoveMultiplier*dt;p.vy+=ay*ORB_TUNING.summons.puppetAcceleration*ORB_TUNING.summons.puppetMoveMultiplier*dt;p.vx*=ORB_TUNING.summons.puppetDamping;p.vy*=ORB_TUNING.summons.puppetDamping;
+        const sp=len(p.vx,p.vy),maxSp=1.95*parentSpeed(f)*ORB_TUNING.summons.puppetMaxSpeedMultiplier*profile.speed;if(sp>maxSp){p.vx=p.vx/sp*maxSp;p.vy=p.vy/sp*maxSp;}
+        p.x+=p.vx*dt;p.y+=p.vy*dt;applyCloneBounds(p);
+        if(profile.projectile&&p.projectileCooldown<=0){
+          firePuppetProjectile(p,foe);
+          const rangedBase=ORB_TUNING.ranged.baseCooldown||18;
+          p.projectileCooldown=Math.max(8,rangedBase*(ORB_TUNING.ranged.fireCooldownMultiplier||1));
+        }
+        if(!Number.isFinite(p.weaponSpin)||Math.abs(p.weaponSpin)<.1){const parentSpin=Math.abs(Number(f.weaponSpin)||0);p.weaponSpin=(parentSpin>=.1?parentSpin:weaponSpinSpeed(p.weaponType||weaponKind(p.weapon)))*(f.side==='A'?1:-1);}
+        p.weaponAngle+=p.weaponSpin*dt*ORB_TUNING.weapons.weaponSpinMultiplier;
+        const diff=Math.atan2(dy,dx)-p.weaponAngle;p.weaponAngle+=Math.atan2(Math.sin(diff),Math.cos(diff))*.012*dt;
+        if(profile.poison&&d<=attackRange&&p.cooldown<=0){damagePuppetPoisonTarget(p,foe);p.cooldown=48;}
+        if(d<=attackRange&&p.cooldown<=0){
+          const tip=tipAt(p,p.weaponAngle),prevTip=tipAt(p,p.prevWeaponAngle),contactRadius=orbContactRadius(foe)+weaponContactRadius(p);
+          const contactDist=Math.min(Math.hypot(tip.x-foe.x,tip.y-foe.y),Math.hypot(prevTip.x-foe.x,prevTip.y-foe.y),distPointSeg(foe.x,foe.y,prevTip.x,prevTip.y,tip.x,tip.y));
+          if(contactDist<=contactRadius){
+            p.attackFlash=10;p.cooldown=18+Math.random()*8;
+            let dmg=p.damage*(.78+Math.random()*.25)*ORB_TUNING.combat.damageMultiplier;
+            if(foe.entityType==='puppet'||foe.entityType==='clone'||foe.entityType==='dog'||foe.entityType==='contractSummon'){
+              if(summonMeleeDamage(p,foe,dmg,'#a8dcff')){reverseWeaponSpin(p,'hit');}
+            }else{
+              if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);continue;}
+              foe.hp-=dmg;fighterDamageGaugeGain(foe,dmg);foe.hitFlash=8;foe.invuln=12;
+              const owner=p.parent||f;
+              owner.j1Meter=clamp((owner.j1Meter||0)+unarmedGaugeGain(owner,8+dmg*.50+stat(owner.ninja,'chakraControl')*.022),0,100);
+              owner.j2Meter=clamp((owner.j2Meter||0)+unarmedGaugeGain(owner,6+dmg*.40+stat(owner.ninja,'chakraControl')*.016),0,100);
+              owner.ultMeter=clamp((owner.ultMeter||0)+unarmedGaugeGain(owner,4+dmg*.24+stat(owner.ninja,'chakraQuantity')*.012),0,100);
+              reverseWeaponSpin(p,'hit');
+              const [kx,ky]=norm(foe.x-p.x);foe.vx+=kx*(4+dmg*.12);foe.vy+=ky*(4+dmg*.12);
+              spawnParticles(foe.x,foe.y,'#a8dcff',7,3,18);floatText(foe.x,foe.y-22,`-${dmg.toFixed(1)}`,'#bfe9ff');
+              if(foe.hp<=0){defeatEntity(foe,foe.color,1.15);running=false;winner=f;showBanner(`${f.name} wins!`,2400);log(`${f.name}'s puppet defeats ${foe.name}.`);el('orbFightBtn').disabled=false;}
+            }
+          }
+        }
       }
     }
+    updatePuppetPoison(dt);
   }
 
   function hasDogTrait(n){
@@ -9199,7 +9623,7 @@ populateSources();resetState();
       id:'dog_'+Date.now()+'_'+Math.random().toString(36).slice(2),parent:f,side:f.side,name:`${f.name}'s Dog`,entityType:'dog',kind:'dog',alive:true,hp,maxHp:hp,
       r:ORB_TUNING.dog.radius,x:f.x+Math.cos(ang)*38,y:f.y+Math.sin(ang)*38,vx:0,vy:0,weapon:'None',weaponType:'fists',weaponReach:10,
       weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:0,damage:Math.max(4,f.dmg*ORB_TUNING.dog.damageMultiplier),dmg:Math.max(4,f.dmg*ORB_TUNING.dog.damageMultiplier),speed:f.speed,ninja:f.ninja,color:'#c9955b',
-      cooldown:0,hitFlash:0,poof:0,age:0,attackFlash:0,invuln:0,shield:0
+      cooldown:0,bodyHitCooldown:0,hitFlash:0,poof:0,age:0,attackFlash:0,invuln:0,shield:0
     };
     f.dog=d;
     f.dogSpawned=true;
@@ -9209,10 +9633,7 @@ populateSources();resetState();
     log(`${f.name} is accompanied by a dog.`);
     return d;
   }
-  function dogTarget(d){
-    const foes=fighters.filter(f=>f.side!==d.side&&f.alive);
-    return foes[0]||null;
-  }
+  function dogTarget(d){return nearestSummonCombatTarget(d)}
   function damageDog(d,dmg,source){
     if(!d||!d.alive)return;
     d.hp-=Math.max(0,dmg);d.hitFlash=10;
@@ -9236,6 +9657,10 @@ populateSources();resetState();
     let dmg=d.damage*(.82+Math.random()*.3)*ORB_TUNING.dog.damageMultiplier*ORB_TUNING.combat.damageMultiplier;
     const evasion=stat(foe.ninja,'speed')*.003+stat(foe.ninja,'stealth')*.0015+stat(foe.ninja,'battleIQ')*.001;
     if(Math.random()<Math.min(.22,evasion*.1))return;
+    if(foe.entityType==='puppet'||foe.entityType==='clone'||foe.entityType==='dog'||foe.entityType==='contractSummon'){
+      summonMeleeDamage(d,foe,dmg,'#ffd39a');
+      return;
+    }
     if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);return;}
     dmg=unarmedDamageTaken(foe,dmg);foe.hp-=dmg;fighterDamageGaugeGain(foe,dmg);foe.hitFlash=9;foe.invuln=12;
     const [nx,ny]=norm(foe.x-d.x,foe.y-d.y);foe.vx+=nx*(4+dmg*.12);foe.vy+=ny*(4+dmg*.12);
@@ -9254,7 +9679,7 @@ populateSources();resetState();
   function updateDogs(dt){
     for(const d of dogs){
       if(!d.alive){d.poof-=dt;continue;}
-      d.age+=dt;if(d.cooldown>0)d.cooldown-=dt;if(d.hitFlash>0)d.hitFlash-=dt;if(d.attackFlash>0)d.attackFlash-=dt;
+      d.age+=dt;if(d.cooldown>0)d.cooldown-=dt;if(d.bodyHitCooldown>0)d.bodyHitCooldown-=dt;if(d.hitFlash>0)d.hitFlash-=dt;if(d.attackFlash>0)d.attackFlash-=dt;
       const foe=dogTarget(d);if(!foe)continue;
       const dx=foe.x-d.x,dy=foe.y-d.y,dist=Math.hypot(dx,dy)||1,nx=dx/dist,ny=dy/dist;
       const ideal=Math.max(1,ORB_TUNING.dog.minimumSpacing),attackRange=ideal+ORB_TUNING.dog.attackRangeBonus;
@@ -9361,22 +9786,18 @@ populateSources();resetState();
       const hp=Math.max(22,parent.maxHp*.13);
       const c={
         id:'clone_'+Date.now()+'_'+Math.random().toString(36).slice(2),
-        parent,side:parent.side,name:`${parent.name} Clone`,kind,alive:true,hp,maxHp:hp,
+        parent,side:parent.side,name:`${parent.name} Clone`,kind,entityType:'clone',alive:true,hp,maxHp:hp,
         r:17,x:parent.x+Math.cos(a)*d,y:parent.y+Math.sin(a)*d,vx:0,vy:0,
         weapon:parent.weapon,weaponType:parent.weaponType,weaponReach:Math.max(16,parent.weaponReach*.82),
         weaponAngle:a,weaponSpin:(Math.abs(Number(parent.weaponSpin))||weaponSpinSpeed(parent.weaponType))*(parent.side==='A'?1:-1),
-        damage:Math.max(4,parent.dmg*.48),cooldown:0,hitFlash:0,poof:0,atkPulse:0,age:0
+        damage:Math.max(4,parent.dmg*.48),cooldown:0,bodyHitCooldown:0,hitFlash:0,poof:0,atkPulse:0,age:0
       };
       clones.push(c);spawnCloneSmoke(c.x,c.y,c.kind==='wood'?'#6dbb58':c.kind==='water'?'#77dfff':'#e8edf7');
     }
     floatText(parent.x,parent.y-parent.r-40,`${n} CLONE${n>1?'S':''}`,parent.color);
     log(`${parent.name} creates ${n} ${kind} clone${n>1?'s':''}.`);
   }
-  function cloneTarget(c){
-    const foes=fighters.filter(f=>f.side!==c.side&&f.alive);
-    if(!foes.length)return null;
-    return foes[0];
-  }
+  function cloneTarget(c){return nearestSummonCombatTarget(c)}
   function cloneAttack(c,foe){
     if(!c.alive||!foe||!foe.alive||c.cooldown>0)return;
     const d=Math.hypot(foe.x-c.x,foe.y-c.y);
@@ -9389,6 +9810,10 @@ populateSources();resetState();
     let dmg=c.damage*(.82+Math.random()*.3)*ORB_TUNING.combat.damageMultiplier;
     const evasion=stat(foe.ninja,'speed')*.003+stat(foe.ninja,'stealth')*.0015+stat(foe.ninja,'battleIQ')*.001;
     if(Math.random()<Math.min(.22,evasion*.1)){spawnParticles(foe.x,foe.y,'#d9e9ff',5,2.5,16);return;}
+    if(foe.entityType==='puppet'||foe.entityType==='clone'||foe.entityType==='dog'||foe.entityType==='contractSummon'){
+      summonMeleeDamage(c,foe,dmg,c.kind==='water'?'#8be9ff':c.kind==='wood'?'#8bd16c':'#dbe6f5');
+      return;
+    }
     if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);return;}
     foe.hp-=dmg;fighterDamageGaugeGain(foe,dmg);foe.hitFlash=9;foe.invuln=12;
     const [nx,ny]=norm(foe.x-c.x,foe.y-c.y);foe.vx+=nx*(5+dmg*.16);foe.vy+=ny*(5+dmg*.16);
@@ -9400,7 +9825,7 @@ populateSources();resetState();
   function updateClones(dt){
     for(const c of clones){
       if(!c.alive){c.poof-=dt;continue;}
-      c.age+=dt;if(c.cooldown>0)c.cooldown-=dt;if(c.hitFlash>0)c.hitFlash-=dt;if(c.atkPulse>0)c.atkPulse-=dt;
+      c.age+=dt;if(c.cooldown>0)c.cooldown-=dt;if(c.bodyHitCooldown>0)c.bodyHitCooldown-=dt;if(c.hitFlash>0)c.hitFlash-=dt;if(c.atkPulse>0)c.atkPulse-=dt;
       const foe=cloneTarget(c);if(!foe)continue;
       const dx=foe.x-c.x,dy=foe.y-c.y,d=len(dx,dy),[nx,ny]=norm(dx,dy);
       /* Clone minimum spacing is a direct center-to-center target so the
@@ -9487,7 +9912,7 @@ populateSources();resetState();
       ...fighters.filter(f=>f.alive&&f.side!==e.side),
       ...summons.filter(s=>s.alive&&s.side!==e.side),
       ...clones.filter(c=>c.alive&&c.side!==e.side),
-      ...fighters.map(f=>f.puppet).filter(x=>x&&x.alive&&x.side!==e.side),
+      ...fighters.flatMap(f=>livePuppetsFor(f)).filter(x=>x&&x.alive&&x.side!==e.side),
       ...dogs.filter(d=>d.alive&&d.side!==e.side)
     ];
     if(!candidates.length)return null;
@@ -9633,53 +10058,425 @@ populateSources();resetState();
   }
   function drawSummon(e){
     if(!e||(!e.alive&&e.poof<=0))return;
-    const p=e.profile,fade=e.alive?1:clamp(e.poof/40,0,1),pulse=e.hitFlash>0?2:0;
-    if(!e.alive){drawDefeatPoofCloud(e.x,e.y,fade,p.accent,e.r+5);return;}
+    const p=e.profile,fade=e.alive?1:clamp(e.poof/40,0,1);
+    if(!e.alive){drawDefeatPoofCloud(e.x,e.y,fade,p.accent,e.r+7);return;}
+
     const a=Math.atan2(e.vy,e.vx)||0;
-    ctx.save();ctx.globalAlpha=.97;
-    /* Every contract creature retains an orb-like energy body, but its silhouette
-       and animation language are unique to the animal family. */
-    const rg=ctx.createRadialGradient(e.x-e.r*.32,e.y-e.r*.35,2,e.x,e.y,e.r*1.25);
-    rg.addColorStop(0,'rgba(255,255,255,.82)');rg.addColorStop(.22,p.color);rg.addColorStop(.82,p.color);rg.addColorStop(1,'rgba(0,0,0,.12)');
-    ctx.fillStyle=rg;ctx.beginPath();ctx.arc(e.x,e.y,e.r+pulse,0,Math.PI*2);ctx.fill();
-    ctx.strokeStyle=p.accent;ctx.lineWidth=2.5;ctx.stroke();
-    if(p.key==='toad'){
-      ctx.fillStyle='#d9e8c5';for(const q of [-.38,.38]){ctx.beginPath();ctx.arc(e.x+Math.cos(a+q)*9,e.y+Math.sin(a+q)*9,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#18231a';ctx.beginPath();ctx.arc(e.x+Math.cos(a+q)*10,e.y+Math.sin(a+q)*10,2.3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d9e8c5'}
-      ctx.strokeStyle='#26351f';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x+Math.cos(a)*5,e.y+Math.sin(a)*5,9,-.55,.55);ctx.stroke();
-      ctx.strokeStyle='#f0d58a';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+Math.cos(a)*34,e.y+Math.sin(a)*34);ctx.stroke();
-    }else if(p.key==='snake'){
-      ctx.strokeStyle=p.accent;ctx.lineWidth=7;ctx.beginPath();for(let i=0;i<22;i++){const t=i/21*Math.PI*2;const rr=e.r*.56+Math.sin(t*3+e.age*.12)*5;const x=e.x+Math.cos(t)*rr,y=e.y+Math.sin(t)*rr;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}ctx.stroke();
-      ctx.fillStyle='#cdeaa8';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*13,e.y+Math.sin(a)*13,5,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#222';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*14-Math.sin(a)*2,e.y+Math.sin(a)*14+Math.cos(a)*2,1.5,0,Math.PI*2);ctx.arc(e.x+Math.cos(a)*14+Math.sin(a)*2,e.y+Math.sin(a)*14-Math.cos(a)*2,1.5,0,Math.PI*2);ctx.fill();
-    }else if(p.key==='slug'){
-      ctx.fillStyle='rgba(255,255,255,.5)';ctx.beginPath();ctx.ellipse(e.x+Math.cos(a)*5,e.y+Math.sin(a)*5,e.r*.58,e.r*.34,a,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle=p.accent;ctx.lineWidth=2;ctx.beginPath();ctx.arc(e.x,e.y,e.r*.6,0,Math.PI*2);ctx.stroke();
-      for(const q of [-.25,.25]){ctx.fillStyle='#f6edf6';ctx.beginPath();ctx.arc(e.x+Math.cos(a+q)*10,e.y+Math.sin(a+q)*10,4,0,Math.PI*2);ctx.fill();}
-      ctx.strokeStyle='#fff3ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*8,e.y+Math.sin(a)*8);ctx.lineTo(e.x+Math.cos(a)*32,e.y+Math.sin(a)*32);ctx.stroke();
-    }else if(p.key==='monkey'){
-      ctx.fillStyle='#f5f5f5';ctx.beginPath();ctx.arc(e.x,e.y,e.r*.72,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#a17b58';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*10,e.y+Math.sin(a)*10,9,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#171717';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*13-Math.sin(a)*3,e.y+Math.sin(a)*13+Math.cos(a)*3,2,0,Math.PI*2);ctx.arc(e.x+Math.cos(a)*13+Math.sin(a)*3,e.y+Math.sin(a)*13-Math.cos(a)*3,2,0,Math.PI*2);ctx.fill();
-      ctx.strokeStyle='#e6c66f';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(e.x-Math.cos(a)*e.r,e.y-Math.sin(a)*e.r);ctx.lineTo(e.x+Math.cos(a)*e.r*1.65,e.y+Math.sin(a)*e.r*1.65);ctx.stroke();
-    }else if(p.key==='hound'){
-      ctx.fillStyle=p.color;ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*e.r,e.y+Math.sin(a)*e.r);ctx.lineTo(e.x+Math.cos(a+.8)*e.r*.72,e.y+Math.sin(a+.8)*e.r*.72);ctx.lineTo(e.x+Math.cos(a-.8)*e.r*.72,e.y+Math.sin(a-.8)*e.r*.72);ctx.closePath();ctx.fill();
-      for(const q of [-.42,.42]){ctx.fillStyle='#70472d';ctx.beginPath();ctx.moveTo(e.x+Math.cos(a+q)*8,e.y+Math.sin(a+q)*8);ctx.lineTo(e.x+Math.cos(a+q)*18,e.y+Math.sin(a+q)*18);ctx.lineTo(e.x+Math.cos(a+q+.25)*9,e.y+Math.sin(a+q+.25)*9);ctx.closePath();ctx.fill();}
-      ctx.fillStyle='#151515';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*9,e.y+Math.sin(a)*9,2,0,Math.PI*2);ctx.fill();
-    }else if(p.key==='hawk'){
-      ctx.strokeStyle=p.accent;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.quadraticCurveTo(e.x-Math.cos(a)*28,e.y-Math.sin(a)*28-Math.sin(e.age*.15)*8,e.x-Math.cos(a)*e.r,e.y-Math.sin(a)*e.r);ctx.moveTo(e.x,e.y);ctx.quadraticCurveTo(e.x+Math.sin(a)*28,e.y-Math.cos(a)*28+Math.sin(e.age*.15)*8,e.x+Math.sin(a)*e.r,e.y-Math.cos(a)*e.r);ctx.stroke();
-      ctx.fillStyle=p.color;ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*e.r,e.y+Math.sin(a)*e.r);ctx.lineTo(e.x-Math.cos(a)*e.r*.65,e.y-Math.sin(a)*e.r*.65);ctx.lineTo(e.x-Math.sin(a)*10,e.y+Math.cos(a)*10);ctx.closePath();ctx.fill();
-    }else if(p.key==='turtle'){
-      ctx.fillStyle='#405b48';ctx.beginPath();ctx.arc(e.x,e.y,e.r*.74,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#e2c866';ctx.lineWidth=2;ctx.stroke();
-      for(let i=0;i<6;i++){const aa=i*Math.PI/3+e.age*.01;ctx.beginPath();ctx.moveTo(e.x,e.y);ctx.lineTo(e.x+Math.cos(aa)*e.r*.68,e.y+Math.sin(aa)*e.r*.68);ctx.stroke();}
-      ctx.fillStyle='#d0d9a1';ctx.beginPath();ctx.arc(e.x+Math.cos(a)*e.r*.78,e.y+Math.sin(a)*e.r*.78,7,0,Math.PI*2);ctx.fill();
-      if(e.shellGuard>0){ctx.strokeStyle='#fff0a4';ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,e.r+7,0,Math.PI*2);ctx.stroke();}
-    }else if(p.key==='insect'){
-      ctx.fillStyle='#18221b';ctx.beginPath();ctx.arc(e.x,e.y,e.r*.42,0,Math.PI*2);ctx.fill();
-      for(let i=0;i<18;i++){const aa=i*.83+e.age*.22,rr=e.r*.7+Math.sin(i+e.age*.15)*5;ctx.fillStyle=i%3===0?'#d9f59d':'#7fbf62';ctx.beginPath();ctx.arc(e.x+Math.cos(aa)*rr,e.y+Math.sin(aa)*rr,2.6+(i%3),0,Math.PI*2);ctx.fill();}
+    const moving=Math.min(1,Math.hypot(e.vx,e.vy)/2.2);
+    const walk=Math.sin(e.age*.24);
+    const fastWalk=Math.sin(e.age*.42);
+    const flap=Math.sin(e.age*.30);
+    const attackPulse=clamp((e.attackFlash||0)/12,0,1);
+    const impactPulse=clamp((e.atkPulse||0)/15,0,1);
+    const hitPulse=clamp((e.hitFlash||0)/10,0,1);
+    const bob=Math.sin(e.age*.18)*1.8;
+    const glow=p.accent;
+
+    ctx.save();
+    ctx.globalAlpha=.98*fade;
+
+    /* Shared summon energy body: still an Orb Arena sphere, but treated as a
+       translucent chakra "shell" around a much more recognizable creature. */
+    const rg=ctx.createRadialGradient(
+      e.x-e.r*.34,e.y-e.r*.38,2,
+      e.x,e.y,e.r*1.34
+    );
+    rg.addColorStop(0,'rgba(255,255,255,.94)');
+    rg.addColorStop(.13,'rgba(255,255,255,.45)');
+    rg.addColorStop(.34,p.color);
+    rg.addColorStop(.78,p.color);
+    rg.addColorStop(1,'rgba(0,0,0,.16)');
+    ctx.fillStyle=rg;
+    ctx.shadowBlur=18+attackPulse*16;
+    ctx.shadowColor=glow;
+    ctx.beginPath();
+    ctx.arc(e.x,e.y+Math.sin(e.age*.16)*.7,e.r+hitPulse*1.8,0,Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur=0;
+
+    /* Chakra halo / movement wake. */
+    ctx.strokeStyle=glow;
+    ctx.globalAlpha=.42*fade;
+    ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.arc(e.x,e.y,e.r+5+Math.sin(e.age*.16)*2,0,Math.PI*2);
+    ctx.stroke();
+    if(moving>.35){
+      ctx.globalAlpha=.18*fade;
+      ctx.lineWidth=2;
+      for(let i=1;i<=3;i++){
+        const back=e.r*(.55+i*.28);
+        ctx.beginPath();
+        ctx.arc(
+          e.x-Math.cos(a)*back,
+          e.y-Math.sin(a)*back,
+          Math.max(2,e.r*.35-i*2),
+          a-.45,a+.45
+        );
+        ctx.stroke();
+      }
     }
-    if(e.attackFlash>0){ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(e.x,e.y,e.r+9+Math.sin(e.age)*2,0,Math.PI*2);ctx.stroke();}
-    ctx.fillStyle=p.accent;ctx.font='800 8px system-ui';ctx.textAlign='center';ctx.fillText(p.label,e.x,e.y-e.r-9);
-    ctx.globalAlpha=.78;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(e.x-18,e.y+e.r+5,36,4);ctx.fillStyle=p.accent;ctx.fillRect(e.x-18,e.y+e.r+5,36*clamp(e.hp/e.maxHp,0,1),4);
+    ctx.globalAlpha=.98*fade;
+
+    /* Soft ground shadow makes the summon read as a creature occupying the
+       arena rather than a flat icon. */
+    ctx.save();
+    ctx.globalAlpha=.25*fade;
+    ctx.fillStyle='#000';
+    ctx.beginPath();
+    ctx.ellipse(e.x-Math.cos(a)*2,e.y+e.r*.82,e.r*.68,Math.max(3,e.r*.20),0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    /* Draw animal-specific bodies in local coordinates pointing toward a. */
+    ctx.save();
+    ctx.translate(e.x,e.y+bob);
+    ctx.rotate(a);
+
+    if(p.key==='toad'){
+      /* Squat frog body, eye stalks, wide mouth, and a visibly animated tongue. */
+      const squash=1+Math.abs(walk)*.055*moving;
+      ctx.scale(1.08*squash,.88-(Math.abs(walk)*.035*moving));
+
+      ctx.fillStyle='#426c3f';
+      ctx.beginPath();ctx.ellipse(0,2,e.r*.83,e.r*.64,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#5e9151';
+      ctx.beginPath();ctx.ellipse(-2,-5,e.r*.67,e.r*.47,0,0,Math.PI*2);ctx.fill();
+
+      /* Back legs / feet. */
+      ctx.fillStyle='#355a35';
+      for(const sy of [-1,1]){
+        ctx.beginPath();
+        ctx.ellipse(-e.r*.48,sy*e.r*.50,e.r*.28,e.r*.15,sy*.22,0,Math.PI*2);ctx.fill();
+      }
+
+      /* Eye stalks. */
+      for(const sy of [-1,1]){
+        ctx.fillStyle='#79aa63';
+        ctx.beginPath();ctx.ellipse(e.r*.32,sy*e.r*.34,6,8,sy*.18,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#eaf4cf';
+        ctx.beginPath();ctx.arc(e.r*.35,sy*e.r*.34,4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#111';
+        ctx.beginPath();ctx.arc(e.r*.37,sy*e.r*.34,1.7,0,Math.PI*2);ctx.fill();
+      }
+
+      /* Wide mouth. */
+      ctx.strokeStyle='#202b1e';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(e.r*.32,2,e.r*.34,-.25,.25);ctx.stroke();
+
+      /* Tongue lashes outward during the attack pulse. */
+      const tongueLen=attackPulse>0 ? 16+attackPulse*28 : 8+Math.sin(e.age*.13)*3;
+      ctx.strokeStyle='#ef8da0';ctx.lineWidth=3.5;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(e.r*.28,2);ctx.lineTo(e.r*.28+tongueLen,2);ctx.stroke();
+      if(attackPulse>.12){
+        ctx.strokeStyle='#ffbdc8';ctx.lineWidth=1.3;
+        ctx.beginPath();ctx.moveTo(e.r*.28,2);ctx.lineTo(e.r*.28+tongueLen,2);ctx.stroke();
+      }
+
+      /* Landing ring / dust during the characteristic jump attack. */
+      if(attackPulse>.35){
+        ctx.restore();
+        ctx.save();
+        ctx.globalAlpha=.42*attackPulse;
+        ctx.strokeStyle='#d8b45f';ctx.lineWidth=2;
+        ctx.beginPath();ctx.ellipse(e.x,e.y+e.r*.72,e.r*(.75+attackPulse),6,0,0,Math.PI*2);ctx.stroke();
+        ctx.restore();
+        ctx.save();ctx.translate(e.x,e.y+bob);ctx.rotate(a);
+      }
+
+    }else if(p.key==='snake'){
+      /* Coiled serpent with a head-led lunge. */
+      const coilAmp=2.5+Math.abs(Math.sin(e.age*.16))*2.5;
+      ctx.strokeStyle='#4c365b';ctx.lineWidth=e.r*.24;ctx.lineCap='round';
+      ctx.beginPath();
+      for(let i=0;i<=34;i++){
+        const t=i/34*Math.PI*2.15;
+        const rr=e.r*.43+Math.sin(t*3+e.age*.12)*coilAmp;
+        const x=-2+Math.cos(t)*rr, y=Math.sin(t)*rr;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.strokeStyle='#9b70aa';ctx.lineWidth=e.r*.10;ctx.beginPath();
+      for(let i=0;i<=34;i++){
+        const t=i/34*Math.PI*2.15;
+        const rr=e.r*.43+Math.sin(t*3+e.age*.12)*coilAmp;
+        const x=-2+Math.cos(t)*rr, y=Math.sin(t)*rr;
+        if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      /* Head and jaw. */
+      const headX=e.r*.54+(attackPulse*e.r*.34);
+      ctx.fillStyle='#684777';
+      ctx.beginPath();ctx.ellipse(headX,0,e.r*.43,e.r*.31,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#8d6298';
+      ctx.beginPath();ctx.ellipse(headX+e.r*.18,0,e.r*.26,e.r*.19,0,0,Math.PI*2);ctx.fill();
+      for(const sy of [-1,1]){
+        ctx.fillStyle='#d9f2a8';ctx.beginPath();ctx.arc(headX+e.r*.17,sy*5,3.4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#151515';ctx.beginPath();ctx.arc(headX+e.r*.18,sy*5,1.4,0,Math.PI*2);ctx.fill();
+      }
+      ctx.strokeStyle='#2a172e';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(headX+e.r*.20,-5);ctx.quadraticCurveTo(headX+e.r*.45,0,headX+e.r*.20,5);ctx.stroke();
+
+      /* Forked tongue. */
+      const tl=attackPulse>0 ? e.r*.78 : e.r*.36;
+      ctx.strokeStyle='#e68c9e';ctx.lineWidth=1.8;
+      ctx.beginPath();ctx.moveTo(headX+e.r*.38,0);ctx.lineTo(headX+e.r*.38+tl,0);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(headX+e.r*.38+tl*.65,0);ctx.lineTo(headX+e.r*.38+tl, -3);ctx.moveTo(headX+e.r*.38+tl*.65,0);ctx.lineTo(headX+e.r*.38+tl,3);ctx.stroke();
+
+      if(attackPulse>.25){
+        ctx.strokeStyle='rgba(215,180,255,.7)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(e.r*.45,0,e.r*.72,-.42,.42);ctx.stroke();
+      }
+
+    }else if(p.key==='slug'){
+      /* Large soft slug body, eyestalks, underside, and animated acid. */
+      const squish=1+Math.sin(e.age*.20)*.055;
+      ctx.scale(1.12*squish,.84);
+      ctx.fillStyle='#b981ae';
+      ctx.beginPath();ctx.ellipse(-2,4,e.r*.88,e.r*.58,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e1b9d5';
+      ctx.beginPath();ctx.ellipse(0,-3,e.r*.72,e.r*.46,0,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle='#f2dff0';
+      for(const sy of [-1,1]){
+        ctx.beginPath();ctx.ellipse(e.r*.42,sy*e.r*.26,4,9,0,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#50384e';ctx.beginPath();ctx.arc(e.r*.46,sy*e.r*.28,1.6,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#f2dff0';
+      }
+      ctx.strokeStyle='#9b7095';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(-e.r*.58,8);ctx.quadraticCurveTo(0,e.r*.35,e.r*.58,8);ctx.stroke();
+
+      /* Acid spray droplets / splash. */
+      const spray=attackPulse>0 ? 18+attackPulse*28 : 8;
+      ctx.fillStyle='#d8f7b7';
+      for(let i=0;i<5;i++){
+        const yy=(i-2)*5+Math.sin(e.age*.2+i)*2;
+        const xx=e.r*.45+spray*(.25+i*.17);
+        ctx.globalAlpha=.35+attackPulse*.55;
+        ctx.beginPath();ctx.arc(xx,yy,1.8+(i%2),0,Math.PI*2);ctx.fill();
+      }
+      if(attackPulse>.2){
+        ctx.strokeStyle='rgba(218,255,180,.8)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(e.r*.35,0,e.r*.65,-.45,.45);ctx.stroke();
+      }
+
+    }else if(p.key==='monkey'){
+      /* White/grey monkey with ears, face, tail and a clearly physical staff. */
+      const lean=attackPulse>.1?-.08:0;
+      ctx.rotate(lean);
+      ctx.fillStyle='#e4e7e9';
+      ctx.beginPath();ctx.ellipse(-2,2,e.r*.72,e.r*.78,0,0,Math.PI*2);ctx.fill();
+
+      ctx.fillStyle='#a57958';
+      ctx.beginPath();ctx.arc(e.r*.28,0,e.r*.42,0,Math.PI*2);ctx.fill();
+      for(const sy of [-1,1]){
+        ctx.fillStyle='#d8dde0';ctx.beginPath();ctx.arc(e.r*.14,sy*e.r*.36,6.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#8d674e';ctx.beginPath();ctx.arc(e.r*.14,sy*e.r*.36,3.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#111';ctx.beginPath();ctx.arc(e.r*.40,sy*5,1.7,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle='#d9b18d';ctx.beginPath();ctx.ellipse(e.r*.56,4,6,4,0,0,Math.PI*2);ctx.fill();
+
+      /* Tail curls behind the body. */
+      ctx.strokeStyle='#b88d68';ctx.lineWidth=4;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-e.r*.45,4);ctx.bezierCurveTo(-e.r*1.1,-e.r*.1,-e.r*1.0,-e.r*.75,-e.r*.35,-e.r*.62);ctx.stroke();
+
+      /* Staff rotates and snaps forward on attacks. */
+      const staffAngle=attackPulse>.05 ? .42*Math.sin((1-attackPulse)*Math.PI*2) : .16*Math.sin(e.age*.18);
+      ctx.save();ctx.rotate(staffAngle);
+      ctx.strokeStyle='#d5a95e';ctx.lineWidth=3.4;
+      ctx.beginPath();ctx.moveTo(-e.r*1.08,-e.r*.12);ctx.lineTo(e.r*1.48,e.r*.12);ctx.stroke();
+      ctx.strokeStyle='#fff0a7';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(-e.r*1.08,-e.r*.12);ctx.lineTo(e.r*1.48,e.r*.12);ctx.stroke();
+      ctx.restore();
+
+      if(attackPulse>.2){
+        ctx.strokeStyle='rgba(255,222,133,.8)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(e.r*.72,0,e.r*.58,-.7,.7);ctx.stroke();
+      }
+
+    }else if(p.key==='hound'){
+      /* Four-legged canine silhouette with ears, tail and sprinting paws. */
+      ctx.fillStyle='#8f5d3a';
+      ctx.beginPath();ctx.ellipse(-2,3,e.r*.77,e.r*.48,0,0,Math.PI*2);ctx.fill();
+
+      /* Neck/head. */
+      ctx.fillStyle='#a86f45';
+      ctx.beginPath();ctx.ellipse(e.r*.54,-1,e.r*.42,e.r*.36,0,0,Math.PI*2);ctx.fill();
+      /* Ears. */
+      for(const sy of [-1,1]){
+        ctx.fillStyle='#70472f';
+        ctx.beginPath();ctx.moveTo(e.r*.43,sy*e.r*.22);ctx.lineTo(e.r*.58,sy*e.r*.68);ctx.lineTo(e.r*.78,sy*e.r*.22);ctx.closePath();ctx.fill();
+      }
+      ctx.fillStyle='#181818';ctx.beginPath();ctx.arc(e.r*.83,0,2,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#2b1712';ctx.beginPath();ctx.arc(e.r*.94,3,3,0,Math.PI*2);ctx.fill();
+
+      /* Legs pump with the movement phase. */
+      ctx.strokeStyle='#6e472f';ctx.lineWidth=5;ctx.lineCap='round';
+      for(const side of [-1,1]){
+        const phase=side>0?walk:-walk;
+        ctx.beginPath();ctx.moveTo(-e.r*.35,side*e.r*.20);ctx.lineTo(-e.r*.48+phase*4,side*e.r*.72);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(e.r*.25,side*e.r*.20);ctx.lineTo(e.r*.42-phase*4,side*e.r*.72);ctx.stroke();
+      }
+      /* Raised wagging tail. */
+      ctx.strokeStyle='#b17b52';ctx.lineWidth=4;
+      ctx.beginPath();ctx.moveTo(-e.r*.66,0);ctx.quadraticCurveTo(-e.r*1.08,-e.r*.50,-e.r*.72,-e.r*.78+Math.sin(e.age*.3)*3);ctx.stroke();
+
+      if(attackPulse>.1){
+        ctx.strokeStyle='rgba(255,224,177,.85)';ctx.lineWidth=2.5;
+        ctx.beginPath();ctx.arc(e.r*.84,0,e.r*.48,-.55,.55);ctx.stroke();
+      }
+
+    }else if(p.key==='hawk'){
+      /* Bird of prey: head/beak plus two independently flapping wings. */
+      const wing=flap*(.18+.35*moving);
+      ctx.fillStyle='#6f4d3a';
+      ctx.beginPath();ctx.ellipse(0,0,e.r*.44,e.r*.64,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#9c765a';
+      ctx.beginPath();ctx.arc(e.r*.30,-2,e.r*.28,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#e2bf74';
+      ctx.beginPath();ctx.moveTo(e.r*.52,0);ctx.lineTo(e.r*.92,4);ctx.lineTo(e.r*.52,7);ctx.closePath();ctx.fill();
+      ctx.fillStyle='#111';ctx.beginPath();ctx.arc(e.r*.39,-5,2,0,Math.PI*2);ctx.fill();
+
+      /* Wing strokes are exaggerated during flight/dive. */
+      ctx.fillStyle='#51392d';
+      ctx.save();ctx.rotate(-wing);
+      ctx.beginPath();ctx.moveTo(-2,-4);ctx.quadraticCurveTo(-e.r*.78,-e.r*1.05,-e.r*1.12,-e.r*.25);ctx.quadraticCurveTo(-e.r*.58,-e.r*.10,-2,8);ctx.closePath();ctx.fill();
+      ctx.restore();
+      ctx.save();ctx.rotate(wing);
+      ctx.beginPath();ctx.moveTo(-2,4);ctx.quadraticCurveTo(-e.r*.78,e.r*1.05,-e.r*1.12,e.r*.25);ctx.quadraticCurveTo(-e.r*.58,e.r*.10,-2,-8);ctx.closePath();ctx.fill();
+      ctx.restore();
+
+      /* Dive attack becomes a sharp golden/feather streak. */
+      if(e.diveTimer>0||attackPulse>.15){
+        ctx.strokeStyle='rgba(245,215,145,.85)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.moveTo(-e.r*.9,0);ctx.lineTo(-e.r*1.8,0);ctx.moveTo(-e.r*.65,5);ctx.lineTo(-e.r*1.55,9);ctx.stroke();
+      }
+
+    }else if(p.key==='turtle'){
+      /* Heavy plated shell, head, feet and segmented shell pattern. */
+      ctx.fillStyle='#3e5e48';
+      ctx.beginPath();ctx.ellipse(-1,2,e.r*.80,e.r*.67,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#d8c35e';ctx.lineWidth=2;
+      ctx.beginPath();ctx.ellipse(-1,2,e.r*.80,e.r*.67,0,0,Math.PI*2);ctx.stroke();
+
+      /* Shell plates. */
+      for(let i=0;i<6;i++){
+        const aa=i*Math.PI/3+e.age*.006;
+        ctx.beginPath();ctx.moveTo(-1,2);
+        ctx.lineTo(-1+Math.cos(aa)*e.r*.72,2+Math.sin(aa)*e.r*.58);ctx.stroke();
+      }
+      ctx.strokeStyle='#7fa477';ctx.lineWidth=2;
+      ctx.beginPath();ctx.ellipse(-1,2,e.r*.48,e.r*.40,0,0,Math.PI*2);ctx.stroke();
+
+      /* Head and four feet. */
+      ctx.fillStyle='#9aaa70';
+      ctx.beginPath();ctx.ellipse(e.r*.72,0,e.r*.28,e.r*.25,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#8d9e69';
+      for(const sy of [-1,1]){
+        ctx.beginPath();ctx.ellipse(e.r*.32,sy*e.r*.64,7,4,0,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(-e.r*.42,sy*e.r*.58,7,4,0,0,Math.PI*2);ctx.fill();
+      }
+      ctx.fillStyle='#182018';ctx.beginPath();ctx.arc(e.r*.80,-4,1.8,0,Math.PI*2);ctx.fill();
+
+      if(e.shellGuard>0||attackPulse>.15){
+        ctx.strokeStyle='rgba(255,239,148,.9)';ctx.lineWidth=3;
+        ctx.beginPath();ctx.arc(0,2,e.r+7+Math.sin(e.age*.3)*2,0,Math.PI*2);ctx.stroke();
+      }
+
+    }else if(p.key==='insect'){
+      /* Beetle-like core with transparent wings and a persistent moving swarm. */
+      ctx.fillStyle='#1a241c';
+      ctx.beginPath();ctx.ellipse(0,0,e.r*.40,e.r*.64,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#91c66e';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(0,-e.r*.58);ctx.lineTo(0,e.r*.58);ctx.stroke();
+
+      for(const sy of [-1,1]){
+        ctx.fillStyle='rgba(178,225,155,.28)';
+        ctx.beginPath();ctx.ellipse(-2,sy*e.r*.35,e.r*.50,e.r*.22,sy*.45,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#9ed07d';ctx.lineWidth=1.4;ctx.stroke();
+      }
+      /* Antennae. */
+      ctx.strokeStyle='#a8d789';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(2,-e.r*.48);ctx.quadraticCurveTo(e.r*.50,-e.r*.80,e.r*.65,-e.r*.55);ctx.moveTo(-2,-e.r*.48);ctx.quadraticCurveTo(-e.r*.50,-e.r*.80,-e.r*.65,-e.r*.55);ctx.stroke();
+
+      /* Animated swarm orbiting the body. */
+      for(let i=0;i<20;i++){
+        const aa=i*.91+e.age*.24;
+        const rr=e.r*(.76+.14*Math.sin(i*2.3+e.age*.08));
+        const xx=Math.cos(aa)*rr,yy=Math.sin(aa)*rr;
+        ctx.fillStyle=i%4===0?'#dff8ad':(i%2?'#72a95d':'#a6d978');
+        ctx.beginPath();ctx.arc(xx,yy,1.5+(i%3)*.45,0,Math.PI*2);ctx.fill();
+      }
+      if(attackPulse>.15){
+        ctx.strokeStyle='rgba(190,245,142,.8)';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(0,0,e.r+8+attackPulse*8,0,Math.PI*2);ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+
+    /* Creature-specific attack motion/effect outside the local body. */
+    if(attackPulse>.05){
+      ctx.save();
+      ctx.globalAlpha=.25+.55*attackPulse;
+      ctx.lineCap='round';
+      if(p.key==='toad'){
+        ctx.strokeStyle='#ffb0bd';ctx.lineWidth=3;
+        ctx.beginPath();ctx.moveTo(e.x+Math.cos(a)*e.r*.35,e.y+Math.sin(a)*e.r*.35);
+        ctx.lineTo(e.x+Math.cos(a)*(e.r+28*attackPulse),e.y+Math.sin(a)*(e.r+28*attackPulse));ctx.stroke();
+      }else if(p.key==='snake'){
+        ctx.strokeStyle='#caa4d9';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+10*attackPulse,a-.7,a+.7);ctx.stroke();
+      }else if(p.key==='slug'){
+        ctx.fillStyle='#dfffbf';
+        for(let i=0;i<7;i++){
+          const rr=e.r+8+i*4,aa=a-.38+i*.12;
+          ctx.beginPath();ctx.arc(e.x+Math.cos(aa)*rr,e.y+Math.sin(aa)*rr,1.5+(i%2),0,Math.PI*2);ctx.fill();
+        }
+      }else if(p.key==='monkey'){
+        ctx.strokeStyle='#ffe28d';ctx.lineWidth=3;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+8,a-.8,a+.8);ctx.stroke();
+      }else if(p.key==='hound'){
+        ctx.strokeStyle='#ffd0a0';ctx.lineWidth=2.5;
+        for(let i=1;i<=3;i++){
+          ctx.beginPath();ctx.moveTo(e.x-Math.cos(a)*e.r*i*.34,e.y-Math.sin(a)*e.r*i*.34);
+          ctx.lineTo(e.x-Math.cos(a)*e.r*(i*.58+.2),e.y-Math.sin(a)*e.r*(i*.58+.2));ctx.stroke();
+        }
+      }else if(p.key==='hawk'){
+        ctx.strokeStyle='#f1d39a';ctx.lineWidth=2.5;
+        ctx.beginPath();ctx.moveTo(e.x-Math.cos(a)*e.r*.7,e.y-Math.sin(a)*e.r*.7);
+        ctx.lineTo(e.x-Math.cos(a)*e.r*1.9,e.y-Math.sin(a)*e.r*1.9);ctx.stroke();
+      }else if(p.key==='turtle'){
+        ctx.strokeStyle='#fff0a2';ctx.lineWidth=3;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+8+attackPulse*5,0,Math.PI*2);ctx.stroke();
+      }else if(p.key==='insect'){
+        ctx.strokeStyle='#bff39a';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(e.x,e.y,e.r+10+attackPulse*6,0,Math.PI*2);ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Nameplate and health strip remain consistent with the rest of the arena. */
+    ctx.save();
+    ctx.globalAlpha=.92*fade;
+    ctx.fillStyle=p.accent;
+    ctx.font='900 8px system-ui';
+    ctx.textAlign='center';
+    ctx.fillText(p.label,e.x,e.y-e.r-11);
+
+    ctx.fillStyle='rgba(0,0,0,.58)';
+    ctx.fillRect(e.x-19,e.y+e.r+6,38,4);
+    ctx.fillStyle=p.accent;
+    ctx.fillRect(e.x-19,e.y+e.r+6,38*clamp(e.hp/e.maxHp,0,1),4);
+
+    if(hitPulse>.05){
+      ctx.strokeStyle='#fff';
+      ctx.lineWidth=2;
+      ctx.globalAlpha=.65*hitPulse;
+      ctx.beginPath();ctx.arc(e.x,e.y,e.r+5+hitPulse*3,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
     ctx.restore();
   }
 
@@ -9707,8 +10504,33 @@ populateSources();resetState();
       log(`${foe.name} resists ${name}; Byakugan immunity prevents genjutsu/Sharingan techniques in the Orb Arena.`);
       foe.genjutsuFlash=18;showBanner(`${foe.name}: BYAKUGAN RESISTS`,850);f[meter]=100;return false;
     }
-    const puppetSource=f.isPuppetUser?ensurePuppetForTechnique(f,name):null;
-    if(f.isPuppetUser&&!puppetSource)return false;
+    let puppetSource=null;
+    if(f.isPuppetUser){
+      /* A puppet user's jutsu meter has two distinct outcomes:
+         1) If no puppet is currently alive, the activation is spent on the
+            required puppet deployment/respawn.
+         2) If ANY configured puppet is still alive, do NOT deploy another
+            puppet. The charged jutsu proceeds normally through the existing
+            jutsu path and the active puppet is its source.
+         Use the full live-puppet list rather than f.puppet alone because
+         multi-puppet weapons can have a live member while the compatibility
+         pointer has already changed or gone stale. */
+      const live=livePuppetsFor(f);
+      if(!live.length){
+        puppetSource=ensurePuppetForTechnique(f,name);
+        if(!puppetSource)return false;
+        f[meter]=0;
+        f[active]=0;
+        f.abilityFlash=24;
+        f.abilityName='Puppet Deployment';
+        f.abilityKind='puppet';
+        f.lastAbility=slot;
+        showBanner(`${f.name}: Puppet Re-Summoned`,900);
+        log(`${f.name} re-summons their puppet. The jutsu charge is spent on deployment.`);
+        return true;
+      }
+      puppetSource=live[0];
+    }
     f[meter]=0;f[active]=slot==='ult'?62:48;f.abilityFlash=34;f.abilityName=name;f.abilityKind=techniqueKind(name);f.lastAbility=slot;
     if(slot==='ult' && f.jinchuriki && f.tailCount && f.ultimateStage===0){
       activateJinchurikiTransformation(f);
@@ -9987,7 +10809,7 @@ populateSources();resetState();
 
   function weaponHitPuppetCheck(a){
     if(a.combatMode==='ranged'||!a.alive)return false;
-    const targets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side!==a.side);
+    const targets=fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive&&p.side!==a.side);
     for(const p of targets){
       if(!weaponTipContact(a,p))continue;
       let dmg=a.dmg*(.50+Math.random()*.24)*ORB_TUNING.combat.damageMultiplier;dmg*=.74+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
@@ -10268,7 +11090,7 @@ populateSources();resetState();
 
   function weaponHitPuppetCheck(a){
     if(a.combatMode==='ranged'||!a.alive)return false;
-    const targets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side!==a.side);
+    const targets=fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive&&p.side!==a.side);
     for(const p of targets){
       if(!weaponTipContact(a,p))continue;
       let dmg=a.dmg*(.50+Math.random()*.24)*ORB_TUNING.combat.damageMultiplier;dmg*=.74+stat(a.ninja,'weaponSkill')*.002+stat(a.ninja,'strength')*.0015;
@@ -10313,7 +11135,7 @@ populateSources();resetState();
   }
 
   function hasActivePuppet(f){
-    return !!(f&&f.puppet&&f.puppet.alive);
+    return !!(f&&livePuppetsFor(f).length);
   }
   function combatTargetFor(f,foe){
     /* The fighter itself remains the primary target for the fighter's own
@@ -10504,7 +11326,7 @@ populateSources();resetState();
       const enemySide=p.f.side==='A'?'B':'A';
       const fighterTarget=enemySide==='A'?fighters[0]:fighters[1];
       const liveClones=clones.filter(c=>c.alive&&c.side===enemySide);
-      const livePuppets=fighters.map(f=>f.puppet).filter(p=>p&&p.alive&&p.side===enemySide);
+      const livePuppets=fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive&&p.side===enemySide);
       const liveDogs=dogs.filter(d=>d.alive&&d.side===enemySide);
       const liveSummons=summons.filter(s=>s.alive&&s.side===enemySide);
 
@@ -10557,7 +11379,7 @@ populateSources();resetState();
              controller's fighter object plus puppet-specific combat state.
              Detect puppets structurally so ranged projectiles always damage
              the actual puppet instead of falling through to clone handling. */
-          if(target.weaponType==='dagger' && target.parent && target.parent.puppet===target){
+          if(target.entityType==='puppet'){
             damagePuppet(target,dmg,p.f);
           }else if(target.entityType==='dog'){
             damageDog(target,dmg,p.f);
@@ -10698,6 +11520,310 @@ populateSources();resetState();
       }
       ctx.restore();
     }
+  }
+
+  /* ================================================================
+     WEAPON / TOOL AESTHETIC PASS
+     This layer is visual-only. It does not alter weapon collision, damage,
+     gauges, movement, projectile cadence, puppets, clones, dogs, or arena
+     balance. Existing weapon silhouettes remain underneath this pass.
+     ================================================================ */
+  const WEAPON_AESTHETIC = {
+    'Adamantine Staff':{shape:'adamantineStaff',c:'#d9d9d9',a:'#8a8f98',phase:0.2},
+    'Arm-mounted Drill':{shape:'drill',c:'#b7c7d6',a:'#61d8ff',phase:1.1},
+    'Artificial Sharingan':{shape:'eye',c:'#e83d4f',a:'#111827',phase:2.2},
+    'Axe':{shape:'axe',c:'#b7c0ca',a:'#5e6875',phase:.4},
+    'Barrier Tag':{shape:'seal',c:'#f1d37a',a:'#b83c3c',phase:1.7},
+    'Blowpipe':{shape:'blowpipe',c:'#6f8798',a:'#b9efff',phase:2.5},
+    'Bow & Arrow':{shape:'bow',c:'#bca078',a:'#eaf5ff',phase:.8},
+    'Bō':{shape:'bo',c:'#7b5a3e',a:'#e0b66f',phase:1.5},
+    'Chain Wind Staff':{shape:'chainStaff',c:'#aeb8c4',a:'#73d8ff',phase:2.8},
+    'Chakra-Suppressing Seal':{shape:'seal',c:'#8fdcff',a:'#6b4bc3',phase:.9},
+    'Claw Club':{shape:'claw',c:'#9ca8b5',a:'#e6edf4',phase:1.9},
+    'Cleaver Sword':{shape:'cleaver',c:'#aeb7c2',a:'#e8f1fa',phase:.1},
+    'Club':{shape:'club',c:'#8d735d',a:'#d6b48d',phase:2.1},
+    'Conch Shell Mace':{shape:'conch',c:'#d9c8b0',a:'#fff0d0',phase:1.3},
+    'Crossbow':{shape:'crossbow',c:'#9ca8b5',a:'#d9f3ff',phase:2.6},
+    'Demonic Flute':{shape:'flute',c:'#d4bd91',a:'#bca0ff',phase:.7},
+    'Double Bladed Bracers':{shape:'bracers',c:'#aeb9c7',a:'#72e2ff',phase:1.8},
+    'Double-Bladed Scythe':{shape:'doubleScythe',c:'#aeb7c4',a:'#f0f6ff',phase:.3},
+    'Dragon Blade':{shape:'dragonBlade',c:'#d4dce6',a:'#e26a4a',phase:2.4},
+    'Explosive Tag':{shape:'seal',c:'#f2d08a',a:'#e84b3c',phase:1.2},
+    'Explosive Tag Ball':{shape:'tagBall',c:'#c9d0d9',a:'#ff7043',phase:2.9},
+    'Eye Scope':{shape:'scope',c:'#aab7c5',a:'#72dcff',phase:1.6},
+    'Fire Sword':{shape:'fireSword',c:'#e9edf4',a:'#ff6b24',phase:.6},
+    "First Hokage's Necklace":{shape:'necklace',c:'#bfe7b2',a:'#70c65b',phase:2.0},
+    'Flail':{shape:'flail',c:'#8f99a6',a:'#d7e1ec',phase:.5},
+    'Flamethrower':{shape:'flamethrower',c:'#9daab7',a:'#ff7a27',phase:1.4},
+    'Flying Thunder God Kunai':{shape:'ftgKunai',c:'#d7e0ea',a:'#f5c45d',phase:2.7},
+    'Fūma Shuriken':{shape:'fuma',c:'#b8c1cc',a:'#8fdcff',phase:1.0},
+    'Garian Sword':{shape:'garian',c:'#c9d2dd',a:'#9c73ff',phase:2.3},
+    'Gekkōran Flower':{shape:'flower',c:'#d7c4ff',a:'#a98cff',phase:.2},
+    'Giant Folding Fan':{shape:'giantFan',c:'#c7a36b',a:'#f0dfb2',phase:1.1},
+    'Gunbai':{shape:'gunbai',c:'#303744',a:'#c9d3df',phase:2.1},
+    'Handheld Kunai Launcher':{shape:'launcher',c:'#9ba8b6',a:'#78dfff',phase:.9},
+    "Hashirama's Artificial Body":{shape:'hashiramaBody',c:'#8dba78',a:'#d6f0c8',phase:1.7},
+    'Hiramekarei':{shape:'hiramekarei',c:'#9ca6b2',a:'#c9d8e8',phase:2.8},
+    'Jidanda':{shape:'jidanda',c:'#858f9d',a:'#e4ebf2',phase:.4},
+    'Jofuku Flower':{shape:'flower',c:'#ffd0df',a:'#ff8eb2',phase:2.2},
+    'Jutsu Absorption Arm':{shape:'absorptionArm',c:'#788696',a:'#75e5ff',phase:1.4},
+    'Kiba (swords)':{shape:'kiba',c:'#d9f5ff',a:'#62dfff',phase:.8},
+    'Knight Sword':{shape:'knight',c:'#b7c1cc',a:'#dce5ef',phase:1.9},
+    'Kunai':{shape:'kunai',c:'#c7d0da',a:'#eaf2fa',phase:2.5},
+    'Kunai Blade':{shape:'kunaiBlade',c:'#c6d0dc',a:'#8edcff',phase:.6},
+    'Kurosawa':{shape:'kurosawa',c:'#d4dae1',a:'#6e7784',phase:1.2},
+    'Kubikiribōchō':{shape:'kubikiribocho',c:'#aeb7c2',a:'#dce5ee',phase:2.0},
+    'Kusarigama':{shape:'kusarigama',c:'#aab4c0',a:'#d8e3ed',phase:.1},
+    'Kuwa':{shape:'kuwa',c:'#9eabb8',a:'#d9e5ef',phase:1.6},
+    'Kōkinjō':{shape:'kokinjo',c:'#f0d26b',a:'#fff2ad',phase:2.6},
+    'Ninja Info Cards':{shape:'cards',c:'#d8e3ed',a:'#7dcfff',phase:.7},
+    'Nuibari':{shape:'nuibari',c:'#e8f2fa',a:'#8fdcff',phase:1.8},
+    'Nunchaku':{shape:'nunchaku',c:'#b7c1cb',a:'#e2ebf4',phase:2.9},
+    'Paw Encyclopaedia':{shape:'book',c:'#c8a36d',a:'#f2dfb4',phase:1.0},
+    'Prayer Beads':{shape:'beads',c:'#d7b06b',a:'#fff0b0',phase:2.4},
+    'Ray Bow':{shape:'rayBow',c:'#9de7ff',a:'#ffffff',phase:.3},
+    'Red Moon Scroll':{shape:'scroll',c:'#c95a57',a:'#ffd0b0',phase:1.5},
+    'Retractable Spear':{shape:'retractSpear',c:'#c5d0dc',a:'#78dcff',phase:2.1},
+    'Samehada':{shape:'samehada',c:'#6f7f8e',a:'#8fdcff',phase:.9},
+    'Sand Gourd':{shape:'gourd',c:'#b47b4b',a:'#e6c28e',phase:1.9},
+    'Scalpel':{shape:'scalpel',c:'#d9e5ef',a:'#8ee4ff',phase:.5},
+    'Scroll of Seals':{shape:'sealScroll',c:'#c99b63',a:'#e7d08b',phase:2.7},
+    'Secret Treasure of the Toads':{shape:'toadTreasure',c:'#8bbd72',a:'#e6d080',phase:1.1},
+    'Senbon':{shape:'senbon',c:'#dce7f1',a:'#9feaff',phase:2.3},
+    'Shakujō':{shape:'shakujo',c:'#d4b76c',a:'#fff0a8',phase:.2},
+    'Shibuki (sword)':{shape:'shibuki',c:'#b7c0cb',a:'#ff7546',phase:1.6},
+    'Shichiseiken':{shape:'shichiseiken',c:'#b9c4d0',a:'#f2d37a',phase:2.8},
+    'Shinobi-Ware':{shape:'shinobiWare',c:'#758392',a:'#7be1ff',phase:.8},
+    'Shuriken':{shape:'shuriken',c:'#bfc9d4',a:'#dff5ff',phase:1.4},
+    'Spear':{shape:'spear',c:'#aeb9c5',a:'#e8f2fa',phase:2.2},
+    'Stone of Gelel':{shape:'stone',c:'#7f95a7',a:'#7de5ff',phase:.4},
+    'Stone Swords':{shape:'stoneSwords',c:'#8f9aa5',a:'#c9d1d9',phase:1.8},
+    'Sword of Kusanagi (Orochimaru)':{shape:'kusanagiOro',c:'#dfe8f2',a:'#78e0b0',phase:2.5},
+    'Sword of Kusanagi (Sasuke Uchiha)':{shape:'kusanagiSasuke',c:'#dfe8f2',a:'#9b7cff',phase:1.0},
+    'Sword of Kusanagi (Scientific Ninja Tool)':{shape:'kusanagiSNT',c:'#dfe8f2',a:'#69dfff',phase:2.0},
+    'Sword of Nunoboko':{shape:'nunoboko',c:'#d9c18a',a:'#fff3bd',phase:.7},
+    'Sword of the Thunder God':{shape:'thunderGod',c:'#d9f4ff',a:'#62dfff',phase:2.7},
+    'Sword of Totsuka':{shape:'totsuka',c:'#c9d0d9',a:'#c78cff',phase:1.3},
+    'Tantō':{shape:'tanto',c:'#c9d2dc',a:'#e8f1fa',phase:2.4},
+    'Three-Section Staff':{shape:'threeSectionStaff',c:'#aeb9c5',a:'#7fdcff',phase:.5},
+    'Tonfa':{shape:'tonfa',c:'#aeb8c4',a:'#dce7ef',phase:1.7},
+    'Treasured Tools of the Sage of Six Paths':{shape:'sixPathsTools',c:'#e0c76b',a:'#fff1a8',phase:2.6},
+    'Triple-Bladed Scythe':{shape:'tripleScythe',c:'#aeb7c3',a:'#f1f6fb',phase:.9},
+    'Water Stream Shooters':{shape:'waterShooters',c:'#67c9ef',a:'#d9f8ff',phase:1.9},
+    'Weaknessless Soaring Shortswords':{shape:'soaring',c:'#d8e2ec',a:'#8fdcff',phase:2.1},
+    'Whip':{shape:'whip',c:'#d5dde6',a:'#8edcff',phase:.3},
+    'White Light Chakra Sabre':{shape:'whiteLight',c:'#f4fbff',a:'#b9eaff',phase:1.5},
+    'Wire Strings':{shape:'wire',c:'#bcd7e8',a:'#ffffff',phase:2.9},
+    'Wrist Launcher':{shape:'launcher',c:'#8e9baa',a:'#70ddff',phase:1.1},
+    'Wrist-Mounted Senbon Launcher':{shape:'senbonLauncher',c:'#8998a7',a:'#a8edff',phase:2.4}
+  };
+
+  function weaponVisualProfile(f){
+    const exact=String(f?.weapon||'').trim();
+    if(exact==='Small Dagger')return{shape:'smallDagger',c:'#b9c7d5',a:'#f3fbff',phase:.35};
+    if(WEAPON_AESTHETIC[exact])return WEAPON_AESTHETIC[exact];
+    const cat=String(orbWeaponRecord(exact)?.category||'').toLowerCase();
+    if(cat==='ranged')return{shape:'launcher',c:'#9caab8',a:'#8edcff',phase:0};
+    if(cat==='staff')return{shape:'staff',c:'#aab5c2',a:'#8edcff',phase:0};
+    if(cat==='sword'||cat==='seven swords')return{shape:'sword',c:'#c5ced8',a:'#dff4ff',phase:0};
+    if(cat==='tag/seal')return{shape:'seal',c:'#e2c87a',a:'#e85a4f',phase:0};
+    return{shape:'artifact',c:'#aebbc8',a:'#8edcff',phase:0};
+  }
+
+  function drawWeaponAestheticPass(f,base,tip,a,L,attacking){
+    const p=weaponVisualProfile(f),t=(Number(f?.age)||0)*.045+performance.now()*.0012+p.phase;
+    const pulse=clamp(Number(f?.atkPulse)||0,0,15)/15;
+    const move=Math.hypot(Number(f?.vx)||0,Number(f?.vy)||0);
+    const travel=Math.min(1.8,move*.22);
+    const wobble=Math.sin(t)*(.7+travel*1.8);
+    const drawGlow=(x,y,r,col,alpha=.45)=>{ctx.save();ctx.globalAlpha*=alpha;ctx.shadowBlur=18;ctx.shadowColor=col;ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();ctx.restore();};
+    const streak=(x,y,ang,len,col,w=2,alpha=.45)=>{ctx.save();ctx.globalAlpha*=alpha;ctx.strokeStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(ang)*len,y-Math.sin(ang)*len);ctx.stroke();ctx.restore();};
+    const local=(x,y,rot,fn)=>{ctx.save();ctx.translate(x,y);ctx.rotate(rot);fn();ctx.restore();};
+    const impact=attacking||f.hitFlash>0;
+
+    /* Movement wake: physical tools visibly lag/drag in the direction of travel. */
+    if(travel>.05){
+      const va=Math.atan2(-(f.vy||0),-(f.vx||0));
+      streak(base.x,base.y,va,12+travel*24,p.a,1.4,.25);
+      streak(base.x,base.y,va+.08,8+travel*16,p.c,1,.2);
+    }
+
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    /* Unique silhouette overlays. These are intentionally lightweight so the
+       existing renderer remains visible and all collision geometry stays intact. */
+    switch(p.shape){
+      case 'smallDagger':
+        /* Clear compact dagger silhouette used by puppet masters/puppets.
+           This is visual-only; weapon reach, hitbox, damage and spin physics
+           remain exactly the same. */
+        local(base.x,base.y,a,()=>{
+          const dx=tip.x-base.x,dy=tip.y-base.y,LL=Math.max(1,Math.hypot(dx,dy));
+          const scale=Math.min(1.45,Math.max(.82,LL/28));
+          ctx.scale(scale,scale);
+          ctx.shadowColor=p.a;ctx.shadowBlur=7;
+          /* grip */
+          ctx.fillStyle='#171d26';ctx.strokeStyle='#070b10';ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.roundRect(-12,-3.1,12,6.2,2.2);ctx.fill();ctx.stroke();
+          /* wrapped handle bands */
+          ctx.strokeStyle='#728397';ctx.lineWidth=1.2;
+          for(let i=-9;i<=-2;i+=3){ctx.beginPath();ctx.moveTo(i,-3);ctx.lineTo(i+2,3);ctx.stroke();}
+          /* guard */
+          ctx.fillStyle='#657586';ctx.strokeStyle='#d7e4ef';ctx.lineWidth=1.4;
+          ctx.beginPath();ctx.roundRect(-1.8,-6.2,3.6,12.4,1.5);ctx.fill();ctx.stroke();
+          /* short double-edged blade with defined point */
+          const grad=ctx.createLinearGradient(0,-4,0,4);grad.addColorStop(0,'#f8fdff');grad.addColorStop(.5,p.c);grad.addColorStop(1,'#718394');
+          ctx.fillStyle=grad;ctx.strokeStyle='#eaf7ff';ctx.lineWidth=1.4;
+          ctx.beginPath();ctx.moveTo(1.2,-4.4);ctx.lineTo(19,0);ctx.lineTo(1.2,4.4);ctx.closePath();ctx.fill();ctx.stroke();
+          /* central fuller / edge highlight */
+          ctx.strokeStyle='#ffffff';ctx.globalAlpha=.78;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(3,0);ctx.lineTo(17,0);ctx.stroke();
+          ctx.globalAlpha=1;
+          /* attack glint */
+          if(attacking||pulse>.05){ctx.strokeStyle=p.a;ctx.lineWidth=1.8;ctx.globalAlpha=.7;ctx.beginPath();ctx.moveTo(11,-7);ctx.lineTo(20,-10);ctx.stroke();ctx.globalAlpha=1;}
+        });
+        if(impact){
+          /* Keep the dagger's impact feedback as directional sparks only.
+             Remove the small circular tip effects that made the dagger look
+             like it had glowing beads attached to its point. */
+          ctx.save();ctx.globalAlpha=.62;ctx.strokeStyle=p.a;ctx.lineWidth=1.5;
+          ctx.beginPath();ctx.moveTo(tip.x-5,tip.y-6);ctx.lineTo(tip.x+2,tip.y-9);ctx.moveTo(tip.x-3,tip.y+4);ctx.lineTo(tip.x+3,tip.y+7);ctx.stroke();ctx.restore();
+        }
+        break;
+      case 'adamantineStaff':
+        ctx.strokeStyle=p.c;ctx.lineWidth=8;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        if(attacking){ctx.globalAlpha=.5;ctx.strokeStyle=p.a;ctx.lineWidth=3;ctx.beginPath();ctx.arc(tip.x,tip.y,12+pulse*12,a-1,a+1);ctx.stroke();}
+        break;
+      case 'bo': case 'staff':
+        ctx.strokeStyle=p.c;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        ctx.fillStyle=p.a;ctx.beginPath();ctx.arc(tip.x,tip.y,3.5+wobble*.6,0,Math.PI*2);ctx.fill();
+        break;
+      case 'chainStaff': case 'shakujo': case 'threeSectionStaff':
+        for(let i=0;i<3;i++){const q=i/3;const x=base.x+(tip.x-base.x)*q,y=base.y+(tip.y-base.y)*q;ctx.strokeStyle=p.c;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+(i%2?Math.sin(t)*3:0),y+(i%2?Math.cos(t)*3:0));ctx.stroke();}
+        ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        if(impact)drawGlow(tip.x,tip.y,5,p.a,.32);break;
+      case 'drill': case 'armDrill':
+        local(tip.x,tip.y,a,( )=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(18,0);ctx.lineTo(-9,-8);ctx.lineTo(-4,0);ctx.lineTo(-9,8);ctx.closePath();ctx.fill();ctx.stroke();for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(2,0,5+i*2,-1.4+i*.25,1.4+i*.25);ctx.stroke();}});break;
+      case 'bracers':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.fillRect(-7,-15,25,9);ctx.fillRect(-7,6,25,9);ctx.strokeRect(-7,-15,25,9);ctx.strokeRect(-7,6,25,9);});break;
+      case 'eye':
+        drawGlow(tip.x,tip.y,5,p.c,.65);local(tip.x,tip.y,a,()=>{ctx.fillStyle='#f4f4f4';ctx.beginPath();ctx.ellipse(0,0,10,6,0,0,Math.PI*2);ctx.fill();ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(0,0,4,0,Math.PI*2);ctx.fill();ctx.strokeStyle=p.a;ctx.lineWidth=1.5;ctx.stroke();});break;
+      case 'axe': case 'cleaver': case 'club': case 'claw': case 'conch': case 'knight': case 'kurosawa': case 'kuwa': case 'spear': case 'tanto': case 'kunaiBlade': case 'scalpel': case 'shichiseiken':
+      case 'kusanagiOro': case 'kusanagiSasuke': case 'kusanagiSNT': case 'nunoboko': case 'thunderGod': case 'totsuka': case 'whiteLight': case 'soaring': case 'stoneSwords':
+        ctx.strokeStyle=p.c;ctx.lineWidth=p.shape==='club'||p.shape==='conch'?8:4.5;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=1.8;ctx.beginPath();
+          if(p.shape==='axe'){ctx.moveTo(19,0);ctx.lineTo(5,-13);ctx.lineTo(-4,-9);ctx.lineTo(-7,0);ctx.lineTo(-4,9);ctx.lineTo(5,13);}
+          else if(p.shape==='club'){ctx.arc(8,0,13,-1.1,1.1);ctx.lineTo(-5,9);ctx.lineTo(-5,-9);}
+          else if(p.shape==='conch'){ctx.arc(5,0,14,-1.2,1.2);ctx.lineTo(-8,7);ctx.lineTo(-8,-7);}
+          else if(p.shape==='kunaiBlade'||p.shape==='tanto'||p.shape==='scalpel'){ctx.moveTo(18,0);ctx.lineTo(-7,-4);ctx.lineTo(-10,0);ctx.lineTo(-7,4);}
+          else if(p.shape==='nunoboko'){ctx.moveTo(18,0);ctx.lineTo(7,-10);ctx.lineTo(-5,-5);ctx.lineTo(-2,0);ctx.lineTo(-5,5);ctx.lineTo(7,10);}
+          else {ctx.moveTo(21,0);ctx.lineTo(-8,-5);ctx.lineTo(-5,0);ctx.lineTo(-8,5);}
+          ctx.closePath();ctx.fill();ctx.stroke();
+        });
+        if(impact){ctx.strokeStyle=p.a;ctx.globalAlpha=.5;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,9+pulse*10,a-.65,a+.65);ctx.stroke();}
+        break;
+      case 'fireSword':
+        ctx.strokeStyle=p.c;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        for(let i=0;i<4;i++){const q=i/4;const x=base.x+(tip.x-base.x)*q,y=base.y+(tip.y-base.y)*q;ctx.strokeStyle=i%2?p.a:'#ffd15c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-Math.cos(a)*5,y-Math.sin(a)*5);ctx.stroke();}
+        if(attacking)streak(tip.x,tip.y,a+Math.PI/2,26,p.a,3,.65);break;
+      case 'dragonBlade': case 'garian': case 'samehada': case 'hiramekarei': case 'kubikiribocho': case 'jidanda': case 'shibuki': case 'kiba': case 'nuibari':
+        ctx.strokeStyle=p.c;ctx.lineWidth=p.shape==='samehada'?8:5;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=1.5;ctx.beginPath();
+          if(p.shape==='samehada'){ctx.moveTo(20,0);for(let i=0;i<8;i++){const q=i/7;ctx.lineTo(20-q*28,-9+(i%2)*18)}ctx.lineTo(-10,0);}
+          else if(p.shape==='hiramekarei'){ctx.roundRect?ctx.roundRect(-8,-13,30,26,5):(ctx.rect(-8,-13,30,26));}
+          else if(p.shape==='kubikiribocho'){ctx.moveTo(22,-12);ctx.lineTo(-11,-16);ctx.lineTo(-15,16);ctx.lineTo(22,12);}
+          else if(p.shape==='jidanda'){ctx.arc(0,0,16,-1.3,1.3);ctx.lineTo(-8,9);ctx.lineTo(-8,-9);}
+          else if(p.shape==='kiba'){ctx.moveTo(21,0);ctx.lineTo(8,-8);ctx.lineTo(0,-4);ctx.lineTo(6,0);ctx.lineTo(0,4);ctx.lineTo(8,8);}
+          else if(p.shape==='nuibari'){ctx.moveTo(24,0);ctx.lineTo(-10,-2);ctx.lineTo(-12,0);ctx.lineTo(-10,2);}
+          else {ctx.moveTo(22,0);ctx.lineTo(-8,-6);ctx.lineTo(-7,0);ctx.lineTo(-8,6);}
+          ctx.closePath();ctx.fill();ctx.stroke();
+        });
+        if(p.shape==='samehada'){for(let i=0;i<5;i++){streak(base.x+(tip.x-base.x)*(.2+i*.14),base.y+(tip.y-base.y)*(.2+i*.14),a+Math.PI/2,7,p.a,1.4,.3)}}
+        if(impact){ctx.globalAlpha=.5;ctx.strokeStyle=p.a;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(tip.x,tip.y,10+pulse*13,a-.8,a+.8);ctx.stroke();}
+        break;
+      case 'doubleScythe': case 'tripleScythe':
+        ctx.strokeStyle=p.c;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        local(tip.x,tip.y,a,()=>{ctx.strokeStyle=p.c;ctx.lineWidth=5;for(let i=0;i<(p.shape==='tripleScythe'?3:2);i++){const off=(i-(p.shape==='tripleScythe'?1:.5))*10;ctx.beginPath();ctx.arc(0,off,20,-1.3,.3);ctx.stroke();}});
+        if(attacking)streak(tip.x,tip.y,a-.8,32,p.a,3,.55);break;
+      case 'flail': case 'nunchaku': case 'kusarigama':
+        ctx.strokeStyle=p.c;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,p.shape==='nunchaku'?8:10,0,Math.PI*2);ctx.fill();ctx.stroke();if(p.shape==='nunchaku'){ctx.fillRect(-18,-3,12,6);ctx.fillRect(8,-3,12,6);}else{ctx.beginPath();ctx.moveTo(10,0);ctx.lineTo(25,-8);ctx.lineTo(25,8);ctx.closePath();ctx.fill();}});
+        break;
+      case 'bow': case 'rayBow':
+        ctx.strokeStyle=p.c;ctx.lineWidth=3;ctx.beginPath();ctx.arc(tip.x,tip.y,23,a-Math.PI/2,a+Math.PI/2);ctx.stroke();
+        ctx.strokeStyle=p.a;ctx.lineWidth=p.shape==='rayBow'?3:1.5;ctx.beginPath();ctx.moveTo(tip.x-Math.cos(a)*23,tip.y-Math.sin(a)*23);ctx.lineTo(tip.x+Math.cos(a)*23,tip.y+Math.sin(a)*23);ctx.stroke();
+        if(attacking){drawGlow(tip.x+Math.cos(a)*8,tip.y+Math.sin(a)*8,5,p.a,.55);streak(tip.x,tip.y,a,30,p.a,2,.5);}break;
+      case 'crossbow': case 'launcher': case 'senbonLauncher':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.fillRect(-8,-11,26,22);ctx.strokeRect(-8,-11,26,22);ctx.fillStyle=p.a;ctx.fillRect(15,-5,10,10);});
+        if(attacking){drawGlow(tip.x,tip.y,5,p.a,.55);for(let i=0;i<3;i++)streak(tip.x,tip.y,a,(14+i*7),p.a,1.5,.45);}
+        break;
+      case 'blowpipe':
+        ctx.strokeStyle=p.c;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+        if(attacking){drawGlow(tip.x,tip.y,4,p.a,.5);streak(tip.x,tip.y,a,20,p.a,1.5,.6);}break;
+      case 'flamethrower':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.fillRect(-9,-11,22,22);ctx.fillStyle=p.a;ctx.shadowBlur=14;ctx.shadowColor=p.a;ctx.beginPath();ctx.moveTo(13,0);ctx.quadraticCurveTo(26,-12,38,0);ctx.quadraticCurveTo(26,12,13,0);ctx.fill();ctx.shadowBlur=0;});
+        if(attacking){ctx.globalAlpha=.7;ctx.strokeStyle='#ffd15c';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(tip.x,tip.y);ctx.quadraticCurveTo(tip.x+24,tip.y-14,tip.x+42,tip.y);ctx.stroke();}break;
+      case 'waterShooters':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.fillRect(-10,-10,20,20);ctx.fillStyle=p.a;ctx.fillRect(10,-4,20,8);});
+        if(attacking){streak(tip.x+10*Math.cos(a),tip.y+10*Math.sin(a),a,35,p.a,3,.6);drawGlow(tip.x,tip.y,5,p.a,.4);}break;
+      case 'fuma': case 'shuriken':
+        local(tip.x,tip.y,a+Number(f.weaponSpin||0)*10,()=>{const n=p.shape==='fuma'?4:4,r=p.shape==='fuma'?25:17;ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<n;i++){const q=i*2*Math.PI/n;ctx.lineTo(Math.cos(q)*r,Math.sin(q)*r);ctx.lineTo(Math.cos(q+Math.PI/n)*6,Math.sin(q+Math.PI/n)*6);}ctx.closePath();ctx.fill();ctx.stroke();});
+        if(attacking)streak(tip.x,tip.y,a+Math.PI/2,24,p.a,2,.5);break;
+      case 'ftgKunai': case 'kunai':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(17,0);ctx.lineTo(-7,-5);ctx.lineTo(-11,0);ctx.lineTo(-7,5);ctx.closePath();ctx.fill();ctx.stroke();if(p.shape==='ftgKunai'){ctx.fillStyle='#f4c84f';ctx.beginPath();ctx.arc(-12,0,5,0,Math.PI*2);ctx.fill();}});break;
+      case 'whip': case 'wire':
+        ctx.strokeStyle=p.c;ctx.lineWidth=p.shape==='whip'?2.8:1.4;ctx.beginPath();ctx.moveTo(base.x,base.y);for(let i=1;i<=16;i++){const q=i/16,off=Math.sin(t*2.4+q*7)*(5+q*10);ctx.lineTo(base.x+(tip.x-base.x)*q-Math.sin(a)*off,base.y+(tip.y-base.y)*q+Math.cos(a)*off);}ctx.stroke();
+        if(impact){ctx.fillStyle=p.a;ctx.beginPath();ctx.arc(tip.x,tip.y,p.shape==='whip'?5:3,0,Math.PI*2);ctx.fill();}break;
+      case 'seal': case 'sealScroll':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=1.5;ctx.fillRect(-8,-15,16,30);ctx.strokeRect(-8,-15,16,30);ctx.fillStyle=p.a;ctx.font='bold 10px serif';ctx.textAlign='center';ctx.fillText('封',0,4);});
+        if(attacking){ctx.strokeStyle=p.a;ctx.globalAlpha=.5;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,16+pulse*12,0,Math.PI*2);ctx.stroke();}break;
+      case 'tagBall':
+        drawGlow(tip.x,tip.y,8,p.c,.45);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(tip.x,tip.y,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.stroke();
+        if(impact||attacking){for(let i=0;i<6;i++){const q=t+i;streak(tip.x,tip.y,q,8+i*3,p.a,1.5,.5);}}break;
+      case 'flute':
+        ctx.strokeStyle=p.c;ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();for(let i=0;i<5;i++){const q=.2+i*.14;const x=base.x+(tip.x-base.x)*q,y=base.y+(tip.y-base.y)*q;ctx.fillStyle=p.a;ctx.beginPath();ctx.arc(x,y,1.7,0,Math.PI*2);ctx.fill();}
+        if(attacking){for(let i=0;i<3;i++){ctx.globalAlpha=.35;ctx.strokeStyle=p.a;ctx.beginPath();ctx.arc(tip.x,tip.y,12+i*7,a-.7,a+.7);ctx.stroke();}}break;
+      case 'flower':
+        local(tip.x,tip.y,a,()=>{ctx.strokeStyle='#63804f';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-12,0);ctx.lineTo(12,0);ctx.stroke();for(let i=0;i<5;i++){const q=i*2*Math.PI/5;ctx.fillStyle=p.c;ctx.beginPath();ctx.ellipse(15+Math.cos(q)*5,Math.sin(q)*5,8,4,q,0,Math.PI*2);ctx.fill();}ctx.fillStyle=p.a;ctx.beginPath();ctx.arc(15,0,4,0,Math.PI*2);ctx.fill();});
+        for(let i=0;i<3;i++){const q=t+i*2.1;ctx.globalAlpha=.35;ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(tip.x-Math.cos(q)*10,tip.y-Math.sin(q)*10,2,0,Math.PI*2);ctx.fill();}break;
+      case 'fan': case 'giantFan': case 'gunbai':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.arc(0,0,p.shape==='giantFan'?31:25,-1.15,1.15);ctx.closePath();ctx.fill();ctx.stroke();for(let i=0;i<5;i++){ctx.strokeStyle=p.a;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(18,(-.9+i*.45));ctx.stroke();}});
+        if(attacking){ctx.strokeStyle=p.a;ctx.globalAlpha=.35;ctx.lineWidth=4;ctx.beginPath();ctx.arc(tip.x,tip.y,35,a-1.2,a+1.2);ctx.stroke();}break;
+      case 'scope':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.fillRect(-7,-10,24,20);ctx.fillStyle='#15212d';ctx.beginPath();ctx.arc(18,0,8,0,Math.PI*2);ctx.fill();ctx.strokeStyle=p.a;ctx.stroke();});
+        if(attacking){ctx.strokeStyle=p.a;ctx.globalAlpha=.5;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(tip.x,tip.y,18,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.moveTo(tip.x-18,tip.y);ctx.lineTo(tip.x+18,tip.y);ctx.moveTo(tip.x,tip.y-18);ctx.lineTo(tip.x,tip.y+18);ctx.stroke();}break;
+      case 'necklace': case 'beads':
+        ctx.strokeStyle=p.c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,11+wobble,0,Math.PI*2);ctx.stroke();for(let i=0;i<7;i++){const q=t+i*Math.PI*2/7;ctx.fillStyle=p.a;ctx.beginPath();ctx.arc(tip.x+Math.cos(q)*11,tip.y+Math.sin(q)*11,3,0,Math.PI*2);ctx.fill();}break;
+      case 'hashiramaBody': case 'artifact': case 'stone': case 'gourd': case 'book': case 'scroll': case 'sixPathsTools': case 'toadTreasure': case 'kokinjo':
+        drawGlow(tip.x,tip.y,7,p.a,.28);local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();
+          if(p.shape==='gourd'){ctx.arc(0,-7,9,0,Math.PI*2);ctx.arc(0,8,13,0,Math.PI*2);}
+          else if(p.shape==='book'){ctx.rect(-12,-15,24,30);ctx.moveTo(0,-15);ctx.lineTo(0,15);}
+          else if(p.shape==='scroll'||p.shape==='sealScroll'){ctx.rect(-8,-16,16,32);}
+          else if(p.shape==='stone'){ctx.moveTo(0,-14);ctx.lineTo(12,-5);ctx.lineTo(8,12);ctx.lineTo(-10,9);ctx.lineTo(-14,-5);}
+          else if(p.shape==='kokinjo'||p.shape==='sixPathsTools'){ctx.arc(0,0,14,0,Math.PI*2);ctx.moveTo(-18,0);ctx.lineTo(18,0);ctx.moveTo(0,-18);ctx.lineTo(0,18);}
+          else {ctx.arc(0,0,14,0,Math.PI*2);}
+          ctx.fill();ctx.stroke();});
+        if(impact||attacking){ctx.strokeStyle=p.a;ctx.globalAlpha=.45;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,17+pulse*12,0,Math.PI*2);ctx.stroke();}break;
+      case 'absorptionArm':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.fillRect(-9,-14,27,28);ctx.beginPath();ctx.arc(18,0,8,0,Math.PI*2);ctx.fill();ctx.stroke();});
+        if(attacking){drawGlow(tip.x+Math.cos(a)*14,tip.y+Math.sin(a)*14,7,p.a,.5);ctx.strokeStyle=p.a;ctx.globalAlpha=.55;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,20,0,Math.PI*2);ctx.stroke();}break;
+      case 'shinobiWare':
+        local(tip.x,tip.y,a,()=>{ctx.fillStyle=p.c;ctx.fillRect(-8,-10,26,20);ctx.fillStyle=p.a;ctx.fillRect(5,-5,8,10);});
+        if(attacking){for(let i=0;i<4;i++)streak(tip.x,tip.y,a+i*.12,16+i*4,p.a,1.5,.4);}break;
+      case 'cards':
+        for(let i=0;i<3;i++){local(tip.x+Math.cos(a+Math.PI/2)*(i-1)*7,tip.y+Math.sin(a+Math.PI/2)*(i-1)*7,a+(i-1)*.12,()=>{ctx.fillStyle=p.c;ctx.fillRect(-7,-11,14,22);ctx.strokeStyle=p.a;ctx.strokeRect(-7,-11,14,22);});}break;
+      case 'waterShooters': break;
+      case 'senbon':
+        ctx.strokeStyle=p.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();if(attacking)streak(tip.x,tip.y,a,26,p.a,1.4,.55);break;
+      case 'whiteLight': break;
+      default:
+        ctx.strokeStyle=p.c;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();
+    }
+    /* Universal impact bloom — purely visual, keyed to the existing hitFlash. */
+    if(f.hitFlash>0){
+      const n=4;for(let i=0;i<n;i++){const q=t+i*Math.PI*2/n;streak(tip.x,tip.y,q,8+Math.sin(t*3+i)*4,p.a,1.8,.6);}
+      ctx.globalAlpha=.35;ctx.strokeStyle=p.a;ctx.lineWidth=2;ctx.beginPath();ctx.arc(tip.x,tip.y,7+Math.sin(t*5)*2,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
   }
 
   function drawWeapon(f){
@@ -11069,6 +12195,8 @@ populateSources();resetState();
       case 'fists': glow(f.color,6);break;
       default: line(3.5,stroke);glow(f.color,6);
     }
+    /* Weapon-specific cinematic overlay. Existing renderer above remains intact. */
+    drawWeaponAestheticPass(f,base,tip,a,L,attacking);
     ctx.restore();
   }
 
@@ -11533,55 +12661,351 @@ populateSources();resetState();
       }else if(archetype===35){ctx.strokeStyle='#d7b9ff';ctx.lineWidth=3.5;for(let i=0;i<9;i++){const r=14+i*11+age*48;ctx.beginPath();ctx.arc(tx,ty,r,ang-.8,ang+.8);ctx.stroke()}
       }else{ctx.strokeStyle=f.color;ctx.lineWidth=e.slot==='ult'?9:5;ctx.beginPath();ctx.arc(tx,ty,baseR+age*travel*.45,0,Math.PI*2);ctx.stroke()}
     }
+    /* ===== JUTSU / ULTIMATE VISUAL UPGRADE PASS =====
+       Visual-only layer. It deliberately runs after the existing renderer so
+       current jutsu art, combat rules, damage, hitboxes, gauges, puppets,
+       clones, dogs, weapons, and arena balance remain untouched. */
+    drawJutsuVisualUpgrade(e);
+    ctx.restore();
+  }
+
+  function drawJutsuVisualUpgrade(e){
+    const f=e?.f;
+    if(!f)return;
+    const name=String(e.name||f.abilityName||'').trim();
+    const kind=String(e.type||techniqueKind(name));
+    const sig=e.signature||techniqueSignature(name);
+    const age=clamp(1-(e.life/e.max),0,1);
+    const ult=e.slot==='ult';
+    const foe=f.side==='A'?fighters[1]:fighters[0];
+    const tx=foe?.x??f.x,ty=foe?.y??f.y;
+    const ang=Math.atan2(ty-f.y,tx-f.x);
+    const power=ult?1.72:1;
+    const pulse=.5+.5*Math.sin(performance.now()/115+sig.phase*2.1);
+    const active=clamp(Math.sin(Math.min(1,age)*Math.PI*1.12),0,1);
+    const col=f.color||'#9deaff';
+    const pale=ult?'#fff4c2':'#ecfbff';
+    const shadow=ult?'#ffd35a':col;
+    const travel=(34+sig.scale*54)*power;
+    const head=f.x+Math.cos(ang)*(18+age*travel), headY=f.y+Math.sin(ang)*(18+age*travel);
+    const low=name.toLowerCase();
+
+    ctx.save();
+    ctx.globalAlpha*=.88;
+    ctx.lineCap='round';ctx.lineJoin='round';
+
+    /* 1) Every jutsu gets a distinct animated launch silhouette. */
+    const silhouettes={
+      fire:['#ff6a24','#ffd36b'], fireDragon:['#ff5c20','#ffe09a'], fireDragonMulti:['#ff5c20','#ffe09a'],
+      fireSea:['#ff5a24','#ffe09a'], greatFireball:['#ff6a24','#fff0a0'], phoenixFire:['#ff6b22','#ffe59a'],
+      blackFire:['#21152f','#ff5b38'], ash:['#a8b1b8','#fff1cf'], scorch:['#ffbd55','#fff3b0'],
+      lightning:['#72ddff','#f3ffff'], chidori:['#5edcff','#ffffff'], kirin:['#b8d8ff','#ffffff'],
+      rasengan:['#67cfff','#eaffff'], rasenshuriken:['#bcecff','#ffffff'], wind:['#c8f5ff','#ffffff'],
+      water:['#54caff','#eaffff'], waterDragon:['#4fbfff','#d8fbff'], waterShark:['#65d7ff','#e7fbff'],
+      waterWave:['#43c8ff','#d8f7ff'], waterPrison:['#56cfff','#efffff'], ice:['#8ee8ff','#ffffff'],
+      crystal:['#e4aaff','#fff1ff'], lava:['#ff7d3b','#ffe0a0'], boil:['#fff0c2','#d7fbff'],
+      earth:['#b59b72','#ead8b1'], mud:['#8f755f','#d8b693'], wood:['#67c96a','#d8ffb0'], woodDragon:['#65c86a','#e7ffbd'],
+      sand:['#d4b36d','#fff0b4'], magnet:['#a47cff','#e4d5ff'], dust:['#fff6a8','#ffffff'],
+      explosion:['#ff6a35','#ffe49a'], bubble:['#8eeaff','#ffffff'], sound:['#d7a2ff','#fff1ff'],
+      poison:['#83ff70','#e4ffba'], insects:['#9dd96c','#e9ffb9'], flora:['#7bce72','#ffd5ec'],
+      paper:['#eef4ff','#ffffff'], threads:['#9ed9ff','#eaffff'], chains:['#b9d8ef','#ffffff'],
+      blade:['#d8eaff','#ffffff'], mind:['#d6a2ff','#fff1ff'], soul:['#c7c9ff','#ffffff'],
+      gravity:['#a98cff','#eadfff'], absorption:['#8f78c9','#e5d8ff'], spaceTime:['#7fb4ff','#ffffff'],
+      genjutsu:['#c08cff','#f1ddff'], shadow:['#7470b8','#d9d5ff'], seal:['#f0bb67','#fff0bb'],
+      gates:['#ff704d','#fff0a8'], taijutsu:['#ff9d68','#fff1d5'], medical:['#75ffad','#e4ffef'],
+      golem:['#b9a47e','#f2dfb7'], toad:['#9ed56d','#ffe0a3'], snake:['#9fd878','#e8ffbd'],
+      bijudama:['#b85cff','#ffe5ff'], truthSeeking:['#d8d8df','#ffffff'], meteor:['#bfc6d1','#fff0c4'],
+      susanoo:['#b996ff','#f0e1ff'], summon:['#9ed8ff','#ffffff'], chakra:[col,pale]
+    };
+    const pair=silhouettes[kind]||silhouettes.chakra;
+    const primary=pair[0],secondary=pair[1];
+
+    /* Idle aura: each technique breathes differently using its hash phase. */
+    const idleR=f.r+9+sig.scale*8+Math.sin(performance.now()/170+sig.phase)*2.5;
+    ctx.globalAlpha*=.22*(.65+active*.65);
+    ctx.strokeStyle=primary;ctx.lineWidth=ult?3.5:2;
+    ctx.shadowColor=primary;ctx.shadowBlur=ult?18:10;
+    ctx.beginPath();ctx.arc(f.x,f.y,idleR,0,Math.PI*2);ctx.stroke();
+    ctx.shadowBlur=0;
+
+    /* Technique-specific movement language. */
+    const style=kind;
+    if(style==='fire'||style==='fireDragon'||style==='fireDragonMulti'||style==='fireSea'||style==='phoenixFire'||style==='blackFire'||style==='scorch'||style==='ash'){
+      for(let i=0;i<(ult?9:5);i++){
+        const q=(i+1)/(ult?10:6),px=f.x+Math.cos(ang)*(q*travel*1.5),py=f.y+Math.sin(ang)*(q*travel*1.5);
+        const sway=Math.sin(performance.now()/95+i+sig.phase)*10;
+        ctx.globalAlpha*=.42;ctx.fillStyle=secondary;ctx.beginPath();ctx.ellipse(px-Math.sin(ang)*sway,py+Math.cos(ang)*sway,3+(i%3),7+(i%4)*2,ang,0,Math.PI*2);ctx.fill();
+      }
+    }else if(style==='lightning'||style==='chidori'||style==='kirin'){
+      ctx.globalAlpha*=.7;ctx.strokeStyle=secondary;ctx.lineWidth=ult?4:2.2;
+      for(let i=0;i<(ult?7:4);i++){
+        const q=(i+1)/(ult?8:5),px=f.x+Math.cos(ang)*travel*q,py=f.y+Math.sin(ang)*travel*q;
+        ctx.beginPath();ctx.moveTo(px-Math.sin(ang)*10,py+Math.cos(ang)*10);ctx.lineTo(px+Math.cos(ang)*12-Math.sin(ang)*4,py+Math.sin(ang)*12+Math.cos(ang)*4);ctx.stroke();
+      }
+    }else if(style==='water'||style==='waterDragon'||style==='waterShark'||style==='waterWave'||style==='waterPrison'||style==='bubble'){
+      ctx.globalAlpha*=.55;ctx.strokeStyle=secondary;ctx.lineWidth=ult?6:3;
+      for(let i=0;i<3;i++){
+        const off=(i-1)*8+Math.sin(performance.now()/250+i)*3;
+        ctx.beginPath();ctx.moveTo(f.x-Math.sin(ang)*off,f.y+Math.cos(ang)*off);ctx.quadraticCurveTo((f.x+head)/2-Math.sin(ang)*off,(f.y+headY)/2+Math.cos(ang)*off+Math.sin(performance.now()/120+i)*12,head,headY);ctx.stroke();
+      }
+    }else if(style==='wind'||style==='spaceTime'||style==='gravity'||style==='absorption'||style==='sound'){
+      ctx.globalAlpha*=.48;ctx.strokeStyle=secondary;ctx.lineWidth=ult?3.5:2;
+      for(let i=0;i<6;i++){
+        const rr=16+i*9+active*22;
+        const aa=sig.phase+i*.82+performance.now()/1800*(style==='spaceTime'?-1:1);
+        ctx.beginPath();ctx.arc(head,headY,rr,aa,aa+1.15);ctx.stroke();
+      }
+    }else if(style==='earth'||style==='mud'||style==='sand'||style==='magnet'||style==='wood'||style==='woodDragon'||style==='flora'||style==='golem'){
+      ctx.globalAlpha*=.62;ctx.strokeStyle=secondary;ctx.lineWidth=ult?4:2.4;
+      for(let i=0;i<(ult?8:5);i++){
+        const aa=ang+(i-(ult?3.5:2))*.24,d=22+active*(travel*.8+i*7);
+        const px=head+Math.cos(aa)*d,py=headY+Math.sin(aa)*d;
+        ctx.beginPath();ctx.moveTo(head,headY);ctx.lineTo(px,py);ctx.stroke();
+        ctx.fillStyle=primary;ctx.beginPath();ctx.arc(px,py,2.5+(i%3),0,Math.PI*2);ctx.fill();
+      }
+    }else if(style==='ice'||style==='crystal'||style==='truthSeeking'||style==='bijudama'||style==='susanoo'){
+      const r=(22+active*travel*.5)*power;
+      ctx.globalAlpha*=.62;ctx.strokeStyle=secondary;ctx.lineWidth=ult?4:2.2;
+      ctx.beginPath();
+      for(let i=0;i<=6;i++){const aa=sig.phase+i*Math.PI/3+active*.7,rr=r*(i%2?.82:1);const px=head+Math.cos(aa)*rr,py=headY+Math.sin(aa)*rr;i?ctx.lineTo(px,py):ctx.moveTo(px,py)}
+      ctx.closePath();ctx.stroke();
+      ctx.fillStyle=primary;ctx.globalAlpha*=.24;ctx.beginPath();ctx.arc(head,headY,r*.55,0,Math.PI*2);ctx.fill();
+    }else if(style==='poison'||style==='insects'||style==='snake'||style==='toad'||style==='summon'){
+      ctx.globalAlpha*=.58;
+      for(let i=0;i<(ult?18:10);i++){
+        const aa=sig.phase+i*.63+performance.now()/1400*(i%2?1:-1),rr=18+active*(35+(i%5)*9);
+        ctx.fillStyle=i%3?primary:secondary;ctx.beginPath();ctx.arc(head+Math.cos(aa)*rr,headY+Math.sin(aa)*rr,2+(i%3),0,Math.PI*2);ctx.fill();
+      }
+    }else if(style==='blade'||style==='taijutsu'||style==='gates'){
+      ctx.globalAlpha*=.7;ctx.strokeStyle=secondary;ctx.lineWidth=ult?6:3;
+      for(let i=0;i<3;i++){const sweep=(i-1)*.28+Math.sin(performance.now()/130)*.04;ctx.beginPath();ctx.arc(head,headY,30+i*12,ang+sweep-.65,ang+sweep+.65);ctx.stroke();}
+    }else if(style==='genjutsu'||style==='mind'||style==='soul'||style==='shadow'||style==='seal'||style==='threads'||style==='chains'){
+      ctx.globalAlpha*=.58;ctx.strokeStyle=secondary;ctx.lineWidth=ult?3.2:1.9;
+      for(let i=0;i<6;i++){const rr=18+i*11+active*35,aa=performance.now()/1100+sig.phase+i*.42;ctx.beginPath();ctx.arc(head,headY,rr,aa,aa+Math.PI*.72);ctx.stroke();}
+    }else if(style==='explosion'||style==='meteor'){
+      for(let i=0;i<(ult?12:7);i++){const aa=sig.phase+i*.52+age*1.8,rr=22+active*(travel*.65+i*8);ctx.globalAlpha*=.48;ctx.strokeStyle=i%2?secondary:primary;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(head+Math.cos(aa)*rr,headY+Math.sin(aa)*rr);ctx.lineTo(head+Math.cos(aa)*(rr+14+(i%4)*4),headY+Math.sin(aa)*(rr+14+(i%4)*4));ctx.stroke();}
+    }else if(style==='medical'){
+      ctx.globalAlpha*=.5;ctx.strokeStyle=secondary;ctx.lineWidth=2.4;for(let i=0;i<3;i++){const rr=22+i*12+Math.sin(performance.now()/220+i)*3;ctx.beginPath();ctx.arc(f.x,f.y,rr,0,Math.PI*2);ctx.stroke();}
+    }else{
+      /* Fallback still receives a distinct, name-seeded glyph. */
+      ctx.globalAlpha*=.55;ctx.strokeStyle=secondary;ctx.lineWidth=ult?3.2:1.8;
+      const rr=22+active*travel*.55;
+      for(let i=0;i<sig.rays;i++){const aa=sig.phase+i*Math.PI*2/sig.rays+age*.8;ctx.beginPath();ctx.moveTo(head,headY);ctx.lineTo(head+Math.cos(aa)*rr,headY+Math.sin(aa)*rr);ctx.stroke();}
+    }
+
+    /* 2) Moving core / trail: unique pulse speed and layered after-images. */
+    ctx.globalAlpha*=.58;
+    const trailCount=ult?7:4;
+    for(let i=trailCount;i>=1;i--){
+      const q=age-Math.min(.42, i*.055);if(q<=0)continue;
+      const px=f.x+Math.cos(ang)*(18+q*travel),py=f.y+Math.sin(ang)*(18+q*travel);
+      const rr=(ult?7:4)*(1-i/(trailCount+1));
+      ctx.fillStyle=i%2?primary:secondary;ctx.beginPath();ctx.arc(px,py,Math.max(1.5,rr+sig.scale),0,Math.PI*2);ctx.fill();
+    }
+
+    /* 3) Attack / impact punctuation: sharp burst at the target phase. */
+    const impact=clamp((age-.58)/.42,0,1);
+    if(impact>0){
+      const ir=(14+sig.scale*15)+(ult?68:42)*impact;
+      ctx.globalAlpha*=.85*(1-impact*.42);
+      for(let i=0;i<(ult?18:10);i++){
+        const aa=sig.phase+i*Math.PI*2/(ult?18:10)+impact*1.6;
+        const inner=ir*.35,outer=ir*(.9+(i%3)*.08);
+        ctx.strokeStyle=i%2?secondary:primary;ctx.lineWidth=ult?3:2;
+        ctx.beginPath();ctx.moveTo(tx+Math.cos(aa)*inner,ty+Math.sin(aa)*inner);ctx.lineTo(tx+Math.cos(aa)*outer,ty+Math.sin(aa)*outer);ctx.stroke();
+      }
+      ctx.globalAlpha*=.24;ctx.fillStyle=secondary;ctx.shadowColor=primary;ctx.shadowBlur=24;ctx.beginPath();ctx.arc(tx,ty,ir*.34,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    }
+
+    /* 4) Name-specific finishing glyphs make same-kind jutsu still distinct. */
+    const glyphSeed=sig.seed%7;
+    ctx.globalAlpha*=.48;ctx.strokeStyle=secondary;ctx.lineWidth=ult?2.8:1.7;
+    if(glyphSeed===0){ctx.beginPath();ctx.arc(head,headY,12+active*18,0,Math.PI*2);ctx.stroke();}
+    else if(glyphSeed===1){ctx.beginPath();ctx.moveTo(head-12,headY);ctx.lineTo(head+12,headY);ctx.moveTo(head,headY-12);ctx.lineTo(head,headY+12);ctx.stroke();}
+    else if(glyphSeed===2){ctx.beginPath();ctx.arc(head,headY,14+active*18,sig.phase,sig.phase+Math.PI*1.45);ctx.stroke();}
+    else if(glyphSeed===3){ctx.beginPath();ctx.moveTo(head-10,headY+8);ctx.lineTo(head,headY-12);ctx.lineTo(head+10,headY+8);ctx.closePath();ctx.stroke();}
+    else if(glyphSeed===4){ctx.beginPath();ctx.ellipse(head,headY,16+active*14,7+active*8,ang,0,Math.PI*2);ctx.stroke();}
+    else if(glyphSeed===5){for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(head,headY,8+i*6,sig.phase+i*.4,sig.phase+i*.4+1.05);ctx.stroke();}}
+    else{ctx.beginPath();ctx.moveTo(head-11,headY-7);ctx.lineTo(head,headY+11);ctx.lineTo(head+11,headY-7);ctx.stroke();}
+
     ctx.restore();
   }
 
   function drawPuppetStrings(f){
-    const p=f.puppet;
-    /* The chakra-thread link is unbreakable and exists only while the puppet
-       itself is alive. Once defeated, the line disappears immediately. */
-    if(!p||!p.alive||!f.alive)return;
-    ctx.save();ctx.globalAlpha=.92;
-    // Multi-layer chakra threads for grandeur
-    ctx.strokeStyle='rgba(114,207,255,.35)';ctx.lineWidth=4;ctx.shadowColor='#55c8ff';ctx.shadowBlur=8;
-    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
-    ctx.strokeStyle='#72cfff';ctx.lineWidth=1.8;ctx.shadowBlur=4;
-    ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
-    // Travelling energy beads along the chakra thread
-    const dx=p.x-f.x,dy=p.y-f.y,len=Math.hypot(dx,dy)||1;
-    const t=performance.now()/900;
-    for(let i=0;i<5;i++){
-      const q=((i/5)+t)%1,px=f.x+dx*q,py=f.y+dy*q;
-      ctx.fillStyle='rgba(180,240,255,.85)';ctx.beginPath();ctx.arc(px,py,2.0,0,Math.PI*2);ctx.fill();
+    if(!f?.alive)return;
+    const puppets=livePuppetsFor(f);
+    for(const p of puppets){
+      ctx.save();ctx.globalAlpha=.92;
+      ctx.strokeStyle='rgba(114,207,255,.35)';ctx.lineWidth=4;ctx.shadowColor='#55c8ff';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+      ctx.strokeStyle='#72cfff';ctx.lineWidth=1.8;ctx.shadowBlur=4;
+      ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+      const dx=p.x-f.x,dy=p.y-f.y,t=performance.now()/900;
+      for(let i=0;i<5;i++){const q=((i/5)+t)%1,px=f.x+dx*q,py=f.y+dy*q;ctx.fillStyle='rgba(180,240,255,.85)';ctx.beginPath();ctx.arc(px,py,2.0,0,Math.PI*2);ctx.fill();}
+      ctx.shadowBlur=0;ctx.restore();
     }
-    ctx.shadowBlur=0;ctx.restore();
   }
+  function puppetVisualKey(p){
+    const w=String(p?.exactWeapon||p?.parent?.ninja?.weapon||'').trim().toLowerCase();
+    if(w==='chikamatsu collection')return 'chikamatsu';
+    if(w==='hiruko')return 'hiruko';
+    if(w==='human puppet')return 'human';
+    if(w==='hundred puppet army')return 'hundred';
+    if(w==='insect queen bee drone puppet')return 'bee';
+    if(w==='komushi (puppet)')return 'komushi';
+    if(w==='lizard puppet')return 'lizard';
+    if(w==='mother and father (puppet)')return p.displayName==='FATHER'?'father':'mother';
+    if(w==='sasori (puppet)')return 'sasori';
+    if(w==='third kazekage (puppet)')return 'thirdKazekage';
+    if(w==='vampire puppet')return 'vampire';
+    if(w==='water-firing puppets')return 'waterFiring';
+    if(w==='otsutsuki clan puppets')return 'otsutsuki';
+    if(w==='barrier puppets')return 'barrier';
+    if(w==='elemental puppets')return 'elemental';
+    return 'generic';
+  }
+
   function drawPuppet(p){
     if(!p||(!p.alive&&p.poof<=0))return;
-    const fade=p.alive?1:clamp(p.poof/36,0,1),pulse=p.hitFlash>0?2:0;
-    const ring='#8fdcff';
+    const fade=p.alive?1:clamp(p.poof/36,0,1);
+    const k=puppetVisualKey(p), t=p.age||0, pulse=p.hitFlash>0?2:0;
+    const move=Math.hypot(p.vx||0,p.vy||0), dir=Math.atan2(p.vy||0,p.vx||0);
+    const weaponA=Number.isFinite(p.weaponAngle)?p.weaponAngle:dir;
+    const atk=p.attackFlash>0;
+    const bob=Math.sin(t*.12+(p.variantIndex||0)*.8)*1.5;
+    const swing=Math.sin(t*.22+(p.variantIndex||0)*1.7);
+    const lunge=atk?Math.max(0,Math.sin((p.attackFlash||0)*.55)):0;
+    const outlineFor={
+      chikamatsu:'#fff7e7',hiruko:'#d99b83',human:'#d8e2ed',hundred:'#e88978',bee:'#f7d34d',komushi:'#9bd28c',
+      lizard:'#b7d18b',mother:'#f0a5b7',father:'#b9c9df',sasori:'#ff9f88',thirdKazekage:'#cbd1dc',vampire:'#ff7897',
+      waterFiring:'#8fe9ff',otsutsuki:'#fff0a2',barrier:'#9eeaff',elemental:'#b9e8ff',generic:'#a9dfff'
+    };
+    const outline=outlineFor[k]||'#a9dfff';
     if(!p.alive){
-      ctx.save();
-      ctx.globalAlpha=fade*.5;
-      ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.4+fade*.6),0,Math.PI*2);ctx.fillStyle='#58758e';ctx.fill();
-      ctx.restore();
-      drawDefeatPoofCloud(p.x,p.y,fade,'#9edcff',p.r+4);
-      return;
+      ctx.save();ctx.globalAlpha=fade*.55;
+      ctx.fillStyle=outline;ctx.shadowColor=outline;ctx.shadowBlur=16;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.35+fade*.65),0,Math.PI*2);ctx.fill();ctx.restore();
+      drawDefeatPoofCloud(p.x,p.y,fade,outline,p.r+5);return;
     }
-    /* Subtle idle bob so puppets feel alive */
-    const bob=Math.sin((p.age||0)*.12)*2.2;
-    ctx.save();ctx.globalAlpha=.9;ctx.translate(0,bob);
-    ctx.beginPath();ctx.arc(p.x,p.y,p.r+pulse,0,Math.PI*2);ctx.fillStyle='#58758e';ctx.fill();
-    if(p.shield>0){ctx.save();ctx.globalAlpha=.78;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12+Math.sin(p.age*.25)*2,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=3;ctx.shadowBlur=12;ctx.shadowColor='#54dfff';ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
-    ctx.strokeStyle=ring;ctx.lineWidth=3;ctx.stroke();
-    ctx.beginPath();ctx.arc(p.x,p.y,p.r+6+Math.sin(p.age*.18)*2,0,Math.PI*2);ctx.strokeStyle='rgba(143,220,255,.35)';ctx.lineWidth=2;ctx.stroke();
-    if(p.kind==='red'){ctx.strokeStyle='#e87979';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,10,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=.25;ctx.fillStyle='#e87979';ctx.beginPath();ctx.arc(p.x,p.y,p.r-2,0,Math.PI*2);ctx.fill();ctx.globalAlpha=.9}
-    else if(p.kind==='water'){ctx.fillStyle='rgba(120,225,255,.35)';ctx.beginPath();ctx.arc(p.x,p.y,p.r+3,0,Math.PI*2);ctx.fill();ctx.strokeStyle='rgba(180,240,255,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r*.6,p.age*.2,p.age*.2+2);ctx.stroke()}
-    else {ctx.strokeStyle='#b7e9ff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x-9,p.y-10);ctx.lineTo(p.x+9,p.y+10);ctx.moveTo(p.x+9,p.y-10);ctx.lineTo(p.x-9,p.y+10);ctx.stroke()}
-    if(p.attackFlash>0){ctx.strokeStyle='#d8f5ff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y,p.r+10,0,Math.PI*2);ctx.stroke();spawnParticles(p.x,p.y,'#d8f5ff',2,2,10)}
+
+    ctx.save();ctx.translate(0,bob);ctx.globalAlpha=.98;
+    const aura=ctx.createRadialGradient(p.x,p.y,2,p.x,p.y,p.r*1.7);
+    aura.addColorStop(0,outline+'44');aura.addColorStop(1,outline+'00');ctx.fillStyle=aura;ctx.beginPath();ctx.arc(p.x,p.y,p.r*1.7,0,Math.PI*2);ctx.fill();
+
+    // Motion wake: every puppet leaves a different-looking mechanical/chakra trail.
+    if(move>.18){
+      ctx.save();ctx.globalAlpha=.18+.12*Math.min(1,move/2);
+      ctx.strokeStyle=outline;ctx.lineWidth=Math.max(1.5,p.r*.11);ctx.lineCap='round';
+      const trail=Math.min(34,p.r*(.65+move*1.4));
+      for(let i=0;i<3;i++){
+        const off=(i-1)*p.r*.22, px=p.x-Math.cos(dir)*trail*(i+1)/2-Math.sin(dir)*off, py=p.y-Math.sin(dir)*trail*(i+1)/2+Math.cos(dir)*off;
+        ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px-Math.cos(dir)*trail*.5,py-Math.sin(dir)*trail*.5);ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    const fillBody=(fill,stroke=outline,lw=2)=>{ctx.fillStyle=fill;ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.shadowColor=stroke;ctx.shadowBlur=atk?7:2;};
+    const limb=(x1,y1,x2,y2,w,stroke)=>{ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();};
+    const face=(x,y,scale=1,eye='#10131b')=>{ctx.fillStyle=eye;ctx.beginPath();ctx.arc(x-scale*3,y,scale*1.3,0,Math.PI*2);ctx.arc(x+scale*3,y,scale*1.3,0,Math.PI*2);ctx.fill();};
+
+    if(k==='chikamatsu'||k==='hundred'||k==='human'||k==='komushi'||k==='mother'||k==='father'||k==='sasori'||k==='thirdKazekage'||k==='vampire'||k==='barrier'||k==='elemental'||k==='generic'){
+      let body='#536b7b',accent='#dff7ff';
+      if(k==='chikamatsu'){body='#e8e0d1';accent=['#c99572','#d8b45f','#8eb4c8','#c56b6b','#7b9b73','#a78ec5'][p.variantIndex%6];}
+      else if(k==='hundred'){body=['#3b3940','#4a4140','#343d45','#4a3835'][p.variantIndex%4];accent='#f0c0a0';}
+      else if(k==='human'){body='#b9a99d';accent='#ece4dc';}
+      else if(k==='komushi'){body='#667a62';accent='#b9dc9e';}
+      else if(k==='mother'){body='#55404a';accent='#efb1bf';}
+      else if(k==='father'){body='#3e4653';accent='#c1d0e0';}
+      else if(k==='sasori'){body='#873d3d';accent='#f0b19c';}
+      else if(k==='thirdKazekage'){body='#303740';accent='#c5cbd5';}
+      else if(k==='vampire'){body='#302b39';accent='#ff7897';}
+      else if(k==='barrier'){body='#3e596a';accent='#a5ecff';}
+      else if(k==='elemental'){body='#435866';accent='#b9e8ff';}
+      else {body='#5a6875';accent='#dff7ff';}
+      const s=p.r/19, turn=Math.cos(weaponA), side=Math.sin(weaponA), mech=0.85+Math.min(1,move/2)*.2;
+      // Distinct body proportions and silhouettes.
+      if(k==='thirdKazekage'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.12);fillBody(body);ctx.beginPath();ctx.roundRect(-p.r*.72,-p.r*.58,p.r*1.44,p.r*1.16,5);ctx.fill();ctx.stroke();ctx.fillStyle=accent;ctx.fillRect(-p.r*.45,-p.r*.72,p.r*.9,p.r*.16);ctx.fillStyle='rgba(20,20,25,.75)';ctx.beginPath();ctx.arc(0,-p.r*.08,p.r*.32,0,Math.PI*2);ctx.fill();ctx.restore();
+        ctx.save();ctx.globalAlpha=.65;for(let i=0;i<12;i++){const aa=i*.52+t*.018,rr=p.r*(.8+.18*Math.sin(i*2.3+t*.08));ctx.fillStyle=i%3?'#4b5562':'#d3d8df';ctx.beginPath();ctx.arc(p.x+Math.cos(aa)*rr,p.y+Math.sin(aa)*rr,1.3+(i%3),0,Math.PI*2);ctx.fill();}ctx.restore();
+      }else if(k==='barrier'){ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.08);fillBody(body);ctx.beginPath();ctx.roundRect(-p.r*.55,-p.r*.7,p.r*1.1,p.r*1.4,5);ctx.fill();ctx.stroke();for(let i=-1;i<=1;i++){ctx.fillStyle='rgba(170,240,255,.18)';ctx.strokeStyle=accent;ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(-p.r*.82+i*p.r*.05,-p.r*.55+i*p.r*.08,p.r*.32,p.r*1.1,3);ctx.fill();ctx.stroke();}ctx.restore();
+        if(atk){ctx.strokeStyle=accent;ctx.lineWidth=3;ctx.globalAlpha=.8;ctx.beginPath();ctx.arc(p.x,p.y,p.r+9,lunge-.9,lunge+.9);ctx.stroke();}
+      }else{
+        // Humanoid mechanical silhouette with visible joints.
+        const torsoW=(k==='hundred'?0.68:k==='vampire'?0.62:.76)*p.r, torsoH=(k==='vampire'?1.05:1.0)*p.r;
+        const hx=p.x+turn*p.r*.15, hy=p.y-side*p.r*.08;
+        ctx.save();ctx.translate(hx,hy);ctx.rotate(dir*.16);
+        fillBody(body);ctx.beginPath();ctx.roundRect(-torsoW*.5,-torsoH*.45,torsoW,torsoH*.82,Math.max(2,p.r*.12));ctx.fill();ctx.stroke();
+        ctx.fillStyle=accent;ctx.beginPath();ctx.arc(0,-torsoH*.48,p.r*.34,0,Math.PI*2);ctx.fill();ctx.stroke();
+        face(0,-torsoH*.49,Math.max(1.2,p.r*.055),k==='vampire'?'#ffb4c6':'#10131b');
+        const legSwing=swing*p.r*.14, armSwing=swing*p.r*.16;
+        limb(-torsoW*.25,torsoH*.28,-torsoW*.35+legSwing,torsoH*.7,p.r*.13,accent);
+        limb(torsoW*.25,torsoH*.28,torsoW*.35-legSwing,torsoH*.7,p.r*.13,accent);
+        limb(-torsoW*.42,-torsoH*.1,-torsoW*.65+armSwing,-torsoH*.02,p.r*.12,accent);
+        limb(torsoW*.42,-torsoH*.1,torsoW*.65-armSwing,-torsoH*.02,p.r*.12,accent);
+        // Visible mechanical joint pins.
+        ctx.fillStyle='#18212b';for(const q of [[-torsoW*.35,torsoH*.7],[torsoW*.35,torsoH*.7],[-torsoW*.65,-torsoH*.02],[torsoW*.65,-torsoH*.02]]){ctx.beginPath();ctx.arc(q[0],q[1],Math.max(1.5,p.r*.055),0,Math.PI*2);ctx.fill();}
+        if(k==='chikamatsu'||k==='hundred'){ctx.strokeStyle=accent;ctx.lineWidth=Math.max(1,p.r*.05);ctx.beginPath();ctx.moveTo(-torsoW*.28,-torsoH*.28);ctx.lineTo(torsoW*.28,torsoH*.2);ctx.stroke();}
+        if(k==='vampire'){ctx.strokeStyle='#ff5b80';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-p.r*.18,-torsoH*.05);ctx.lineTo(-p.r*.08,torsoH*.18);ctx.moveTo(p.r*.18,-torsoH*.05);ctx.lineTo(p.r*.08,torsoH*.18);ctx.stroke();}
+        if(k==='human'){ctx.strokeStyle='#6b554d';ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(0,-torsoH*.48,p.r*.22,.15,2.98);ctx.stroke();}
+        ctx.restore();
+        // Weapon-driven mechanical extension, kept visual-only.
+        if(atk){ctx.save();ctx.strokeStyle=accent;ctx.lineWidth=Math.max(2,p.r*.12);ctx.lineCap='round';const ex=p.x+Math.cos(weaponA)*(p.r+7+lunge*8),ey=p.y+Math.sin(weaponA)*(p.r+7+lunge*8);ctx.beginPath();ctx.moveTo(p.x+Math.cos(weaponA)*p.r*.25,p.y+Math.sin(weaponA)*p.r*.25);ctx.lineTo(ex,ey);ctx.stroke();ctx.strokeStyle=outline;ctx.lineWidth=2;ctx.beginPath();ctx.arc(ex,ey,3,0,Math.PI*2);ctx.stroke();ctx.restore();}
+      }
+      if(k==='elemental'){
+        const colors=['#ff9d5c','#7de5ff','#c9ffc0','#e7f3ff','#b89d7a'];
+        const c=colors[p.variantIndex%colors.length];ctx.save();ctx.globalAlpha=.65;ctx.strokeStyle=c;ctx.lineWidth=2.2;for(let i=0;i<4;i++){const aa=t*.05+i*Math.PI/2;ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.72+i*.08),aa,aa+1.0);ctx.stroke();}ctx.restore();
+      }
+      if(k==='chikamatsu'&&p.variantIndex===0){ctx.strokeStyle=accent;ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+7,lunge-1,lunge+.2);ctx.stroke();}
+    }
+    else if(k==='hiruko'){
+      const s=p.r/22;fillBody('#4b3535',outline);ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.08);
+      ctx.beginPath();ctx.ellipse(0,0,p.r*.9,p.r*1.05,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#2b2327';ctx.beginPath();ctx.arc(0,-p.r*.28,p.r*.45,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#83c7d8';ctx.beginPath();ctx.arc(0,-p.r*.31,p.r*.13,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#d99b83';ctx.lineWidth=p.r*.13;ctx.beginPath();ctx.moveTo(p.r*.45,p.r*.1);ctx.quadraticCurveTo(p.r*1.0,p.r*.3,p.r*.72,-p.r*.42);ctx.stroke();
+      ctx.restore();
+      if(atk){ctx.strokeStyle='#a7e4dc';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+8,weaponA-.55,weaponA+.55);ctx.stroke();}
+      if(p.poisonCooldown>0||atk){ctx.fillStyle='rgba(120,230,170,.65)';for(let i=0;i<4;i++){const aa=t*.08+i*1.57;ctx.beginPath();ctx.arc(p.x+Math.cos(aa)*p.r*.9,p.y+Math.sin(aa)*p.r*.9,2,0,Math.PI*2);ctx.fill();}}
+    }
+    else if(k==='bee'){
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.15);fillBody('#4a3821','#f7d34d');ctx.beginPath();ctx.ellipse(0,0,p.r*.72,p.r*.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#f7d34d';ctx.lineWidth=Math.max(2,p.r*.1);for(let i=-1;i<=1;i++){ctx.beginPath();ctx.moveTo(-p.r*.45,i*p.r*.18);ctx.lineTo(p.r*.45,i*p.r*.18);ctx.stroke();}
+      ctx.fillStyle='rgba(210,240,255,.32)';ctx.strokeStyle='#bfeeff';ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(-p.r*.25,-p.r*.55,p.r*.48,p.r*.2,-.35,0,Math.PI*2);ctx.fill();ctx.stroke();ctx.beginPath();ctx.ellipse(p.r*.25,-p.r*.55,p.r*.48,p.r*.2,.35,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.strokeStyle='#f7d34d';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(-3,-p.r*.38);ctx.lineTo(-7,-p.r*.72);ctx.moveTo(3,-p.r*.38);ctx.lineTo(7,-p.r*.72);ctx.stroke();ctx.restore();
+      ctx.save();ctx.globalAlpha=.5;for(let i=0;i<5;i++){const aa=t*.11+i*1.25;ctx.fillStyle='#f7d34d';ctx.beginPath();ctx.arc(p.x+Math.cos(aa)*(p.r+5),p.y+Math.sin(aa)*(p.r+5),1.5,0,Math.PI*2);ctx.fill();}ctx.restore();
+      if(atk){ctx.strokeStyle='#ffe27a';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r+9,weaponA-.7,weaponA+.7);ctx.stroke();}
+    }
+    else if(k==='lizard'){
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.12);fillBody('#536944','#b7d18b');ctx.beginPath();ctx.ellipse(0,0,p.r*.85,p.r*.5,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#687f4e';ctx.beginPath();ctx.ellipse(p.r*.62,-p.r*.05,p.r*.35,p.r*.27,0,0,Math.PI*2);ctx.fill();ctx.stroke();face(p.r*.72,-p.r*.12,1.2,'#121c12');
+      ctx.strokeStyle='#b7d18b';ctx.lineWidth=p.r*.1;ctx.beginPath();ctx.moveTo(-p.r*.65,p.r*.05);ctx.quadraticCurveTo(-p.r*1.15,p.r*.45,-p.r*1.0,p.r*.8);ctx.stroke();
+      for(const sx of [-.42,.05,.5]){limb(sx*p.r,p.r*.22,(sx+.12)*p.r,p.r*.58,p.r*.1,'#b7d18b');}
+      ctx.restore();if(atk){ctx.strokeStyle='#d6f09d';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+8,weaponA-.55,weaponA+.55);ctx.stroke();}
+    }
+    else if(k==='waterFiring'){
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.08);fillBody('#66503f','#8fe9ff');ctx.beginPath();ctx.roundRect(-p.r*.62,-p.r*.48,p.r*1.24,p.r*.96,4);ctx.fill();ctx.stroke();
+      ctx.fillStyle='rgba(80,210,255,.25)';ctx.beginPath();ctx.arc(0,0,p.r*.4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8fe9ff';ctx.stroke();
+      ctx.strokeStyle='#bfefff';ctx.lineWidth=p.r*.16;ctx.beginPath();ctx.moveTo(p.r*.45,0);ctx.lineTo(p.r*.9,0);ctx.stroke();ctx.restore();
+      if(atk){ctx.strokeStyle='#9ff5ff';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(p.x+Math.cos(weaponA)*p.r,p.y+Math.sin(weaponA)*p.r);ctx.lineTo(p.x+Math.cos(weaponA)*(p.r+22),p.y+Math.sin(weaponA)*(p.r+22));ctx.stroke();for(let i=0;i<7;i++){const rr=8+i*3;ctx.beginPath();ctx.arc(p.x+Math.cos(weaponA)*(p.r+rr),p.y+Math.sin(weaponA)*(p.r+rr),2,0,Math.PI*2);ctx.stroke();}}
+    }
+    else if(k==='otsutsuki'){
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(dir*.04);fillBody('#e8e7e3','#fff0a2');ctx.beginPath();ctx.ellipse(0,0,p.r*.62,p.r*.86,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#f8f5ee';ctx.beginPath();ctx.arc(0,-p.r*.58,p.r*.34,0,Math.PI*2);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#2c2333';ctx.beginPath();ctx.moveTo(-p.r*.18,-p.r*.82);ctx.lineTo(-p.r*.02,-p.r*1.12);ctx.lineTo(p.r*.04,-p.r*.8);ctx.moveTo(p.r*.18,-p.r*.82);ctx.lineTo(p.r*.02,-p.r*1.12);ctx.lineTo(-p.r*.04,-p.r*.8);ctx.fill();
+      face(0,-p.r*.58,1.3,'#11111a');ctx.restore();
+      ctx.save();ctx.globalAlpha=.55;for(let i=0;i<6;i++){const aa=t*.035+i*Math.PI/3;ctx.strokeStyle='#fff0a2';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r*(.9+i*.08),aa,aa+.55);ctx.stroke();}ctx.restore();
+      if(atk){ctx.strokeStyle='#fff7c4';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+9,weaponA-.8,weaponA+.8);ctx.stroke();}
+    }
+
+    // Shared impact flash plus puppet-specific attack accents.
+    if(atk){
+      ctx.save();ctx.globalAlpha=.28+.25*lunge;ctx.strokeStyle=outline;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(p.x,p.y,p.r+5+lunge*4,0,Math.PI*2);ctx.stroke();ctx.restore();
+    }
+    if(p.hitFlash>0){ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,p.r+4+pulse,0,Math.PI*2);ctx.stroke();ctx.restore();}
+
+    // The existing weapon renderer remains responsible for the actual weapon.
     drawCloneWeapon(p);
-    ctx.fillStyle='#d9f2ff';ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.fillText('PUPPET',p.x,p.y-p.r-8);
-    ctx.globalAlpha=.8;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(p.x-16,p.y+p.r+5,32,4);ctx.fillStyle=ring;ctx.fillRect(p.x-16,p.y+p.r+5,32*clamp(p.hp/p.maxHp,0,1),4);
+    ctx.fillStyle='#e7f5ff';ctx.font='700 9px system-ui';ctx.textAlign='center';ctx.fillText(p.displayName||p.name||'PUPPET',p.x,p.y-p.r-9);
+    ctx.globalAlpha=.8;ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(p.x-16,p.y+p.r+5,32,4);ctx.fillStyle=outline;ctx.fillRect(p.x-16,p.y+p.r+5,32*clamp(p.hp/p.maxHp,0,1),4);
     ctx.restore();
   }
 
@@ -11880,7 +13304,7 @@ populateSources();resetState();
     for(const c of clones)drawClone(c);
     for(const d of dogs)drawDog(d);
     for(const su of summons)drawSummon(su);
-    for(const f of fighters)drawPuppet(f.puppet);
+    for(const f of fighters)for(const p of livePuppetsFor(f))drawPuppet(p);
     for(const f of fighters)drawFighter(f);
     for(const t of floating){
       const lifeA=clamp(t.life/48,0,1);
@@ -11988,7 +13412,7 @@ populateSources();resetState();
        opposing summons, fighters, puppets, clones, and dogs, but never end the
        battle merely by being defeated. */
     const summonBodies=summons.filter(su=>su.alive);
-    const summonTargets=[...fighters.filter(f=>f.alive),...clones.filter(c=>c.alive),...fighters.map(f=>f.puppet).filter(p=>p&&p.alive),...dogs.filter(d=>d.alive),...summonBodies];
+    const summonTargets=[...fighters.filter(f=>f.alive),...clones.filter(c=>c.alive),...fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive),...dogs.filter(d=>d.alive),...summonBodies];
     for(const su of summonBodies){
       for(const v of summonTargets){
         if(!v.alive||v===su||v.side===su.side)continue;
@@ -12006,7 +13430,33 @@ populateSources();resetState();
        they collide with an opposing fighter, clone, puppet, or dog, so they
        do not ghost through the other combat bodies. */
     const dogBodies=dogs.filter(d=>d.alive);
-    const otherBodies=[...fighters.filter(f=>f.alive),...clones.filter(c=>c.alive),...fighters.map(f=>f.puppet).filter(p=>p&&p.alive),...dogs.filter(d=>d.alive)];
+    const otherBodies=[...fighters.filter(f=>f.alive),...clones.filter(c=>c.alive),...fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive),...dogs.filter(d=>d.alive)];
+
+    /* Every summoned combat body can physically collide with every opposing
+       summoned combat body.  This is a separate damage pass from the fighter
+       collision system so summons can fight one another without ever ending
+       the main ninja-vs-ninja battle by themselves. */
+    const summonCombatBodies=[
+      ...fighters.flatMap(f=>livePuppetsFor(f)).filter(p=>p&&p.alive),
+      ...clones.filter(c=>c.alive),
+      ...dogs.filter(d=>d.alive),
+      ...summons.filter(su=>su.alive)
+    ];
+    for(let i=0;i<summonCombatBodies.length;i++){
+      const aS=summonCombatBodies[i];
+      for(let j=i+1;j<summonCombatBodies.length;j++){
+        const bS=summonCombatBodies[j];
+        if(!aS.alive||!bS.alive||aS.side===bS.side)continue;
+        const dx=bS.x-aS.x,dy=bS.y-aS.y,dist=Math.hypot(dx,dy)||1,minDist=(aS.r||16)+(bS.r||16);
+        if(dist>minDist)continue;
+        if((aS.bodyHitCooldown||0)>0||(bS.bodyHitCooldown||0)>0)continue;
+        const baseA=Math.max(3,Number(aS.dmg||aS.damage||4)*.48*ORB_TUNING.combat.damageMultiplier);
+        const baseB=Math.max(3,Number(bS.dmg||bS.damage||4)*.48*ORB_TUNING.combat.damageMultiplier);
+        summonMeleeDamage(aS,bS,baseA,aS.color||'#dbe6f5');
+        if(bS.alive)summonMeleeDamage(bS,aS,baseB,bS.color||'#dbe6f5');
+        aS.bodyHitCooldown=10;bS.bodyHitCooldown=10;
+      }
+    }
     for(const d of dogBodies){
       for(const v of otherBodies){
         if(!v.alive||v===d||v.side===d.side)continue;
@@ -12088,7 +13538,7 @@ populateSources();resetState();
       const f={
         name:String(name||'Weapon'),x:cx,y:cy,r:42,vx:Math.cos(angle)*2,vy:Math.sin(angle)*2,
         color:'#8edcff',weapon:String(name||''),weaponType:kind,weaponReach:weaponLength(kind),
-        weaponAngle:angle,weaponSpin:weaponSpinSpeed(kind),atkPulse:attacking?pulse*14:0,hitFlash:pulse>.94?4:0,
+        weaponAngle:angle,weaponSpin:weaponSpinSpeed(kind),atkPulse:attacking?pulse*14:0,hitFlash:pulse>.94?4:0,age:frameTime/16,
         ultActive:0,j1Active:0,j2Active:0,shield:0,transformActive:0,tailCount:0,
         unarmed:false,hasConsumable:false,combatMode:'melee',previewWeapon:true,
         side:'A',alive:true,genjutsuStun:0,consumableActive:0
@@ -12151,6 +13601,27 @@ populateSources();resetState();
     }finally{ctx=previousCtx;fighters=previousFighters;summons=previousSummons;}
   }
   window.orbRenderEffectPreview=orbRenderEffectPreview;
+  function orbRenderPuppetPreview(name,previewCtx,previewCanvas,frameTime=0){
+    if(!previewCtx||!previewCanvas)return;
+    const previousCtx=ctx, oldFighters=fighters;
+    ctx=previewCtx;
+    try{
+      const dpr=Math.min(window.devicePixelRatio||1,2),cssW=Math.max(1,previewCanvas.clientWidth||760),cssH=Math.max(1,previewCanvas.clientHeight||360);
+      const bw=Math.round(cssW*dpr),bh=Math.round(cssH*dpr);if(previewCanvas.width!==bw||previewCanvas.height!==bh){previewCanvas.width=bw;previewCanvas.height=bh;}
+      ctx.setTransform(bw/cssW,0,0,bh/cssH,0,0);ctx.clearRect(0,0,cssW,cssH);
+      const cx=cssW/2,cy=cssH/2+18;const bg=ctx.createRadialGradient(cx,cy,20,cx,cy,Math.max(cssW,cssH)*.62);bg.addColorStop(0,'rgba(28,42,62,.96)');bg.addColorStop(.62,'rgba(9,15,25,.98)');bg.addColorStop(1,'rgba(0,0,0,1)');ctx.fillStyle=bg;ctx.fillRect(0,0,cssW,cssH);
+      ctx.strokeStyle='rgba(120,170,220,.14)';ctx.lineWidth=1;for(let r=55;r<Math.min(cssW,cssH)*.48;r+=42){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();}
+      const exact=String(name||'Puppet');const keyMap={'Barrier Puppets':'barrier','Chikamatsu Collection':'chikamatsu','Elemental Puppets':'elemental','Hiruko':'hiruko','Human Puppet':'human','Hundred Puppet Army':'hundred','Insect Queen Bee Drone Puppet':'bee','Komushi (puppet)':'komushi','Lizard Puppet':'lizard','Mother and Father (puppet)':'motherFather','Puppet':'generic','Sasori (puppet)':'sasori','Third Kazekage (puppet)':'thirdKazekage','Vampire Puppet':'vampire','Water-Firing Puppets':'waterFiring','Ōtsutsuki Clan Puppets':'otsutsuki'};
+      const key=keyMap[exact]||'generic';const count=(key==='chikamatsu'?6:key==='hundred'?10:key==='motherFather'||key==='waterFiring'||key==='otsutsuki'?2:1);
+      const baseR=key==='hundred'?11:key==='chikamatsu'?14:key==='hiruko'?22:key==='thirdKazekage'||key==='motherFather'||key==='otsutsuki'?24:19;
+      fighters=[];const dummy={name:'Puppet Master Preview',side:'A',alive:true,x:cx,y:cy+125,r:30,vx:0,vy:0,color:'#8edcff',ninja:{weapon:exact},weaponSpin:.15};
+      const created=[];for(let i=0;i<count;i++){const spread=count>1?((i-(count-1)/2)*.22):0;const p={id:'preview_'+i,parent:dummy,side:'A',name:exact,displayName:key==='motherFather'?(i?'FATHER':'MOTHER'):key==='waterFiring'?'WATER PUPPET':key==='otsutsuki'?'ŌTSUTSUKI':key==='chikamatsu'?'CHIKAMATSU':key==='hundred'?'HUNDRED':exact,exactWeapon:exact,profile:{key,count},kind:key,variantIndex:i,entityType:'puppet',alive:true,hp:100,maxHp:100,r:baseR,x:cx+Math.cos(spread)*55,y:cy+Math.sin(spread)*55,vx:Math.cos(frameTime/420+i)*.7,vy:Math.sin(frameTime/510+i)*.7,weapon:'Small Dagger',weaponType:'dagger',weaponReach:28,weaponAngle:frameTime/500+i,prevWeaponAngle:0,weaponSpin:.16,damage:10,dmg:10,ninja:dummy.ninja,color:'#a8dcff',cooldown:0,weaponClashCooldown:0,shield:0,hitFlash:Math.sin(frameTime/120+i*1.3)>.82?3:0,poof:0,age:frameTime/16+i*12,attackFlash:((frameTime/180+i*80)%900)<150?10:0,projectileCooldown:0,poisonCooldown:0};created.push(p);}
+      // Mother/Father and multi-puppet groups are shown together; other puppets get a single hero pose.
+      for(const p of created)drawPuppet(p);
+      ctx.save();ctx.textAlign='center';ctx.fillStyle='#eaf8ff';ctx.font='800 18px system-ui';ctx.fillText(exact,cx,32);ctx.fillStyle='#91a9c1';ctx.font='600 11px system-ui';ctx.fillText(`Animation Preview · Puppet · ${count} visual unit${count===1?'':'s'}`,cx,50);ctx.restore();
+    }finally{ctx=previousCtx;fighters=oldFighters;}
+  }
+  window.orbRenderPuppetPreview=orbRenderPuppetPreview;
   window.orbRenderSummonPreview=orbRenderSummonPreview;
 
   function loop(ts){
@@ -12260,15 +13731,20 @@ populateSources();resetState();
   function summonEntries(){
     return typeof SUMMON_PROFILES!=='undefined'?Object.keys(SUMMON_PROFILES):['Toad','Snake','Slug','Monkey','Dog / Hound','Hawk / Bird','Turtle','Insect'];
   }
+  function puppetEntries(){
+    const vals=['Barrier Puppets','Chikamatsu Collection','Elemental Puppets','Hiruko','Human Puppet','Hundred Puppet Army','Insect Queen Bee Drone Puppet','Komushi (puppet)','Lizard Puppet','Mother and Father (puppet)','Puppet','Sasori (puppet)','Third Kazekage (puppet)','Vampire Puppet','Water-Firing Puppets','Ōtsutsuki Clan Puppets'];
+    return uniqueNames(vals);
+  }
   function entries(){
     const mode=typeSel?.value||'weapon';
     if(mode==='jutsu')return jutsuEntries();
     if(mode==='ultimate')return ultimateEntries();
     if(mode==='summon')return summonEntries();
+    if(mode==='puppet')return puppetEntries();
     return weaponEntries();
   }
   function labelForMode(mode){
-    return mode==='weapon'?'weapon/tool':mode==='jutsu'?'jutsu':mode==='ultimate'?'ultimate jutsu':'summoning';
+    return mode==='weapon'?'weapon/tool':mode==='jutsu'?'jutsu':mode==='ultimate'?'ultimate jutsu':mode==='summon'?'summoning':'puppet';
   }
   function escAttr(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
   function fill(keep=true){
@@ -12308,11 +13784,17 @@ populateSources();resetState();
     const previewCtx=canvas.getContext('2d');
     window.orbRenderSummonPreview(name,previewCtx,canvas,t);
   }
+  function renderPuppet(name,t){
+    if(!window.orbRenderPuppetPreview)return;
+    const previewCtx=canvas.getContext('2d');
+    window.orbRenderPuppetPreview(name,previewCtx,canvas,t);
+  }
   function render(t=0,attack=true){
     const mode=typeSel.value||'weapon',name=item.value;if(!name)return;
     startTime=startTime||performance.now();
     if(mode==='weapon')renderWeapon(name,t,attack);
     else if(mode==='summon')renderSummon(name,t);
+    else if(mode==='puppet')renderPuppet(name,t);
     else renderEffect(name,t,mode==='ultimate'?'ult':'j1');
   }
   function frame(ts){
