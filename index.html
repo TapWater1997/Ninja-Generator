@@ -8998,6 +8998,512 @@ populateSources();resetState();
     if(/ten-tails|ten tails|j[uū]bi/.test(t))return 10;
     return 0;
   }
+
+  /* ========================================================================
+     JUTSU BEHAVIOR PROFILES (derived from Naruto_Orb_Arena_Jutsu_Behaviors.xlsx)
+     Covers all 634 LOCAL + ULTIMATE techniques via keyword / family matching.
+     Each profile drives: cost scaling, self-effects, opponent status, damage
+     multipliers, and visual kind hints for the existing renderer.
+     ======================================================================== */
+  const JUTSU_FAMILY_PROFILES = {
+    rasengan: {
+      costMul: 1.0, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 12,
+      dmgMul: 1.15, knockbackMul: 1.35, status: null, statusDur: 0,
+      visualHint: 'rasengan', notes: 'Kinetic spiral; momentum on hit'
+    },
+    rasenganBig: {
+      costMul: 1.15, selfSlow: 12, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 10,
+      dmgMul: 1.35, knockbackMul: 1.55, status: null, statusDur: 0,
+      visualHint: 'rasengan', notes: 'Larger kinetic sphere'
+    },
+    rasenshuriken: {
+      costMul: 1.35, selfSlow: 14, selfInvuln: 0, selfDamage: 2, postSpeedBoost: 8,
+      dmgMul: 1.55, knockbackMul: 1.4, status: 'bleed', statusDur: 45,
+      visualHint: 'rasenshuriken', notes: 'Cutting residual DoT'
+    },
+    tailedBeastBomb: {
+      costMul: 1.6, selfSlow: 18, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 6,
+      dmgMul: 1.9, knockbackMul: 1.8, status: 'stun', statusDur: 18,
+      visualHint: 'bijudama', notes: 'Massive AOE kinetic'
+    },
+    baryon: {
+      costMul: 2.2, selfSlow: 0, selfInvuln: 0, selfDamage: 8, postSpeedBoost: 20,
+      dmgMul: 2.4, knockbackMul: 1.6, status: 'drain', statusDur: 40,
+      visualHint: 'baryon', notes: 'Life-force drain; self HP cost'
+    },
+    chidori: {
+      costMul: 1.1, selfSlow: 0, selfInvuln: 10, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.25, knockbackMul: 1.1, status: 'electric', statusDur: 25,
+      visualHint: 'chidori', notes: 'High-speed piercing dash'
+    },
+    chidoriSpear: {
+      costMul: 1.2, selfSlow: 0, selfInvuln: 8, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.35, knockbackMul: 1.15, status: 'electric', statusDur: 30,
+      visualHint: 'chidori', notes: 'Extended range piercing'
+    },
+    kirin: {
+      costMul: 1.8, selfSlow: 22, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 2.1, knockbackMul: 1.9, status: 'stun', statusDur: 28,
+      visualHint: 'kirin', notes: 'Vertical lightning dragon'
+    },
+    fireball: {
+      costMul: 0.95, selfSlow: 6, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.1, knockbackMul: 1.2, status: 'burn', statusDur: 35,
+      visualHint: 'fire', notes: 'Standard fire projectile + burn'
+    },
+    greatFire: {
+      costMul: 1.4, selfSlow: 16, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.6, knockbackMul: 1.5, status: 'burn', statusDur: 50,
+      visualHint: 'fireSea', notes: 'Wide fire wave / annihilation'
+    },
+    amaterasu: {
+      costMul: 1.7, selfSlow: 20, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.4, knockbackMul: 0.6, status: 'blackBurn', statusDur: 90,
+      visualHint: 'blackFire', notes: 'Unextinguishable black flames'
+    },
+    kagutsuchi: {
+      costMul: 1.5, selfSlow: 10, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.35, knockbackMul: 0.9, status: 'blackBurn', statusDur: 70,
+      visualHint: 'blackFire', notes: 'Shaped black flames'
+    },
+    susanoo: {
+      costMul: 1.3, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.25, knockbackMul: 1.2, status: null, statusDur: 0,
+      visualHint: 'susanoo', notes: 'Transformation handled separately'
+    },
+    tsukuyomi: {
+      costMul: 1.6, selfSlow: 12, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.4, knockbackMul: 0.2, status: 'genjutsuLong', statusDur: 55,
+      visualHint: 'genjutsu', notes: 'Long stun + mental damage'
+    },
+    kotoamatsukami: {
+      costMul: 2.0, selfSlow: 4, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.2, knockbackMul: 0.1, status: 'forcedAction', statusDur: 60,
+      visualHint: 'genjutsu', notes: 'Forced action / confusion'
+    },
+    izanagi: {
+      costMul: 1.8, selfSlow: 0, selfInvuln: 45, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0, knockbackMul: 0, status: null, statusDur: 0,
+      visualHint: 'spaceTime', notes: 'Reality rewrite; self invuln'
+    },
+    shinra: {
+      costMul: 1.25, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.1, knockbackMul: 2.2, status: null, statusDur: 0,
+      visualHint: 'gravity', notes: 'Strong radial knockback'
+    },
+    bansho: {
+      costMul: 1.25, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.9, knockbackMul: 0.3, status: 'pull', statusDur: 12,
+      visualHint: 'gravity', notes: 'Pull toward user'
+    },
+    chibaku: {
+      costMul: 1.9, selfSlow: 25, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.7, knockbackMul: 1.0, status: 'lift', statusDur: 40,
+      visualHint: 'gravity', notes: 'Rock prison then drop'
+    },
+    wood: {
+      costMul: 1.3, selfSlow: 14, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.2, knockbackMul: 0.8, status: 'root', statusDur: 35,
+      visualHint: 'wood', notes: 'Binding + zone control'
+    },
+    woodDragon: {
+      costMul: 1.4, selfSlow: 12, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.35, knockbackMul: 0.7, status: 'root', statusDur: 45,
+      visualHint: 'woodDragon', notes: 'Constricting wood dragon'
+    },
+    sandBind: {
+      costMul: 1.2, selfSlow: 10, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.15, knockbackMul: 0.5, status: 'root', statusDur: 40,
+      visualHint: 'sand', notes: 'Root then crush'
+    },
+    sandBurial: {
+      costMul: 1.55, selfSlow: 16, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.75, knockbackMul: 0.4, status: 'root', statusDur: 50,
+      visualHint: 'sand', notes: 'High damage finisher once trapped'
+    },
+    gates: {
+      costMul: 0.8, selfSlow: 0, selfInvuln: 0, selfDamage: 5, postSpeedBoost: 25,
+      dmgMul: 1.6, knockbackMul: 1.5, status: null, statusDur: 0,
+      visualHint: 'gates', notes: 'Self-damage for power'
+    },
+    nightGuy: {
+      costMul: 1.0, selfSlow: 0, selfInvuln: 15, selfDamage: 18, postSpeedBoost: 40,
+      dmgMul: 2.8, knockbackMul: 2.5, status: 'stun', statusDur: 20,
+      visualHint: 'gates', notes: 'Extreme self-damage finisher'
+    },
+    waterPrison: {
+      costMul: 1.15, selfSlow: 6, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.7, knockbackMul: 0.2, status: 'root', statusDur: 48,
+      visualHint: 'waterPrison', notes: 'Root inside water sphere'
+    },
+    waterDragon: {
+      costMul: 1.1, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.25, knockbackMul: 1.4, status: null, statusDur: 0,
+      visualHint: 'waterDragon', notes: 'Tracking water projectile'
+    },
+    mist: {
+      costMul: 0.9, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.3, knockbackMul: 0.2, status: 'blind', statusDur: 55,
+      visualHint: 'water', notes: 'Vision / accuracy reduction'
+    },
+    earthWall: {
+      costMul: 0.95, selfSlow: 4, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.4, knockbackMul: 0.3, status: null, statusDur: 0,
+      visualHint: 'earth', notes: 'Defensive barrier (also sets shield)'
+    },
+    swamp: {
+      costMul: 1.15, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.8, knockbackMul: 0.3, status: 'slow', statusDur: 50,
+      visualHint: 'mud', notes: 'Terrain slow / eventual root'
+    },
+    lightning: {
+      costMul: 1.05, selfSlow: 0, selfInvuln: 4, selfDamage: 0, postSpeedBoost: 8,
+      dmgMul: 1.2, knockbackMul: 1.15, status: 'electric', statusDur: 22,
+      visualHint: 'lightning', notes: 'Speed + paralysis chance'
+    },
+    wind: {
+      costMul: 1.0, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 6,
+      dmgMul: 1.15, knockbackMul: 1.45, status: null, statusDur: 0,
+      visualHint: 'wind', notes: 'Cutting + strong knockback'
+    },
+    ice: {
+      costMul: 1.15, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.2, knockbackMul: 0.9, status: 'slow', statusDur: 30,
+      visualHint: 'ice', notes: 'Pierce + slow'
+    },
+    crystal: {
+      costMul: 1.2, selfSlow: 10, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.25, knockbackMul: 0.7, status: 'root', statusDur: 35,
+      visualHint: 'crystal', notes: 'Geometric bind / pierce'
+    },
+    lava: {
+      costMul: 1.25, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.3, knockbackMul: 1.1, status: 'burn', statusDur: 40,
+      visualHint: 'lava', notes: 'Molten burn + zone'
+    },
+    explosion: {
+      costMul: 1.3, selfSlow: 6, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.55, knockbackMul: 1.7, status: null, statusDur: 0,
+      visualHint: 'explosion', notes: 'High AOE knockback'
+    },
+    dust: {
+      costMul: 2.0, selfSlow: 18, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 2.6, knockbackMul: 1.0, status: null, statusDur: 0,
+      visualHint: 'dust', notes: 'Disintegration; extreme single-target'
+    },
+    magnet: {
+      costMul: 1.2, selfSlow: 8, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.25, knockbackMul: 0.8, status: 'root', statusDur: 28,
+      visualHint: 'magnet', notes: 'Particle bind / crush'
+    },
+    shadow: {
+      costMul: 1.1, selfSlow: 15, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.6, knockbackMul: 0.2, status: 'root', statusDur: 42,
+      visualHint: 'shadow', notes: 'Shadow link root / strangle'
+    },
+    insect: {
+      costMul: 0.95, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.85, knockbackMul: 0.4, status: 'drain', statusDur: 55,
+      visualHint: 'insects', notes: 'Chakra drain DoT swarm'
+    },
+    sealing: {
+      costMul: 1.5, selfSlow: 14, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.7, knockbackMul: 0.3, status: 'seal', statusDur: 60,
+      visualHint: 'seal', notes: 'Restrict gauges / techniques'
+    },
+    reaper: {
+      costMul: 2.5, selfSlow: 30, selfInvuln: 0, selfDamage: 25, postSpeedBoost: 0,
+      dmgMul: 1.0, knockbackMul: 0.2, status: 'seal', statusDur: 999,
+      visualHint: 'seal', notes: 'Sacrificial soul seal'
+    },
+    spaceTime: {
+      costMul: 1.35, selfSlow: 0, selfInvuln: 12, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.1, knockbackMul: 0.8, status: null, statusDur: 0,
+      visualHint: 'spaceTime', notes: 'Teleport / phase / displacement'
+    },
+    medical: {
+      costMul: 1.0, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.5, knockbackMul: 0.3, status: null, statusDur: 0,
+      visualHint: 'medical', notes: 'Heal / strength of 100 handled separately'
+    },
+    multiSize: {
+      costMul: 1.2, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.5, knockbackMul: 1.6, status: null, statusDur: 0,
+      visualHint: 'golem', notes: 'Size increase; heavy physical'
+    },
+    gentleFist: {
+      costMul: 0.9, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.05, knockbackMul: 0.7, status: 'chakraDisrupt', statusDur: 30,
+      visualHint: 'taijutsu', notes: 'Chakra point disruption'
+    },
+    truthSeeking: {
+      costMul: 1.8, selfSlow: 0, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.7, knockbackMul: 1.2, status: null, statusDur: 0,
+      visualHint: 'truthSeeking', notes: 'Ninjutsu nullifying orbs'
+    },
+    genjutsu: {
+      costMul: 1.1, selfSlow: 4, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 0.35, knockbackMul: 0.15, status: 'genjutsu', statusDur: 32,
+      visualHint: 'genjutsu', notes: 'Standard genjutsu stun'
+    },
+    default: {
+      costMul: 1.0, selfSlow: 6, selfInvuln: 0, selfDamage: 0, postSpeedBoost: 0,
+      dmgMul: 1.1, knockbackMul: 1.15, status: null, statusDur: 0,
+      visualHint: 'chakra', notes: 'Generic ninjutsu profile'
+    }
+  };
+
+  function getJutsuBehaviorProfile(name){
+    const t = String(name||'').toLowerCase().replace(/[–—]/g,'-');
+    if(!t || t==='none') return JUTSU_FAMILY_PROFILES.default;
+
+    // Baryon
+    if(/baryon/.test(t)) return JUTSU_FAMILY_PROFILES.baryon;
+    // Tailed Beast / Planetary / Six Paths Rasengan-scale
+    if(/tailed beast bomb|bij[uū]dama|planetary rasen|six paths.*rasen|massive rasengan|mega barrage/.test(t)) return JUTSU_FAMILY_PROFILES.tailedBeastBomb;
+    // Rasenshuriken
+    if(/rasenshuriken|rasen shuriken/.test(t)) return JUTSU_FAMILY_PROFILES.rasenshuriken;
+    // Big / Barrage Rasengan
+    if(/big ball rasengan|rasengan barrage|odama|gallant rasengan|vermillion rasengan|dive bomb rasengan|scientific ninja tool rasengan/.test(t)) return JUTSU_FAMILY_PROFILES.rasenganBig;
+    // Base Rasengan
+    if(/rasengan/.test(t)) return JUTSU_FAMILY_PROFILES.rasengan;
+
+    // Kirin
+    if(/kirin/.test(t)) return JUTSU_FAMILY_PROFILES.kirin;
+    // Chidori spear variants
+    if(/chidori.*(spear|true)|true spear|sharp spear/.test(t)) return JUTSU_FAMILY_PROFILES.chidoriSpear;
+    // Chidori / Raikiri / Lightning Blade
+    if(/chidori|raikiri|lightning blade|kamui lightning/.test(t)) return JUTSU_FAMILY_PROFILES.chidori;
+
+    // Amaterasu / Kagutsuchi / Inferno
+    if(/amaterasu/.test(t)) return JUTSU_FAMILY_PROFILES.amaterasu;
+    if(/kagutsuchi|inferno style|flame control|black fire/.test(t)) return JUTSU_FAMILY_PROFILES.kagutsuchi;
+    // Great Fire scale
+    if(/great fire annihilation|great fire destruction|majestic destroyer|blast wave wild dance|ash pile burning.*ultimate|dragon flame release song/.test(t)) return JUTSU_FAMILY_PROFILES.greatFire;
+    // Standard fire
+    if(/fire (style|release)|flame bullet|phoenix|dragon flame|fireball|burning ash|intelligent hard work|toad oil flame/.test(t)) return JUTSU_FAMILY_PROFILES.fireball;
+
+    // Susanoo
+    if(/susanoo/.test(t)) return JUTSU_FAMILY_PROFILES.susanoo;
+
+    // Tsukuyomi / Koto / Izanagi / Izanami
+    if(/tsukuyomi/.test(t)) return JUTSU_FAMILY_PROFILES.tsukuyomi;
+    if(/kotoamatsukami/.test(t)) return JUTSU_FAMILY_PROFILES.kotoamatsukami;
+    if(/izanagi/.test(t)) return JUTSU_FAMILY_PROFILES.izanagi;
+    if(/izanami/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.tsukuyomi, {status:'genjutsuLong', statusDur:70});
+
+    // Gravity
+    if(/shinra tensei|almighty push/.test(t)) return JUTSU_FAMILY_PROFILES.shinra;
+    if(/bansho tenin/.test(t)) return JUTSU_FAMILY_PROFILES.bansho;
+    if(/chibaku tensei|planetary devastation/.test(t)) return JUTSU_FAMILY_PROFILES.chibaku;
+
+    // Wood
+    if(/wood dragon|true several thousand|deep forest|advent of a world of flowering|hotei|smothering binding/.test(t)) return JUTSU_FAMILY_PROFILES.woodDragon;
+    if(/wood release|wood style|wood human|genes of the first/.test(t)) return JUTSU_FAMILY_PROFILES.wood;
+
+    // Sand
+    if(/giant sand burial|layered sand burial|sand waterfall funeral|quicksand/.test(t)) return JUTSU_FAMILY_PROFILES.sandBurial;
+    if(/sand binding|sand coffin|sand shield|sand arm|sand shuriken|gold dust/.test(t)) return JUTSU_FAMILY_PROFILES.sandBind;
+
+    // Eight Gates / Taijutsu finishers
+    if(/night guy/.test(t)) return JUTSU_FAMILY_PROFILES.nightGuy;
+    if(/morning peacock|daytime tiger|evening elephant|asakujaku|hirudora|primary lotus|hidden lotus|reverse lotus|front lotus|eight gates|leaf hurricane|leaf hot wind|leaf burning sky|dynamic entry|one's own rule/.test(t)) return JUTSU_FAMILY_PROFILES.gates;
+
+    // Water
+    if(/water prison/.test(t)) return JUTSU_FAMILY_PROFILES.waterPrison;
+    if(/hiding in mist|mist technique/.test(t)) return JUTSU_FAMILY_PROFILES.mist;
+    if(/water dragon|water shark|feeding sharks|great waterfall|exploding water|wild water wave|water colliding|super shark|tri-water|flowing whip|bubble|aqua shoot|freight bubbles|tidal|sea dragon/.test(t)) return JUTSU_FAMILY_PROFILES.waterDragon;
+
+    // Earth / Mud
+    if(/swamp of the underworld|quagmire|mud release|mud assault|muddy water|bottomless mud|landslide/.test(t)) return JUTSU_FAMILY_PROFILES.swamp;
+    if(/earth[- ]style wall|earth shore|rock shelter|mud wall|golem technique|added-weight|light-weight rock|earth dragon|moving earth core|rock bullet|weighted boulder/.test(t)) return JUTSU_FAMILY_PROFILES.earthWall;
+
+    // Lightning general
+    if(/lightning (style|release)|lariat|oppression horizontal|false darkness|hell stab|electromagnetic|thunderbolt|lightning ball|depth charge|lightning beast|lightning transmission|lightning strike|wave of inspiration/.test(t)) return JUTSU_FAMILY_PROFILES.lightning;
+
+    // Wind
+    if(/wind (style|release)|vacuum|sickle weasel|gale palm|air bullet|pressure damage|great breakthrough|typhoon|tornado high|true wind scythe/.test(t)) return JUTSU_FAMILY_PROFILES.wind;
+
+    // Ice
+    if(/ice release|demonic mirroring|certain-kill ice|one horned white whale|tearing dragon fierce tiger|ice rock dome/.test(t)) return JUTSU_FAMILY_PROFILES.ice;
+
+    // Crystal
+    if(/crystal release|jade crystal|crystal lance|crystal armour|crystal needles|crystal wheel|crystal thorns|crystal prison|shuriken wild dance|gods' crossings/.test(t)) return JUTSU_FAMILY_PROFILES.crystal;
+
+    // Lava / Boil / Scorch
+    if(/lava release|lava style|melting apparition|scorching rocks|acid explosion|boil release|scorch release|extremely steaming|steaming danger/.test(t)) return JUTSU_FAMILY_PROFILES.lava;
+
+    // Explosion / Dust
+    if(/dust release|atomic dismantling|particle style/.test(t)) return JUTSU_FAMILY_PROFILES.dust;
+    if(/explosion|exploding clay|landmine|c0|c1|c2|c3|c4/.test(t)) return JUTSU_FAMILY_PROFILES.explosion;
+
+    // Magnet / Iron Sand
+    if(/magnet release|iron sand|conserving bee|gold dust imperial/.test(t)) return JUTSU_FAMILY_PROFILES.magnet;
+
+    // Shadow / Nara
+    if(/shadow imitation|shadow strangle|shadow-neck|shadow sewing|shadow pull|shadow pinning|shadow stitching|shadow gathering|shadow imitation shuriken/.test(t)) return JUTSU_FAMILY_PROFILES.shadow;
+
+    // Insect
+    if(/insect|parasitic|bee bomb|bee honey|beeswax|thousand bee|insect bog|insect sphere|insect jamming|insect clone|insect gathering|spider bind/.test(t)) return JUTSU_FAMILY_PROFILES.insect;
+
+    // Sealing
+    if(/reaper death|dead demon consuming/.test(t)) return JUTSU_FAMILY_PROFILES.reaper;
+    if(/seal|sealing|adamantine.*chain|four symbols|five elements seal|contract seal|string light|tiger vision|dark sealing|phantom dragons|iron armour seal|uzumaki life-force/.test(t)) return JUTSU_FAMILY_PROFILES.sealing;
+
+    // Space-Time
+    if(/flying thunder god|kamui|amenotejikara|yomotsu hirasaka|amenominaka|sukunahikona|daikokuten|space-time|dimensional|j[oō]gan.*portal|j[oō]gan.*dimension/.test(t)) return JUTSU_FAMILY_PROFILES.spaceTime;
+
+    // Medical
+    if(/mystical palm|creation rebirth|strength of a hundred|100 healings|cherry blossom impact|mitotic/.test(t)) return JUTSU_FAMILY_PROFILES.medical;
+
+    // Multi-Size
+    if(/multi-size|human bullet|butterfly mode|calorie control|super expansion|super slap|partial multi-size|spiked human bullet/.test(t)) return JUTSU_FAMILY_PROFILES.multiSize;
+
+    // Gentle Fist / Byakugan
+    if(/gentle fist|gentle step|eight trigrams|byakugan|air palm|revolving heaven|64 palms|thirty-two palms|lion fist|lion camellia/.test(t)) return JUTSU_FAMILY_PROFILES.gentleFist;
+
+    // Truth-Seeking / Six Paths high end
+    if(/truth-seeking|gud[oō]dama|all-killing ash bones|six paths.*orb|yin-yang release/.test(t)) return JUTSU_FAMILY_PROFILES.truthSeeking;
+
+    // Genjutsu generic
+    if(/genjutsu|illusion|demonic illusion|bringer-of-darkness|temple of nirvana|ephemeral|shackling stakes|hell viewing|tree binding|false surroundings|ketsury[uū]gan.*genjutsu|kurama clan.*genjutsu|painting-conduit|village-scale reality|physical-damage genjutsu/.test(t)) return JUTSU_FAMILY_PROFILES.genjutsu;
+
+    // Dark Release
+    if(/dark release|inhaling maw|judgment/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.default, {status:'drain', statusDur:40, dmgMul:1.2, visualHint:'absorption'});
+
+    // Steel / Swift
+    if(/steel release|impervious armour|blade-proof/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.default, {selfInvuln:20, dmgMul:0.9, visualHint:'chakra'});
+    if(/swift release|shadowless flight|blur-speed/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.lightning, {postSpeedBoost:22, visualHint:'spaceTime'});
+
+    // Paper / Shikigami
+    if(/paper|shikigami|dance of the shikigami|paper person/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.default, {status:'bleed', statusDur:25, visualHint:'paper'});
+
+    // Snake
+    if(/snake|striking shadow snake|snake bearer|white snake/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.default, {status:'root', statusDur:20, visualHint:'snake'});
+
+    // Flute / Sound
+    if(/flute|demon flute|nocturne|phantom wave|chains of fantasia|floating note/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.genjutsu, {visualHint:'sound'});
+
+    // Karma / Ōtsutsuki
+    if(/karma|takamimusubinokami|sukunahikona|daikokuten/.test(t)) return Object.assign({}, JUTSU_FAMILY_PROFILES.truthSeeking, {status:'drain', statusDur:35, costMul:1.9});
+
+    return JUTSU_FAMILY_PROFILES.default;
+  }
+
+  function applyJutsuStatus(target, status, duration, source){
+    if(!target || !target.alive || !status) return;
+    duration = Math.max(1, Number(duration)||20);
+    if(status==='burn' || status==='blackBurn'){
+      target.burn = Math.max(target.burn||0, duration);
+      target.burnPower = status==='blackBurn' ? 1.6 : 1.0;
+      target.burnSource = source;
+      floatText(target.x, target.y-target.r-20, status==='blackBurn'?'BLACK FLAMES':'BURN', '#ff6a24');
+    }else if(status==='electric'){
+      target.electric = Math.max(target.electric||0, duration);
+      target.vx *= 0.55; target.vy *= 0.55;
+      floatText(target.x, target.y-target.r-20, 'SHOCK', '#72ddff');
+    }else if(status==='root' || status==='lift'){
+      target.root = Math.max(target.root||0, duration);
+      target.vx *= 0.1; target.vy *= 0.1;
+      floatText(target.x, target.y-target.r-20, status==='lift'?'LIFT':'BIND', '#c4a574');
+    }else if(status==='slow'){
+      target.slow = Math.max(target.slow||0, duration);
+      floatText(target.x, target.y-target.r-20, 'SLOW', '#8f755f');
+    }else if(status==='drain'){
+      target.drain = Math.max(target.drain||0, duration);
+      floatText(target.x, target.y-target.r-20, 'DRAIN', '#b9a0ff');
+    }else if(status==='bleed'){
+      target.bleed = Math.max(target.bleed||0, duration);
+      floatText(target.x, target.y-target.r-20, 'CUT', '#ff8a8a');
+    }else if(status==='stun' || status==='genjutsu' || status==='genjutsuLong'){
+      const stun = status==='genjutsuLong' ? Math.max(duration, 48) : duration;
+      target.genjutsuStun = Math.max(target.genjutsuStun||0, stun);
+      target.genjutsuSource = source;
+      target.genjutsuFlash = stun;
+      target.vx *= 0.15; target.vy *= 0.15;
+      floatText(target.x, target.y-target.r-20, status.startsWith('genjutsu')?'GENJUTSU':'STUN', '#d9b6ff');
+    }else if(status==='chakraDisrupt'){
+      target.j1Meter = Math.max(0, (target.j1Meter||0) - 18);
+      target.j2Meter = Math.max(0, (target.j2Meter||0) - 14);
+      target.ultMeter = Math.max(0, (target.ultMeter||0) - 10);
+      floatText(target.x, target.y-target.r-20, 'DISRUPT', '#9deaff');
+    }else if(status==='seal'){
+      target.seal = Math.max(target.seal||0, duration);
+      target.j1Meter = Math.max(0, (target.j1Meter||0) * 0.5);
+      target.j2Meter = Math.max(0, (target.j2Meter||0) * 0.5);
+      target.ultMeter = Math.max(0, (target.ultMeter||0) * 0.45);
+      floatText(target.x, target.y-target.r-20, 'SEAL', '#f0bb67');
+    }else if(status==='blind'){
+      target.blind = Math.max(target.blind||0, duration);
+      floatText(target.x, target.y-target.r-20, 'MIST', '#c8d0d8');
+    }else if(status==='pull'){
+      // Handled as displacement in activation
+      floatText(target.x, target.y-target.r-20, 'PULL', '#a98cff');
+    }else if(status==='forcedAction'){
+      target.forcedAction = Math.max(target.forcedAction||0, duration);
+      floatText(target.x, target.y-target.r-20, 'CONTROL', '#c69cff');
+    }
+  }
+
+  function processFighterStatuses(f, dt){
+    if(!f || !f.alive) return;
+    // Burn / Black Burn DoT
+    if(f.burn > 0){
+      f.burn = Math.max(0, f.burn - dt);
+      const power = f.burnPower || 1;
+      const dmg = 0.22 * power * dt;
+      f.hp -= dmg;
+      if(Math.random() < 0.08) spawnParticles(f.x, f.y, power>1.3 ? '#21152f' : '#ff6a24', 3, 2, 10);
+      if(f.hp <= 0){defeatEntity(f, f.color, 1.0);}
+    }
+    // Electric residual (slow + small damage)
+    if(f.electric > 0){
+      f.electric = Math.max(0, f.electric - dt);
+      f.vx *= (1 - 0.03*dt); f.vy *= (1 - 0.03*dt);
+      if(Math.random() < 0.06) spawnParticles(f.x, f.y, '#72ddff', 2, 1.5, 8);
+    }
+    // Root / Bind
+    if(f.root > 0){
+      f.root = Math.max(0, f.root - dt);
+      f.vx *= 0.15; f.vy *= 0.15;
+    }
+    // Slow
+    if(f.slow > 0){
+      f.slow = Math.max(0, f.slow - dt);
+      f.vx *= 0.7; f.vy *= 0.7;
+    }
+    // Drain (chakra + light HP)
+    if(f.drain > 0){
+      f.drain = Math.max(0, f.drain - dt);
+      f.j1Meter = Math.max(0, (f.j1Meter||0) - 0.35*dt);
+      f.j2Meter = Math.max(0, (f.j2Meter||0) - 0.28*dt);
+      f.ultMeter = Math.max(0, (f.ultMeter||0) - 0.18*dt);
+      f.hp -= 0.08 * dt;
+    }
+    // Bleed
+    if(f.bleed > 0){
+      f.bleed = Math.max(0, f.bleed - dt);
+      f.hp -= 0.15 * dt;
+      if(f.hp <= 0){defeatEntity(f, f.color, 1.0);}
+    }
+    // Seal (reduces gauge gain effectiveness is handled elsewhere; here just timer)
+    if(f.seal > 0) f.seal = Math.max(0, f.seal - dt);
+    // Blind
+    if(f.blind > 0) f.blind = Math.max(0, f.blind - dt);
+    // Forced action
+    if(f.forcedAction > 0) f.forcedAction = Math.max(0, f.forcedAction - dt);
+    // Self-slow from ability wind-up
+    if(f.selfSlow > 0){
+      f.selfSlow = Math.max(0, f.selfSlow - dt);
+      f.vx *= 0.6; f.vy *= 0.6;
+    }
+    // Post-hit speed boost
+    if(f.postSpeedBoost > 0){
+      f.postSpeedBoost = Math.max(0, f.postSpeedBoost - dt);
+    }
+  }
+
+
   function makeFighter(side,ninja){
     const d=derived(ninja),isA=side==='A',angle=isA?Math.PI:0,dist=170,spinDir=isA?1:-1;
     const hasConsumable=!!ninja.hasConsumable;
@@ -9027,7 +9533,7 @@ populateSources();resetState();
       rangedWeaponOnly:weaponCombatMode({weapon})==='ranged',
       j1Meter:0,j2Meter:0,ultMeter:0,j1Active:0,j2Active:0,ultActive:0,
       j1Prep:0,j2Prep:0,ultPrep:0,abilityFlash:0,abilityName:'',abilityKind:'',
-      cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,
+      cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,burn:0,burnPower:1,electric:0,root:0,slow:0,drain:0,bleed:0,seal:0,blind:0,forcedAction:0,selfSlow:0,postSpeedBoost:0,
       isPuppetUser:isPuppetUser(ninja),puppet:null,puppetRespawnFlash:0,hasDog,dog:null,dogSpawned:false,
       hasConsumable,consumable:consumableName(ninja),consumableProfile:consumableProfile(consumableName(ninja)),consumableMeter:0,consumableCooldown:hasConsumable?80:Infinity,
       consumableActive:0,consumableBoosts:{},consumableUses:0,
@@ -9360,8 +9866,10 @@ populateSources();resetState();
     if(!foe||!foe.alive)return;
     const ang=Math.atan2(foe.y-f.y,foe.x-f.x);
     const speed=slot==='ult'?4.8:4.1;
-    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015)*ORB_TUNING.combat.damageMultiplier;
-    projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false});
+    const profile=getJutsuBehaviorProfile(name);
+    const dmgMul=(profile&&profile.dmgMul)||1.1;
+    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*dmgMul*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015)*ORB_TUNING.combat.damageMultiplier;
+    projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false,profile,status:profile.status||null,statusDur:profile.statusDur||0});
   }
 
 
@@ -10541,15 +11049,45 @@ populateSources();resetState();
       return true;
     }
     const source=puppetSource||f;
+    const profile=getJutsuBehaviorProfile(name);
+    const ultScale=slot==='ult'?1.35:1.0;
+    /* Apply self-effects from behavior profile */
+    if(profile.selfSlow>0) f.selfSlow=Math.max(f.selfSlow||0, profile.selfSlow*(slot==='ult'?1.2:1));
+    if(profile.selfInvuln>0) f.invuln=Math.max(f.invuln||0, profile.selfInvuln);
+    if(profile.selfDamage>0){
+      const sd=profile.selfDamage*(slot==='ult'?1.4:1);
+      f.hp=Math.max(1, f.hp-sd);
+      floatText(f.x,f.y-f.r-16,`-${sd.toFixed(0)} SELF`,'#ff8a8a');
+    }
+    if(profile.postSpeedBoost>0) f.postSpeedBoost=Math.max(f.postSpeedBoost||0, profile.postSpeedBoost);
     const ranged=isRangedTechnique(name);
-    effect(f.abilityKind,source,{life:slot==='ult'?92:50,slot,name,ranged});
+    effect(f.abilityKind,source,{life:slot==='ult'?92:50,slot,name,ranged,profile});
     if(ranged) spawnRangedProjectile(source,name,f.abilityKind,slot);
     spawnParticles(source.x,source.y,puppetSource?'#a8dcff':f.color,slot==='ult'?32:18,slot==='ult'?7:4,30);
     floatText(source.x,source.y-source.r-24,name,puppetSource?'#a8dcff':f.color);
     log(puppetSource?`${f.name}'s puppet uses ${name}`:`${f.name} uses ${name}`);
     showBanner(puppetSource?`${f.name}'s Puppet: ${name}`:`${f.name}: ${name}`,900);
     if(isCloneTechnique(name)) spawnClones(source,name,slot);
-    if(isGenjutsuTechnique(name)){
+    /* Opponent impact from profile */
+    const foe2=f.side==='A'?fighters[1]:fighters[0];
+    if(foe2&&foe2.alive&&profile.status){
+      if((profile.status==='genjutsu'||profile.status==='genjutsuLong'||isGenjutsuTechnique(name))&&hasByakugan(foe2.ninja)){
+        log(`${foe2.name} resists ${name}; Byakugan immunity.`);
+        foe2.genjutsuFlash=18;
+      }else{
+        const dur=(profile.statusDur||24)*ultScale;
+        applyJutsuStatus(foe2, profile.status, dur, source);
+        if(profile.status==='pull'||profile.visualHint==='gravity'&& /bansho|tenin/.test(String(name).toLowerCase())){
+          const dx=source.x-foe2.x, dy=source.y-foe2.y, L=Math.hypot(dx,dy)||1;
+          foe2.vx+=dx/L*9; foe2.vy+=dy/L*9;
+        }
+        if(profile.knockbackMul>1.3 && !ranged){
+          const dx=foe2.x-source.x, dy=foe2.y-source.y, L=Math.hypot(dx,dy)||1;
+          const kb=6*profile.knockbackMul*ultScale;
+          foe2.vx+=dx/L*kb; foe2.vy+=dy/L*kb;
+        }
+      }
+    }else if(isGenjutsuTechnique(name)){
       const foe=f.side==='A'?fighters[1]:fighters[0];
       if(foe&&foe.alive){
         if(hasByakugan(foe.ninja)){
@@ -10566,7 +11104,7 @@ populateSources();resetState();
         }
       }
     }
-    if(isDefensiveTechnique(name)){
+    if(isDefensiveTechnique(name)||profile.visualHint==='earth'&&/wall|shelter|shore|armour|armor|shield/.test(String(name).toLowerCase())){
       const defender=source||f;
       defender.shield=Math.max(defender.shield||0,slot==='ult'?58:42);
       defender.defenseName=name;
@@ -11149,6 +11687,7 @@ populateSources();resetState();
   function updateFighter(f,foe,dt){
     if(!f.alive)return;
     updateConsumable(f,dt);
+    processFighterStatuses(f,dt);
     if(f.bodyHitCooldown>0)f.bodyHitCooldown=Math.max(0,f.bodyHitCooldown-dt);
     if(f.genjutsuStun>0){
       f.genjutsuStun=Math.max(0,f.genjutsuStun-dt);
@@ -11390,6 +11929,10 @@ populateSources();resetState();
           continue;
         }
         target.hp-=dmg;fighterDamageGaugeGain(target,dmg);target.hitFlash=14;target.invuln=24;
+        /* Apply jutsu status from behavior profile on successful projectile hit */
+        if(p.status && !p.weapon){
+          applyJutsuStatus(target, p.status, (p.statusDur||24)*(p.slot==='ult'?1.3:1), p.f);
+        }
         if(p.weapon) reverseWeaponSpin(p.f,'hit');
         const owner=p.casterOwner||p.f;
         owner.j1Meter=clamp((owner.j1Meter||0)+unarmedGaugeGain(owner,9+dmg*.42+stat(owner.ninja,'chakraControl')*.02),0,100);
@@ -12233,9 +12776,9 @@ populateSources();resetState();
       ctx.restore();
     }
     if(age>.52){
-      const impact=clamp((age-.52)/.48,0,1),ir=(10+sig.scale*16)*ultMul + impact*(e.slot==='ult'?68:42);
-      ctx.save();ctx.globalAlpha*=.58*(1-impact*.35);ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?5.5:2.8;
-      ctx.shadowBlur=e.slot==='ult'?28:14;ctx.shadowColor=cinematicColor;
+      const impact=clamp((age-.52)/.48,0,1),ir=(10+sig.scale*16)*ultMul + impact*(e.slot==='ult'?88:42);
+      ctx.save();ctx.globalAlpha*=.62*(1-impact*.32);ctx.strokeStyle=cinematicColor;ctx.lineWidth=e.slot==='ult'?6.5:2.8;
+      ctx.shadowBlur=e.slot==='ult'?36:14;ctx.shadowColor=cinematicColor;
       // Triple shockwave rings for stronger residual presence
       ctx.beginPath();ctx.arc(tx,ty,ir,0,Math.PI*2);ctx.stroke();
       ctx.globalAlpha*=.7;ctx.lineWidth=e.slot==='ult'?3.2:1.6;
@@ -12720,6 +13263,206 @@ populateSources();resetState();
     const pair=silhouettes[kind]||silhouettes.chakra;
     const primary=pair[0],secondary=pair[1];
 
+    /* ===== THREE-PHASE TIMELINE (anime / Storm-style) =====
+       0.00-0.22  Wind-up: energy gathers on the caster
+       0.22-0.62  Travel: distinctive silhouette moves toward target
+       0.62-1.00  Impact: burst + residual field on the target
+       Ultimates scale harder and linger longer. */
+    const phaseWind = age < 0.22;
+    const phaseTravel = age >= 0.22 && age < 0.62;
+    const phaseImpact = age >= 0.62;
+    const windT = clamp(age / 0.22, 0, 1);
+    const travelT = clamp((age - 0.22) / 0.40, 0, 1);
+    const impactT = clamp((age - 0.62) / 0.38, 0, 1);
+
+    /* Wind-up: gather aura on caster (readable charge pose) */
+    if(phaseWind || age < 0.28){
+      ctx.save();
+      const grow = (f.r + 6 + windT * (18 + sig.scale * 10)) * (ult ? 1.25 : 1);
+      ctx.globalAlpha *= 0.35 * (1 - windT * 0.4) + 0.15;
+      ctx.strokeStyle = primary;
+      ctx.lineWidth = ult ? 4 : 2.2;
+      ctx.shadowColor = primary;
+      ctx.shadowBlur = ult ? 22 : 12;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, grow, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha *= 0.7;
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 4 + windT * 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    /* Family-specific wind-up accents */
+    if(phaseWind){
+      ctx.save();
+      ctx.globalAlpha *= 0.55 * windT;
+      if(kind === 'rasengan' || kind === 'rasenshuriken' || kind === 'bijudama'){
+        ctx.strokeStyle = secondary;
+        ctx.lineWidth = 2;
+        for(let i = 0; i < 3; i++){
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, 8 + windT * 14 + i * 5, sig.phase + i, sig.phase + i + Math.PI * 1.2);
+          ctx.stroke();
+        }
+      }else if(kind === 'chidori' || kind === 'lightning' || kind === 'kirin'){
+        ctx.strokeStyle = secondary;
+        ctx.lineWidth = 1.8;
+        for(let i = 0; i < 5; i++){
+          const a = sig.phase + i * 1.1 + windT;
+          ctx.beginPath();
+          ctx.moveTo(f.x, f.y);
+          ctx.lineTo(f.x + Math.cos(a) * (10 + windT * 16), f.y + Math.sin(a) * (10 + windT * 16));
+          ctx.stroke();
+        }
+      }else if(kind === 'blackFire' || kind === 'fire' || kind === 'greatFireball' || kind === 'phoenixFire' || kind === 'scorch' || kind === 'ash'){
+        for(let i = 0; i < 4; i++){
+          ctx.fillStyle = i % 2 ? primary : secondary;
+          ctx.beginPath();
+          ctx.arc(f.x + (i - 1.5) * 5, f.y - windT * 12 - i * 3, 2 + i % 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }else if(kind === 'sand' || kind === 'wood' || kind === 'woodDragon' || kind === 'earth' || kind === 'mud'){
+        ctx.strokeStyle = primary;
+        ctx.lineWidth = 2.5;
+        for(let i = 0; i < 4; i++){
+          const ox = f.x + (i - 1.5) * 10;
+          ctx.beginPath();
+          ctx.moveTo(ox, f.y + f.r);
+          ctx.lineTo(ox + 2, f.y + f.r - windT * 18);
+          ctx.stroke();
+        }
+      }else if(kind === 'genjutsu' || kind === 'mind'){
+        ctx.strokeStyle = secondary;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(f.x, f.y, f.r + 10 + windT * 12, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Kirin-style vertical strike override during travel/impact */
+    if((kind === 'kirin' || /kirin/i.test(name)) && age > 0.15){
+      ctx.save();
+      const drop = clamp((age - 0.15) / 0.5, 0, 1);
+      const kx = tx;
+      const ky = ty - (1 - drop) * 120;
+      ctx.globalAlpha *= 0.85;
+      ctx.strokeStyle = '#b8d8ff';
+      ctx.lineWidth = ult ? 10 : 6;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.moveTo(kx, ky - 40);
+      ctx.lineTo(kx, ty);
+      ctx.stroke();
+      ctx.fillStyle = '#e8f4ff';
+      ctx.beginPath();
+      ctx.arc(kx, ty - (1 - drop) * 20, 10 + drop * 8, 0, Math.PI * 2);
+      ctx.fill();
+      if(drop > 0.7){
+        ctx.globalAlpha *= 0.5;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 20 + (drop - 0.7) * 80, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    /* Terrain bind residual for wood/sand/earth/crystal during impact */
+    if(phaseImpact && (kind === 'wood' || kind === 'woodDragon' || kind === 'sand' || kind === 'earth' || kind === 'mud' || kind === 'crystal')){
+      ctx.save();
+      ctx.globalAlpha *= 0.4 * (1 - impactT * 0.5);
+      ctx.strokeStyle = primary;
+      ctx.lineWidth = ult ? 3.5 : 2;
+      for(let i = 0; i < (ult ? 8 : 5); i++){
+        const a = sig.phase + i * 0.9;
+        const len = 16 + impactT * 28 + i * 3;
+        ctx.beginPath();
+        ctx.moveTo(tx + Math.cos(a) * 6, ty + Math.sin(a) * 6);
+        ctx.lineTo(tx + Math.cos(a) * len, ty + Math.sin(a) * len + 8);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* Amaterasu cling accent on impact */
+    if(phaseImpact && (kind === 'blackFire' || /amaterasu|kagutsuchi/i.test(name))){
+      ctx.save();
+      ctx.globalAlpha *= 0.55;
+      for(let i = 0; i < 6; i++){
+        const a = performance.now() / 200 + i;
+        ctx.fillStyle = i % 2 ? '#21152f' : '#ff5b38';
+        ctx.beginPath();
+        ctx.arc(tx + Math.cos(a) * (12 + impactT * 10), ty + Math.sin(a) * (12 + impactT * 10), 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* Rasengan spiral body during travel */
+    if(phaseTravel && (kind === 'rasengan' || kind === 'rasenshuriken' || kind === 'bijudama')){
+      ctx.save();
+      const pr = (10 + sig.scale * 8 + travelT * 6) * (ult ? 1.4 : 1);
+      ctx.globalAlpha *= 0.75;
+      ctx.strokeStyle = secondary;
+      ctx.lineWidth = ult ? 3 : 2;
+      ctx.shadowColor = primary;
+      ctx.shadowBlur = 12;
+      ctx.beginPath();
+      ctx.arc(head, headY, pr, 0, Math.PI * 2);
+      ctx.stroke();
+      for(let i = 0; i < 4; i++){
+        ctx.beginPath();
+        ctx.arc(head, headY, pr * (0.4 + i * 0.15), sig.phase + age * 8 + i, sig.phase + age * 8 + i + 1.5);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    /* Chidori spear body during travel */
+    if(phaseTravel && (kind === 'chidori' || kind === 'lightning') && !/kirin/i.test(name)){
+      ctx.save();
+      ctx.globalAlpha *= 0.8;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = ult ? 5 : 3;
+      ctx.shadowColor = '#5edcff';
+      ctx.shadowBlur = 14;
+      const tip = 28 + travelT * travel * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(f.x, f.y);
+      ctx.lineTo(f.x + Math.cos(ang) * tip, f.y + Math.sin(ang) * tip);
+      ctx.stroke();
+      ctx.strokeStyle = primary;
+      ctx.lineWidth = 1.5;
+      for(let i = 0; i < 3; i++){
+        const off = (i - 1) * 0.25;
+        ctx.beginPath();
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(f.x + Math.cos(ang + off) * tip * 0.85, f.y + Math.sin(ang + off) * tip * 0.85);
+        ctx.stroke();
+      }
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    /* Ultimate screen-ownership flash */
+    if(ult && phaseImpact && impactT < 0.35){
+      ctx.save();
+      ctx.globalAlpha *= 0.12 * (1 - impactT / 0.35);
+      ctx.fillStyle = secondary;
+      ctx.beginPath();
+      ctx.arc(tx, ty, 40 + impactT * 100, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
     /* Idle aura: each technique breathes differently using its hash phase. */
     const idleR=f.r+9+sig.scale*8+Math.sin(performance.now()/170+sig.phase)*2.5;
     ctx.globalAlpha*=.22*(.65+active*.65);
@@ -13136,6 +13879,134 @@ populateSources();resetState();
     ctx.restore();
   }
 
+
+  /* Persistent status visuals — burn, root, electric, genjutsu, seal, etc.
+     Drawn every frame while the status timer is active so the fight reads
+     like the anime/Storm games even after the jutsu projectile is gone. */
+  function drawFighterStatusVFX(f){
+    if(!f||!f.alive)return;
+    const now=performance.now();
+    ctx.save();
+
+    /* Burn / Black Burn — clinging flames */
+    if((f.burn||0)>0){
+      const black=(f.burnPower||1)>1.3;
+      const n=black?7:5;
+      for(let i=0;i<n;i++){
+        const a=now/180+i*(Math.PI*2/n), rr=f.r+4+Math.sin(now/120+i)*3;
+        const px=f.x+Math.cos(a)*rr, py=f.y+Math.sin(a)*rr-Math.abs(Math.sin(now/90+i))*4;
+        ctx.globalAlpha=.55+.25*Math.sin(now/100+i);
+        if(black){
+          ctx.fillStyle=i%2?'#21152f':'#ff5b38';
+          ctx.shadowColor='#ff5b38';ctx.shadowBlur=8;
+        }else{
+          ctx.fillStyle=i%2?'#ff6a24':'#ffd36b';
+          ctx.shadowColor='#ff6a24';ctx.shadowBlur=6;
+        }
+        ctx.beginPath();ctx.arc(px,py,2.5+(i%3),0,Math.PI*2);ctx.fill();
+      }
+      ctx.shadowBlur=0;
+    }
+
+    /* Electric residual — crackling arcs */
+    if((f.electric||0)>0){
+      ctx.globalAlpha=.7;
+      ctx.strokeStyle='#72ddff';ctx.lineWidth=1.8;ctx.shadowColor='#9ef6ff';ctx.shadowBlur=6;
+      for(let i=0;i<3;i++){
+        const a=now/80+i*2.1;
+        ctx.beginPath();
+        ctx.moveTo(f.x+Math.cos(a)*f.r*.6, f.y+Math.sin(a)*f.r*.6);
+        ctx.lineTo(f.x+Math.cos(a+1.2)*(f.r+8), f.y+Math.sin(a+1.2)*(f.r+8));
+        ctx.stroke();
+      }
+      ctx.shadowBlur=0;
+    }
+
+    /* Root / Bind — floor-connected tendrils */
+    if((f.root||0)>0){
+      ctx.globalAlpha=.65;
+      ctx.strokeStyle='#c4a574';ctx.lineWidth=2.2;
+      for(let i=0;i<6;i++){
+        const a=i*(Math.PI*2/6)+now/900;
+        const ox=f.x+Math.cos(a)*(f.r+2);
+        const oy=f.y+Math.sin(a)*(f.r+2);
+        ctx.beginPath();
+        ctx.moveTo(ox, oy);
+        ctx.quadraticCurveTo(ox+Math.cos(a)*12, oy+10, ox+Math.cos(a)*6, oy+16+Math.sin(now/200+i)*3);
+        ctx.stroke();
+      }
+      ctx.globalAlpha=.2;
+      ctx.fillStyle='#8f755f';
+      ctx.beginPath();ctx.ellipse(f.x,f.y+f.r*.7,f.r*1.3,6,0,0,Math.PI*2);ctx.fill();
+    }
+
+    /* Slow — heavy drag rings */
+    if((f.slow||0)>0 && !(f.root>0)){
+      ctx.globalAlpha=.35;
+      ctx.strokeStyle='#8f755f';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+7+Math.sin(now/200)*2,0,Math.PI*2);ctx.stroke();
+    }
+
+    /* Drain — purple inward particles */
+    if((f.drain||0)>0){
+      ctx.globalAlpha=.5;
+      for(let i=0;i<6;i++){
+        const a=now/140+i, rr=f.r+14-((now/30+i*8)%14);
+        ctx.fillStyle='#b9a0ff';
+        ctx.beginPath();ctx.arc(f.x+Math.cos(a)*rr, f.y+Math.sin(a)*rr, 2, 0, Math.PI*2);ctx.fill();
+      }
+    }
+
+    /* Bleed — red flecks */
+    if((f.bleed||0)>0){
+      ctx.globalAlpha=.55;
+      for(let i=0;i<4;i++){
+        const a=now/160+i*1.7;
+        ctx.fillStyle='#ff6a6a';
+        ctx.beginPath();ctx.arc(f.x+Math.cos(a)*(f.r+3), f.y+Math.sin(a)*(f.r+3)-2, 1.8, 0, Math.PI*2);ctx.fill();
+      }
+    }
+
+    /* Seal — orbiting formula ticks */
+    if((f.seal||0)>0){
+      ctx.globalAlpha=.7;
+      ctx.strokeStyle='#f0bb67';ctx.lineWidth=1.6;
+      for(let i=0;i<5;i++){
+        const a=now/400+i*(Math.PI*2/5);
+        const px=f.x+Math.cos(a)*(f.r+11), py=f.y+Math.sin(a)*(f.r+11);
+        ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.stroke();
+        ctx.fillStyle='#f0bb67';ctx.globalAlpha=.4;
+        ctx.beginPath();ctx.arc(px,py,1.5,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=.7;
+      }
+    }
+
+    /* Blind / Mist — soft gray veil */
+    if((f.blind||0)>0){
+      ctx.globalAlpha=.22;
+      ctx.fillStyle='#c8d0d8';
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+14,0,Math.PI*2);ctx.fill();
+    }
+
+    /* Forced action / Koto — subtle purple mind-wave */
+    if((f.forcedAction||0)>0){
+      ctx.globalAlpha=.4;
+      ctx.strokeStyle='#c69cff';ctx.lineWidth=1.5;
+      const rr=f.r+8+Math.sin(now/150)*3;
+      ctx.beginPath();ctx.arc(f.x,f.y,rr,now/200,now/200+Math.PI*1.2);ctx.stroke();
+    }
+
+    /* Genjutsu strengthen */
+    if((f.genjutsuStun||0)>0){
+      ctx.globalAlpha=.25;
+      ctx.fillStyle='rgba(125,72,190,.35)';
+      ctx.beginPath();ctx.arc(f.x,f.y,f.r+12+Math.sin(f.genjutsuStun*.35)*2,0,Math.PI*2);ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+
   function drawFighter(f){
     /* Defeat poof: orb shrinks into a cute smoke cloud then vanishes. */
     if(!f.alive){
@@ -13151,6 +14022,7 @@ populateSources();resetState();
     }
     drawSusanooTransformation(f);
     drawTailedBeastTransformation(f);
+    drawFighterStatusVFX(f);
     drawWeapon(f);
 
     const now=performance.now();
