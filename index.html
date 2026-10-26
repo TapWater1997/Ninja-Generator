@@ -634,8 +634,8 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 @keyframes orbTitleImpact{from{transform:scale(1.55);opacity:0;filter:blur(5px)}to{transform:scale(1);opacity:1;filter:blur(0)}}
 #orbBattlePanel .orb-replay-label{position:absolute;z-index:7;top:12px;left:50%;transform:translateX(-50%);padding:7px 14px;border:1px solid rgba(125,220,255,.8);border-radius:999px;background:rgba(4,10,20,.86);color:#c7f0ff;font-weight:1000;letter-spacing:.18em;font-size:11px;opacity:0;pointer-events:none}
 #orbBattlePanel .orb-replay-label.show{opacity:1}
-#orbBattlePanel.orb-shake .orb-canvas-wrap{animation:orbShellShake .14s linear}
-@keyframes orbShellShake{0%,100%{transform:translate(0)}25%{transform:translate(-3px,2px)}50%{transform:translate(3px,-2px)}75%{transform:translate(-2px,-1px)}}
+#orbBattlePanel.orb-shake .orb-canvas-wrap{animation:orbShellShake .12s linear}
+@keyframes orbShellShake{0%,100%{transform:translate(0)}25%{transform:translate(-1px,1px)}50%{transform:translate(1px,-1px)}75%{transform:translate(-1px,0)}}
 @media(max-width:900px){#orbBattlePanel .orb-spectator-tools{margin:0 6px 10px;gap:7px}#orbBattlePanel .orb-spectator-tools label{flex:1 1 42%;min-width:0}#orbBattlePanel .orb-spectator-tools .orb-check{flex:1 1 42%}}
 @media(prefers-reduced-motion:reduce){#orbBattlePanel .orb-cinematic-title{animation:none}#orbBattlePanel.orb-shake .orb-canvas-wrap{animation:none}}
 </style>
@@ -653,6 +653,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
       <button class="secondary" onclick="showLogView()">Character Log</button>
       <button class="secondary" onclick="showCatalogueView()">Ninja Catalogue</button>
       <button class="secondary" onclick="showTournamentBracketPage()">🏆 Tournament Bracket</button>
+      <button class="secondary" type="button" onclick="showGeneratorView();requestAnimationFrame(()=>document.getElementById('orbBattlePanel')?.scrollIntoView({behavior:'smooth',block:'start'}))">⚔️ Arena</button>
       <button class="secondary" onclick="exportJSON()">Export JSON</button>
     </div>
   </div>
@@ -2468,6 +2469,7 @@ function exportCatalogueHTML(){
 <div class="note">This is a readable HTML catalogue. The complete catalogue data is embedded in this file so it can be imported back into Ninja Generator without losing fields.</div>
 <div class="table-wrap"><table><thead><tr><th>#</th><th>Catalogue Name</th><th>Type / Status</th><th>Rank</th><th>Village / Land</th><th>Clan</th><th>Weapon / Tool</th><th>Jutsu 1</th><th>Jutsu 2</th><th>Ultimate Jutsu</th></tr></thead><tbody>${rows}</tbody></table></div>
 ${dataScriptOpen}${embeddedJSON}${dataScriptClose}
+<!-- ORB ARENA BALANCE PATCH: 2026-10-26 -->
 </body></html>`;
   const blob=new Blob([html],{type:"text/html;charset=utf-8"});
   const url=URL.createObjectURL(blob),a=document.createElement("a");
@@ -8027,11 +8029,11 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function orbEvent(kind,detail=''){
     if(!orbFullEffects)return;
     const p=el('orbBattlePanel');
-    if(kind==='hit'){orbShake=Math.max(orbShake,detail==='heavy'?9:4);orbFlash=Math.max(orbFlash,detail==='heavy'?8:3);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+(detail==='heavy'?72:30));}
-    if(kind==='clash'){orbShake=Math.max(orbShake,5);orbFlash=Math.max(orbFlash,4);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+26);}
-    if(kind==='ultimate'){orbShake=Math.max(orbShake,14);orbFlash=Math.max(orbFlash,15);orbSlowMo=.42;orbSlowMoUntil=performance.now()+650;}
-    if(kind==='win'){orbShake=Math.max(orbShake,11);orbFlash=Math.max(orbFlash,10);}
-    if(p&&kind==='ultimate'){p.classList.remove('orb-shake');void p.offsetWidth;p.classList.add('orb-shake');setTimeout(()=>p.classList.remove('orb-shake'),220);}
+    if(kind==='hit'){orbShake=Math.max(orbShake,detail==='heavy'?4:1.8);orbFlash=Math.max(orbFlash,detail==='heavy'?2.5:.8);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+(detail==='heavy'?58:24));}
+    if(kind==='clash'){orbShake=Math.max(orbShake,2.2);orbFlash=Math.max(orbFlash,1);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+22);}
+    if(kind==='ultimate'){orbShake=Math.max(orbShake,6);orbFlash=Math.max(orbFlash,3);orbSlowMo=.52;orbSlowMoUntil=performance.now()+520;}
+    if(kind==='win'){orbShake=Math.max(orbShake,4);orbFlash=Math.max(orbFlash,2);}
+    if(p&&kind==='ultimate'){p.classList.remove('orb-shake');void p.offsetWidth;p.classList.add('orb-shake');setTimeout(()=>p.classList.remove('orb-shake'),150);}
   }
   function orbSetEnvironment(v){orbEnvironment=['training','forest','volcanic','water','night'].includes(v)?v:'training';drawArena();}
   function orbSetSpeed(v){orbCombatSpeed=clamp(Number(v)||1,.5,2);}
@@ -8247,8 +8249,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(/fists|unarmed|none/.test(t))return'fists';
     return'custom';
   }
-  function weaponLength(type){return({dagger:31,samehada:51,kubikiribocho:60,hiramekarei:53,kabutowari:52,kiba:44,nuibari:63,shibuki:51,gunbai:45,bashosen:44,kusanagi:45,sword:42,kunai:29,shuriken:34,fan:39,staff:49,spear:55,scythe:53,bow:47,hammer:45,chain:58,puppet:50,fists:19,crossbow:44,blowpipe:35,flamethrower:38,watershooter:39,launcher:36,senbon:31,whip:55,wire:58,customRanged:42,custom:38}[type]||38)}
-  function weaponSpinSpeed(type){return({dagger:.22,samehada:.11,kubikiribocho:.08,hiramekarei:.10,kabutowari:.09,kiba:.16,nuibari:.13,shibuki:.12,gunbai:.14,bashosen:.15,kusanagi:.15,sword:.14,kunai:.22,shuriken:.2,fan:.18,staff:.11,spear:.12,scythe:.13,bow:.1,hammer:.09,chain:.17,puppet:.12,fists:.26,crossbow:.11,blowpipe:.13,flamethrower:.09,watershooter:.12,launcher:.18,senbon:.2,whip:.16,wire:.18,customRanged:.14,custom:.15}[type]||.15)}
+  function weaponLength(type){return({dagger:31,samehada:51,kubikiribocho:60,hiramekarei:53,kabutowari:52,kiba:44,nuibari:63,shibuki:51,gunbai:45,bashosen:44,kusanagi:45,sword:42,kunai:29,shuriken:34,fan:39,staff:49,spear:55,scythe:53,bow:47,hammer:45,chain:58,puppet:50,fists:8,crossbow:44,blowpipe:35,flamethrower:38,watershooter:39,launcher:36,senbon:31,whip:55,wire:58,customRanged:42,custom:38}[type]||38)}
+  function weaponSpinSpeed(type){return({dagger:.22,samehada:.11,kubikiribocho:.08,hiramekarei:.10,kabutowari:.09,kiba:.16,nuibari:.13,shibuki:.12,gunbai:.14,bashosen:.15,kusanagi:.15,sword:.14,kunai:.22,shuriken:.2,fan:.18,staff:.11,spear:.12,scythe:.13,bow:.1,hammer:.09,chain:.17,puppet:.12,fists:.132,crossbow:.11,blowpipe:.13,flamethrower:.09,watershooter:.12,launcher:.18,senbon:.2,whip:.16,wire:.18,customRanged:.14,custom:.15}[type]||.15)}
 
   // Existing Generator weapon metadata is the source of truth for ranged equipment.
   // Consumables/Treasures have already been removed by filterOrbWeapons().
@@ -8320,6 +8322,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,
       combatMode:weaponCombatMode({weapon}), /* Every fighter has either a ranged profile or a tangible melee weapon. */ rangedCooldown:0, rangedPulse:0,
       j1Meter:0,j2Meter:0,ultMeter:0,j1Active:0,j2Active:0,ultActive:0,
+      ultActivations:0,tailedBeastCloak:false,cloakTails:0,cloakColor:'#ff8b24',
       j1Prep:0,j2Prep:0,ultPrep:0,ultWindup:0,ultWindupReady:false,ultimateAfterglow:0,recovery:0,stagger:0,bindTimer:0,abilityFlash:0,abilityName:'',abilityKind:'',
       cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,
       isPuppetUser:isPuppetUser(ninja),puppet:null,puppets:[],puppetRespawnFlash:0,puppetOriginalCount:puppetOriginalCountFor(ninja),puppetSummonCooldown:0,
@@ -8391,7 +8394,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       el('orbJ2Bar'+s).style.width=(clamp(f.j2Meter/100,0,1)*100)+'%';
       el('orbUltBar'+s).style.width=(clamp(f.ultMeter/100,0,1)*100)+'%';
       el('orbHpText'+s).textContent=`${Math.ceil(Math.max(0,f.hp))}/${f.maxHp}`;
-      const a=f.ultActive>0?'ULT ACTIVE':`Ult ${Math.floor(f.ultMeter)}%`;
+      const a=f.tailedBeastCloak?`CLOAK · ${f.cloakTails} ${f.cloakTails===1?'TAIL':'TAILS'}`:(f.ultActive>0?'ULT ACTIVE':`Ult ${Math.floor(f.ultMeter)}%`);
       el('orbAbilityText'+s).textContent=`J1 ${Math.floor(f.j1Meter)}% · J2 ${Math.floor(f.j2Meter)}% · ${a}`;
       const cb=el('orbConsumableBar'+s),ct=el('orbConsumableText'+s);
       if(f.hasConsumable){
@@ -8946,6 +8949,38 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     for(const b of orbBarriers){ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.globalAlpha=.78*clamp(b.life/b.max,0,1);ctx.fillStyle='#8d775d';ctx.strokeStyle='#e4c79b';ctx.lineWidth=3;ctx.shadowBlur=10;ctx.shadowColor='#b79a70';ctx.beginPath();ctx.moveTo(-b.w/2,b.h/2);ctx.lineTo(-b.w*.42,-b.h/2);ctx.lineTo(b.w*.15,-b.h*.65);ctx.lineTo(b.w/2,-b.h/2);ctx.lineTo(b.w/2,b.h/2);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
   }
 
+  function isJinchurikiFighter(f){
+    return !!(f&&f.ninja&&(String(f.ninja.jinchuriki||'').toLowerCase()==='yes'||String(f.ninja.beast||f.ninja.tailedBeast||'').trim()));
+  }
+  function tailedBeastCloakProfile(f){
+    const beast=String(f?.ninja?.beast||f?.ninja?.tailedBeast||'').toLowerCase();
+    if(/shukaku|one.?tail/.test(beast))return{tails:1,color:'#d7ad58'};
+    if(/matatabi|two.?tail/.test(beast))return{tails:2,color:'#43cfff'};
+    if(/isobu|three.?tail/.test(beast))return{tails:3,color:'#63c9c8'};
+    if(/son gok[uū]|four.?tail/.test(beast))return{tails:4,color:'#ff6538'};
+    if(/koku[oō]|five.?tail/.test(beast))return{tails:5,color:'#f2e4c2'};
+    if(/saiken|six.?tail/.test(beast))return{tails:6,color:'#b9edb0'};
+    if(/ch[oō]mei|seven.?tail/.test(beast))return{tails:7,color:'#a7ee72'};
+    if(/gy[uū]ki|eight.?tail/.test(beast))return{tails:8,color:'#8e83ed'};
+    if(/kurama|nine.?tail/.test(beast))return{tails:9,color:'#ff8b24'};
+    if(/ten.?tails|juubi|j[uū]bi/.test(beast))return{tails:10,color:'#e5d8ff'};
+    return{tails:9,color:'#ff8b24'};
+  }
+  function activateTailedBeastCloak(f){
+    const profile=tailedBeastCloakProfile(f),oldMax=f.maxHp;
+    f.tailedBeastCloak=true;f.cloakTails=profile.tails;f.cloakColor=profile.color;
+    // A modest +8 to every rolled stat (capped at 100), permanent for this fight.
+    for(const [key] of STAT_KEYS)f.ninja.stats[key]=clamp((Number(f.ninja.stats[key])||50)+8,1,100);
+    const d=derived(f.ninja);f.maxHp=d.hp;f.hp=Math.min(f.maxHp,f.hp+Math.max(0,d.hp-oldMax));
+    f.dmg=d.dmg;f.speed=d.speed;f.range=d.range;f.evade=d.evade;f.stats=f.ninja.stats;
+    f.abilityName='Tailed Beast Cloak';f.abilityKind='tailed-beast-cloak';f.abilityFlash=48;f.ultimateAfterglow=80;f.ultActive=0;
+    spawnParticles(f.x,f.y,f.cloakColor,48,7,42);
+    for(let i=0;i<profile.tails;i++)spawnParticles(f.x+Math.cos(i*Math.PI*2/profile.tails)*f.r,f.y+Math.sin(i*Math.PI*2/profile.tails)*f.r,profile.color,4,3,34);
+    orbImpactMarks.push({x:f.x,y:f.y,r:12,life:125,max:125,color:profile.color,kind:'ultimate'});
+    orbSpectacleBanner('JINCHŪRIKI TRANSFORMATION','TAILED BEAST CLOAK',`${f.name} manifests ${profile.tails} ${profile.tails===1?'tail':'tails'} · permanent combat boost`,1900);
+    log(`${f.name} transforms into Tailed Beast Cloak (${profile.tails} ${profile.tails===1?'tail':'tails'}). All stats increase by 8, capped at 100, for the rest of the combat.`);
+  }
+
   function activateAbility(f,slot){
     const meter=slot==='j1'?'j1Meter':slot==='j2'?'j2Meter':'ultMeter';
     const active=slot==='j1'?'j1Active':slot==='j2'?'j2Active':'ultActive';
@@ -8959,6 +8994,13 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       log(`${f.name} begins charging ${name}.`);return true;
     }
     if(slot==='ult')f.ultWindupReady=false;
+    // Jinchūriki use their second ultimate activation to enter a permanent
+    // Tailed Beast Cloak. Their first and third (and later) activations remain
+    // their normal ultimate jutsu.
+    if(slot==='ult'&&isJinchurikiFighter(f)&&f.ultActivations===1&&!f.tailedBeastCloak){
+      f.ultMeter=0;f.ultActivations=2;f.recovery=24;f.ultPrep=0;f.ultWindup=0;
+      activateTailedBeastCloak(f);return true;
+    }
     const puppetSource=f.isPuppetUser?ensurePuppetForTechnique(f,name):null;
     if(f.isPuppetUser&&!puppetSource)return false;
     f[meter]=0;f[active]=slot==='ult'?62:48;f.abilityFlash=34;f.abilityName=name;f.abilityKind=techniqueKind(name);f.lastAbility=slot;f.recovery=slot==='ult'?20:slot==='j2'?8:5;f.ultimateAfterglow=slot==='ult'?70:0;
@@ -8967,6 +9009,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     effect(f.abilityKind,source,{life:slot==='ult'?92:50,slot,name,ranged});
     applyJutsuConsequence(f,name,slot,source);
     if(slot==='ult'){
+      f.ultActivations=(Number(f.ultActivations)||0)+1;
       orbEvent('ultimate');
       orbSpectacleBanner('ULTIMATE JUTSU',name,`${f.name} unleashes their signature technique`,1350);
       orbImpactMarks.push({x:source.x,y:source.y,r:10,life:110,max:110,color:'#ffd86b',kind:'ultimate'});
@@ -9082,7 +9125,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       shibuki:18,gunbai:24,bashosen:24,kusanagi:18,sword:15,kunai:11,shuriken:16,
       fan:24,staff:10,spear:15,scythe:20,hammer:18,chain:10,puppet:18,fists:4,
       crossbow:12,blowpipe:10,flamethrower:12,watershooter:13,launcher:12,senbon:8,
-      whip:12,wire:10,customRanged:10,custom:12
+      whip:12,wire:10,customRanged:10,fists:0,custom:12
     }[t]||12);
   }
   function orbContactRadius(o){return Math.max(1,Number(o?.r)||22)}
@@ -9114,7 +9157,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(d<70)return false;
     const angle=Math.atan2(dy,dx),ang=angle+(Math.random()-.5)*.08;
     const name=a.weapon||'Ranged Weapon';
-    const damage=a.dmg*(.72+Math.random()*.28)*(0.9+consumableStat(a,'weaponSkill')*.004);
+    const damage=a.dmg*(.72+Math.random()*.28)*(0.9+consumableStat(a,'weaponSkill')*.004)*1.08*.75; // Projectile damage reduced to 75% of the previous value.
     trimOldest(projectiles,ORB_MAX_PROJECTILES-1);projectiles.push({f:a,name,kind:'weapon',x:a.x+Math.cos(ang)*(a.r+8),y:a.y+Math.sin(ang)*(a.r+8),vx:Math.cos(ang)*4.2*a.speed,vy:Math.sin(ang)*4.2*a.speed,life:95,r:4.5,damage,hit:false,weapon:true});
     a.rangedCooldown=26-Math.min(10,stat(a.ninja,'speed')*.08);a.rangedPulse=12;a.stamina=clamp(a.stamina-.25,0,100);
     return true;
@@ -9207,6 +9250,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(a.ultActive>0)dmg*=1.5;
     // Individual generator stats modify contact outcomes.
     dmg*=.82 + consumableStat(a,'weaponSkill')*.0035 + consumableStat(a,'strength')*.0025;
+    if(a.weaponType==='fists')dmg*=.75; // Unarmed fist damage reduced to 75% of its previous value.
+    else dmg*=1.08; // Modest equipment advantage after correcting fist reach.
     if(b.shield>0){spawnParticles(b.x,b.y,'#9eeeff',12,4,20);floatText(b.x,b.y-b.r-18,'BLOCKED','#a9efff');orbEvent('clash');a.recovery=Math.max(a.recovery||0,4);b.vx*=.88;b.vy*=.88;return false;}
     const evasion=consumableStat(b,'speed')*.004 + consumableStat(b,'stealth')*.0018 + consumableStat(b,'battleIQ')*.0012;
     if(Math.random()<Math.min(.28,evasion*.12)){floatText(b.x,b.y-b.r-18,'DODGE!','#b9e8ff');spawnParticles(b.x,b.y,'#b9e8ff',7,2.8,17);const da=Math.atan2(b.y-a.y,b.x-a.x);b.vx+=Math.cos(da+Math.PI/2)*2.8;b.vy+=Math.sin(da+Math.PI/2)*2.8;return false;}
@@ -9273,6 +9318,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       let dmg=a.dmg*(.82+Math.random()*.36);
       if(a.j1Active>0)dmg*=1.18;if(a.j2Active>0)dmg*=1.26;if(a.ultActive>0)dmg*=1.5;
       dmg*=.82+consumableStat(a,'weaponSkill')*.0035+consumableStat(a,'strength')*.0025;
+      if(a.weaponType==='fists')dmg*=.75; // Apply the unarmed damage reduction to puppet contacts too.
       if(p.shield>0){spawnParticles(p.x,p.y,'#9eeeff',12,4,20);floatText(p.x,p.y-p.r-18,'BLOCKED','#a9efff');continue;}
       damagePuppet(p,dmg,a);awardDamageMeters(a,dmg);a.atkPulse=Math.max(a.atkPulse||0,14);
       // Do not reverse the user's weapon or apply hit/clash cooldown for puppet
@@ -9291,6 +9337,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       let dmg=a.dmg*(.82+Math.random()*.36);
       if(a.j1Active>0)dmg*=1.18;if(a.j2Active>0)dmg*=1.26;if(a.ultActive>0)dmg*=1.5;
       dmg*=.82+consumableStat(a,'weaponSkill')*.0035+consumableStat(a,'strength')*.0025;
+      if(a.weaponType==='fists')dmg*=.75; // Apply the unarmed damage reduction to clone contacts too.
       if(c.shield>0){spawnParticles(c.x,c.y,'#9eeeff',12,4,20);floatText(c.x,c.y-c.r-18,'BLOCKED','#a9efff');a.recovery=Math.max(a.recovery||0,4);return false;}
       damageClone(c,dmg,a);awardDamageMeters(a,dmg);a.atkPulse=14;reverseWeaponSpin(a,'hit');
       spawnParticles(c.x,c.y,a.color||'#dceeff',10,3.8,22);floatText(c.x,c.y-25,`-${dmg.toFixed(1)}`,'#ffb3b3');
@@ -10135,7 +10182,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const palette={karasu:['#292c35','#d6a56b'],kuroari:['#25272d','#db4e58'],salamander:['#566c53','#b9cba0'],hiruko:['#665a54','#d4c0a5'],kazekage:['#b7a88c','#e9d5b0'],motherfather:['#d6c8a7','#8e6046'],chikamatsu:['#eee6d5','#9c8d7a'],hundred:['#8e2d35','#f0c9c9'],bee:['#a47c24','#f7d95a'],elemental:['#9e3737','#7ed8f5'],water:['#3e7d95','#9beaff'],wood:['#5c7751','#b4d98b'],barrier:['#647c91','#a8e6ff'],komushi:['#897b68','#b9a68c'],sasori:['#682d3e','#d48b9d'],vampire:['#3c263d','#c4a1df'],human:['#6b6259','#d5c8b4'],puppet:['#3c4c5d','#b7e9ff']};
     const colors=palette[p.kind]||palette.puppet,base=colors[0],accent=colors[1];
     ctx.beginPath();ctx.arc(p.x,p.y,p.r+pulse,0,Math.PI*2);ctx.fillStyle=base;ctx.fill();
-    if(p.shield>0){ctx.save();ctx.globalAlpha=.78;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12+Math.sin(p.age*.25)*2,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=3;ctx.shadowBlur=12;ctx.shadowColor='#54dfff';ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
+    if(p.shield>0){ctx.save();ctx.globalAlpha=.58;ctx.beginPath();ctx.arc(p.x,p.y,p.r+12+Math.sin(p.age*.18)*1.2,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=2;ctx.shadowBlur=7;ctx.shadowColor='#54dfff';ctx.setLineDash([7,4]);ctx.stroke();ctx.setLineDash([]);ctx.restore()}
     ctx.strokeStyle=accent;ctx.lineWidth=2.5;ctx.stroke();
     ctx.save();ctx.translate(p.x,p.y);ctx.lineJoin='round';ctx.lineCap='round';
     // Small, readable silhouettes inspired by each puppet's canon shape, face and signature mechanism.
@@ -10215,20 +10262,46 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(tip.x,tip.y);ctx.stroke();ctx.shadowBlur=0;ctx.restore();
   }
 
+  function drawTailedBeastCloak(f){
+    if(!f?.tailedBeastCloak||!f.alive)return;
+    const count=clamp(Number(f.cloakTails)||1,1,10),baseAngle=Math.atan2(f.vy,f.vx);
+    const facing=Number.isFinite(baseAngle)&&Math.hypot(f.vx,f.vy)>.15?baseAngle:f.weaponAngle;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    // Fan the exact number of chakra tails out behind the fighter. Alternating
+    // lengths and curves keep up to ten tails individually readable at orb scale.
+    for(let i=0;i<count;i++){
+      const spread=count===1?0:(i/(count-1)-.5)*Math.PI*.88;
+      const a=facing+Math.PI+spread,tailLen=22+(i%3)*4+(count>6?Math.min(8,count-6):0);
+      const sx=f.x+Math.cos(a)*f.r*.62,sy=f.y+Math.sin(a)*f.r*.62;
+      const ex=f.x+Math.cos(a)*tailLen,ey=f.y+Math.sin(a)*tailLen;
+      const bend=a+Math.sin(performance.now()/240+i*.8)*.16;
+      const cx=f.x+Math.cos(bend)*(tailLen*.72),cy=f.y+Math.sin(bend)*(tailLen*.72);
+      ctx.globalAlpha=.34;ctx.strokeStyle=f.cloakColor;ctx.lineWidth=7;ctx.shadowBlur=12;ctx.shadowColor=f.cloakColor;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(cx,cy,ex,ey);ctx.stroke();
+      ctx.globalAlpha=.9;ctx.strokeStyle='#fff0c9';ctx.lineWidth=2.1;ctx.shadowBlur=5;
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.quadraticCurveTo(cx,cy,ex,ey);ctx.stroke();
+    }
+    // Persistent chakra mantle around the orb; restrained opacity avoids excess flashing.
+    ctx.globalAlpha=.16;ctx.fillStyle=f.cloakColor;ctx.shadowBlur=16;ctx.shadowColor=f.cloakColor;
+    ctx.beginPath();ctx.arc(f.x,f.y,f.r+5,0,Math.PI*2);ctx.fill();ctx.restore();
+  }
+
   function drawFighter(f){
     if(!f.alive)ctx.globalAlpha=.28;
+    drawTailedBeastCloak(f);
     drawWeapon(f);
-    ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle=f.hitFlash>0?'#fff3d6':f.color;ctx.fill();if(f.hitFlash>0){ctx.save();ctx.globalAlpha=Math.min(.8,f.hitFlash/12);ctx.strokeStyle='#fff6d8';ctx.lineWidth=3;ctx.beginPath();ctx.arc(f.x,f.y,f.r+5+(14-f.hitFlash)*.7,0,Math.PI*2);ctx.stroke();ctx.restore();}
-    if(f.ultWindup>0){const pulse=1+Math.sin(performance.now()/55)*.14;ctx.save();ctx.globalAlpha=.6+Math.sin(performance.now()/80)*.18;ctx.strokeStyle='#ffe58c';ctx.lineWidth=4;ctx.shadowBlur=22;ctx.shadowColor='#ffd86b';ctx.beginPath();ctx.arc(f.x,f.y,(f.r+12+(20-f.ultWindup)*.8)*pulse,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(f.x,f.y,f.r+20,-performance.now()/150,-performance.now()/150+Math.PI*1.45);ctx.stroke();ctx.restore();}
+    ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle=f.hitFlash>0?'#f4e9d2':f.color;ctx.fill();if(f.hitFlash>0){ctx.save();ctx.globalAlpha=Math.min(.28,f.hitFlash/24);ctx.strokeStyle='#fff0ce';ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r+3+(14-f.hitFlash)*.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
+    if(f.ultWindup>0){const pulse=1+Math.sin(performance.now()/180)*.035;ctx.save();ctx.globalAlpha=.42+Math.sin(performance.now()/220)*.05;ctx.strokeStyle='#ffe58c';ctx.lineWidth=3;ctx.shadowBlur=10;ctx.shadowColor='#ffd86b';ctx.beginPath();ctx.arc(f.x,f.y,(f.r+12+(20-f.ultWindup)*.8)*pulse,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(f.x,f.y,f.r+20,-performance.now()/150,-performance.now()/150+Math.PI*1.45);ctx.stroke();ctx.restore();}
     if(f.j1Active>0||f.j2Active>0||f.ultActive>0){ctx.beginPath();ctx.arc(f.x,f.y,f.r+8,0,Math.PI*2);ctx.strokeStyle=f.ultActive>0?'#ffd86b':'#8ce8ff';ctx.lineWidth=3;ctx.stroke()}
-    if(f.shield>0){ctx.save();ctx.globalAlpha=.78;const br=f.r+15+Math.sin(performance.now()/70)*3;ctx.beginPath();ctx.arc(f.x,f.y,br,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=f.ultActive>0?5:3;ctx.shadowBlur=16;ctx.shadowColor='#54dfff';ctx.setLineDash([8,5]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(88,211,255,.08)';ctx.beginPath();ctx.arc(f.x,f.y,br-2,0,Math.PI*2);ctx.fill();ctx.restore()}
+    if(f.shield>0){ctx.save();ctx.globalAlpha=.58;const br=f.r+15+Math.sin(performance.now()/180)*1.2;ctx.beginPath();ctx.arc(f.x,f.y,br,0,Math.PI*2);ctx.strokeStyle='#9feeff';ctx.lineWidth=f.ultActive>0?4:2;ctx.shadowBlur=8;ctx.shadowColor='#54dfff';ctx.setLineDash([8,5]);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(88,211,255,.08)';ctx.beginPath();ctx.arc(f.x,f.y,br-2,0,Math.PI*2);ctx.fill();ctx.restore()}
     const face=Math.atan2(f.vy,f.vx)||f.weaponAngle,ex=f.x+Math.cos(face)*6,ey=f.y+Math.sin(face)*6;
     ctx.fillStyle='#0b1020';ctx.beginPath();ctx.arc(ex-Math.sin(face)*4,ey+Math.cos(face)*4,2.2,0,Math.PI*2);ctx.arc(ex+Math.sin(face)*4,ey-Math.cos(face)*4,2.2,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;ctx.fillStyle='rgba(232,238,248,.92)';ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.fillText(f.name,f.x,f.y-f.r-12);
-    if(f.hasConsumable){ctx.fillStyle='#9fe9ff';ctx.font='700 9px system-ui';ctx.fillText(f.consumableActive>0?'BOOST ACTIVE':'CONSUMABLE',f.x,f.y+f.r+18);}
+    if(f.tailedBeastCloak){ctx.fillStyle=f.cloakColor;ctx.font='800 9px system-ui';ctx.fillText(`TAILED BEAST CLOAK · ${f.cloakTails} TAIL${f.cloakTails===1?'':'S'}`,f.x,f.y+f.r+18);}
+    else if(f.hasConsumable){ctx.fillStyle='#9fe9ff';ctx.font='700 9px system-ui';ctx.fillText(f.consumableActive>0?'BOOST ACTIVE':'CONSUMABLE',f.x,f.y+f.r+18);}
     if(f.bindTimer>0){ctx.save();ctx.globalAlpha=.72;ctx.strokeStyle='#aaa0f0';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(f.x-35,f.y-16);ctx.lineTo(f.x+35,f.y+16);ctx.moveTo(f.x-35,f.y+16);ctx.lineTo(f.x+35,f.y-16);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
     if(f.genjutsuStun>0){
-      ctx.save();ctx.globalAlpha=.75;ctx.strokeStyle='#d8a8ff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(f.x,f.y,f.r+9+Math.sin(f.genjutsuStun*.35)*3,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(125,72,190,.16)';ctx.beginPath();ctx.arc(f.x,f.y,f.r+5,0,Math.PI*2);ctx.fill();ctx.restore();
+      ctx.save();ctx.globalAlpha=.48;ctx.strokeStyle='#d8a8ff';ctx.lineWidth=2;ctx.setLineDash([4,5]);ctx.beginPath();ctx.arc(f.x,f.y,f.r+9+Math.sin(f.genjutsuStun*.35)*3,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(125,72,190,.16)';ctx.beginPath();ctx.arc(f.x,f.y,f.r+5,0,Math.PI*2);ctx.fill();ctx.restore();
     }
 
   }
@@ -10293,7 +10366,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     for(const f of fighters)drawFighter(f);
     for(const t of floating){ctx.globalAlpha=clamp(t.life/42,0,1);ctx.fillStyle=t.color;ctx.font='800 13px system-ui';ctx.textAlign='center';ctx.fillText(t.text,t.x,t.y);ctx.globalAlpha=1}
     orbImpactMarks=orbImpactMarks.filter(m=>{m.life-=1;return m.life>0;});
-    if(orbFlash>0){ctx.save();ctx.globalAlpha=Math.min(.28,orbFlash*.018);ctx.fillStyle='#dff7ff';ctx.fillRect(0,0,W,H);ctx.restore();orbFlash=Math.max(0,orbFlash-1);}
+    if(orbFlash>0){ctx.save();ctx.globalAlpha=Math.min(.055,orbFlash*.006);ctx.fillStyle='#dff7ff';ctx.fillRect(0,0,W,H);ctx.restore();orbFlash=Math.max(0,orbFlash-1.35);}
     if(shake)ctx.restore();
     ctx.restore();
   }
@@ -10604,5 +10677,91 @@ const _tourneyOldShowCatalogueView=showCatalogueView;
 showCatalogueView=function(){const p=document.getElementById('tournamentBracketPage');if(p)p.style.display='none';_tourneyOldShowCatalogueView();};
 document.addEventListener('DOMContentLoaded',()=>{tourneyBuildNameInputs();try{const saved=JSON.parse(localStorage.getItem(TOURNEY_STORAGE_KEY)||'null');if(saved&&saved.rounds?.length)customTournament=saved;}catch(e){}});
 </script>
+
+
+<script id="orbContestantSourceRepair">
+/* Keep Orb Arena contestant menus synchronized with the live generator and catalogue. */
+(function(){
+  function refreshOrbSources(){
+    try{
+      if(typeof window.orbRefreshSources==='function') window.orbRefreshSources();
+      else if(typeof window.updateSources==='function') window.updateSources();
+    }catch(err){console.warn('Orb Arena source refresh failed:',err);}
+  }
+  function refreshSoon(){setTimeout(refreshOrbSources,0);setTimeout(refreshOrbSources,120);}
+  document.addEventListener('DOMContentLoaded',refreshSoon);
+  ['orbSourceA','orbSourceB'].forEach(id=>{
+    const sel=document.getElementById(id);
+    if(sel){
+      sel.addEventListener('focus',refreshOrbSources);
+      sel.addEventListener('pointerdown',refreshOrbSources);
+    }
+  });
+  if(typeof window.generate==='function'&&!window.generate.__orbSourceRefreshWrapped){
+    const originalGenerate=window.generate;
+    const wrappedGenerate=function(){
+      const result=originalGenerate.apply(this,arguments);
+      refreshSoon();
+      return result;
+    };
+    wrappedGenerate.__orbSourceRefreshWrapped=true;
+    window.generate=wrappedGenerate;
+  }
+  if(typeof window.importCatalogueFile==='function'&&!window.importCatalogueFile.__orbSourceRefreshWrapped){
+    const originalImport=window.importCatalogueFile;
+    const wrappedImport=async function(){
+      const result=await originalImport.apply(this,arguments);
+      refreshSoon();
+      return result;
+    };
+    wrappedImport.__orbSourceRefreshWrapped=true;
+    window.importCatalogueFile=wrappedImport;
+  }
+  /* Catalogue edits, deletes, and imports can alter source indices; refresh after
+     catalogue UI actions as well, without changing the user's current selection. */
+  ['saveManualCatalogueEntry','saveCatalogueEntry','deleteSelectedCatalogueNinja',
+   'saveCatalogueStats','renameCatalogueEntry'].forEach(name=>{
+    const original=window[name];
+    if(typeof original==='function'&&!original.__orbSourceRefreshWrapped){
+      const wrapped=function(){
+        const result=original.apply(this,arguments);
+        refreshSoon();
+        return result;
+      };
+      wrapped.__orbSourceRefreshWrapped=true;
+      window[name]=wrapped;
+    }
+  });
+})();
+</script>
+
+
+<style id="orbArenaCompactTextStyles">
+/* Keep the dramatic combat callouts in a compact strip at the top of the arena. */
+#orbBattlePanel .orb-cinematic-overlay,
+#orbBattlePanel .orb-cinematic-overlay.subtle{
+  inset:0 0 auto 0;
+  height:clamp(86px,20%,150px);
+  min-height:0;
+  box-sizing:border-box;
+  justify-content:flex-start;
+  gap:3px;
+  padding:10px 12px 24px;
+  background:linear-gradient(180deg,rgba(3,8,18,.82) 0%,rgba(3,8,18,.62) 58%,rgba(3,8,18,0) 100%);
+}
+#orbBattlePanel .orb-cinematic-kicker{font-size:clamp(8px,1.2vw,11px);letter-spacing:.16em;line-height:1.2}
+#orbBattlePanel .orb-cinematic-title{font-size:clamp(17px,3.2vw,34px);line-height:1.08;letter-spacing:.02em;text-shadow:0 2px 7px rgba(0,0,0,.95),0 0 14px rgba(92,178,255,.6)}
+#orbBattlePanel .orb-cinematic-sub{font-size:clamp(9px,1.45vw,13px);line-height:1.2;margin-top:2px;max-width:96%;text-shadow:0 2px 6px #000}
+#orbBattlePanel .orb-cinematic-overlay.subtle{padding:8px 10px 20px;gap:2px}
+#orbBattlePanel .orb-cinematic-overlay.subtle .orb-cinematic-kicker{font-size:clamp(8px,1.1vw,10px);letter-spacing:.13em}
+#orbBattlePanel .orb-cinematic-overlay.subtle .orb-cinematic-title{font-size:clamp(15px,2.5vw,26px);line-height:1.08;max-width:98%}
+#orbBattlePanel .orb-cinematic-overlay.subtle .orb-cinematic-sub{font-size:clamp(9px,1.25vw,11px);margin-top:1px;max-width:98%}
+@media(max-width:520px){
+  #orbBattlePanel .orb-cinematic-overlay,
+  #orbBattlePanel .orb-cinematic-overlay.subtle{height:clamp(78px,19%,118px);padding:8px 8px 20px}
+  #orbBattlePanel .orb-cinematic-title{font-size:clamp(16px,4.2vw,25px)}
+  #orbBattlePanel .orb-cinematic-sub{font-size:clamp(9px,2.5vw,11px)}
+}
+</style>
 
 </body></html>
