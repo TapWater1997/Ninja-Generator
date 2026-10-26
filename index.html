@@ -51,6 +51,11 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 .catalogue-stat-input input{width:100%;box-sizing:border-box}
 @media(max-width:800px){.catalogue-stat-input-grid{grid-template-columns:repeat(2,minmax(130px,1fr))}}
 @media(max-width:500px){.catalogue-stat-input-grid{grid-template-columns:1fr}}
+
+/* Orb Arena-focused Ninja Catalogue editor: keep non-combat legacy fields in the DOM so imported records round-trip intact. */
+.catalogue-arena-hidden-field{display:none!important}
+#ninjaCataloguePage .catalogue-arena-field-note{padding:10px 12px;margin:8px 0 12px;border-left:3px solid var(--accent);background:rgba(90,150,230,.08);border-radius:6px}
+
 </style>
 
 <style>
@@ -908,14 +913,15 @@ html.tourney-recording-active,html.tourney-recording-active body{overflow:hidden
 
 <section class="card full" id="ninjaCataloguePage" style="display:none">
   <div class="log-page-head">
-    <div><h2>Ninja Catalogue</h2><p class="small">Ninjas saved here remain stored in this browser until you delete them or clear this browser's site data.</p></div>
-    <div class="step-actions"><button class="secondary" onclick="exportCatalogueJSON()">Export Catalogue JSON</button><button onclick="showGeneratorView()">Back to Generator</button></div>
+    <div><h2>Ninja Catalogue</h2><p class="small">A focused catalogue for Orb Arena combatants. Import/export stays in HTML, and legacy details are preserved when you edit an existing ninja.</p></div>
+    <div class="step-actions"><button onclick="exportCatalogueHTML()">⬇ Download Catalogue (HTML)</button><button class="secondary" onclick="document.getElementById('catalogueImportFile').click()">⬆ Import Catalogue (HTML)</button><input id="catalogueImportFile" type="file" accept=".html,.htm,text/html" style="display:none" onchange="importCatalogueFile(this)"><button onclick="showGeneratorView()">Back to Generator</button></div>
   </div>
 
-  <div class="catalogue-note">Create a ninja directly here, or import one from the Character Log. Nothing in this section requires a generated ninja first. Saved Catalogue entries remain in this browser until you delete them or clear browser site data.</div>
+  <div class="catalogue-note">Keep only the information useful for Orb Arena visible: combat identity, loadout, special abilities, and D100 stats. HTML import/export preserves the complete record, including legacy fields hidden from this streamlined editor.</div>
 
   <div class="log-detail-card">
-    <h3 id="manualCatalogueFormTitle">Create Ninja Directly</h3>
+    <h3 id="manualCatalogueFormTitle">Create Orb Arena Ninja</h3>
+    <p class="small">Required core: name, weapon/tool, Jutsu 1, Jutsu 2, Ultimate Jutsu, relevant lineage/abilities, and all D100 combat stats. Type, rank, village, and clan help identify the fighter and trigger specific arena behavior.</p>
     <div class="catalogue-manual-grid">
       <div><label class="small">Catalogue Name</label><input id="manualCatalogueName" type="text" placeholder="Ninja name"></div>
       <div><label class="small">Age</label><select id="manualCatalogueAge"><option value="">Select...</option><option value="0">0</option><option value="1">1</option><option value="10">10</option><option value="100">100</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="2">2</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="3">3</option><option value="30">30</option><option value="31">31</option><option value="32">32</option><option value="33">33</option><option value="34">34</option><option value="35">35</option><option value="36">36</option><option value="37">37</option><option value="38">38</option><option value="39">39</option><option value="4">4</option><option value="40">40</option><option value="41">41</option><option value="42">42</option><option value="43">43</option><option value="44">44</option><option value="45">45</option><option value="46">46</option><option value="47">47</option><option value="48">48</option><option value="49">49</option><option value="5">5</option><option value="50">50</option><option value="51">51</option><option value="52">52</option><option value="53">53</option><option value="54">54</option><option value="55">55</option><option value="56">56</option><option value="57">57</option><option value="58">58</option><option value="59">59</option><option value="6">6</option><option value="60">60</option><option value="61">61</option><option value="62">62</option><option value="63">63</option><option value="64">64</option><option value="65">65</option><option value="66">66</option><option value="67">67</option><option value="68">68</option><option value="69">69</option><option value="7">7</option><option value="70">70</option><option value="71">71</option><option value="72">72</option><option value="73">73</option><option value="74">74</option><option value="75">75</option><option value="76">76</option><option value="77">77</option><option value="78">78</option><option value="79">79</option><option value="8">8</option><option value="80">80</option><option value="81">81</option><option value="82">82</option><option value="83">83</option><option value="84">84</option><option value="85">85</option><option value="86">86</option><option value="87">87</option><option value="88">88</option><option value="89">89</option><option value="9">9</option><option value="90">90</option><option value="91">91</option><option value="92">92</option><option value="93">93</option><option value="94">94</option><option value="95">95</option><option value="96">96</option><option value="97">97</option><option value="98">98</option><option value="99">99</option></select></div>
@@ -973,7 +979,7 @@ html.tourney-recording-active,html.tourney-recording-active body{overflow:hidden
   </div>
 
   <div class="log-detail-card" style="margin-top:14px">
-    <h3>Import Existing Generated Ninja</h3>
+    <h3>Import Existing Ninja</h3>
     <div class="catalogue-toolbar">
       <div><label class="small">Source Ninja</label><select id="catalogueSourceSelect"><option value="">Select a ninja from the Character Log</option><option value="0">Ninja #1: independent / civilian settlement Senju Clan Jōnin</option></select></div>
       <div><label class="small">Catalogue Name</label><input id="catalogueNameInput" type="text" placeholder="Optional permanent name"></div>
@@ -993,10 +999,10 @@ html.tourney-recording-active,html.tourney-recording-active body{overflow:hidden
         <button onclick="saveCatalogueStats()">Save D100 Stats</button>
         <button onclick="editSelectedCatalogueNinja()">Edit Ninja Details</button>
         <button class="secondary" onclick="renameCatalogueEntry()">Rename Ninja</button>
-        <button class="secondary" onclick="loadCatalogueIntoDevelopment()">Load into Development</button>
+        
       </div>
-      <h3 style="margin-top:18px">D100 / Individual Stats</h3>
-      <p class="small">Set each individual stat from 1–100. These values are stored with this catalogue entry and persist across refreshes and future visits on this browser.</p>
+      <h3 style="margin-top:18px">Orb Arena Combat Stats</h3>
+      <p class="small">Set each individual stat from 1–100. These values directly influence Orb Arena combat and are stored with this catalogue entry.</p>
       <div id="catalogueStatGrid" class="catalogue-stat-grid"></div>
     </div>
     <div id="catalogueCharacterDetail" class="character-log-detail" style="display:block;margin-top:14px"></div>
@@ -2446,13 +2452,75 @@ function render(c){
   document.getElementById("goals").innerHTML=row("Moral alignment",c.moral)+row("Motivation",c.motivation)+row("Exceptional trait",c.exceptional);
   document.getElementById("stats").innerHTML=STAT_NAMES.map(([k,l])=>`<div class="stat"><span>${l}</span><b>${c.stats[k]}</b><div class="bar"><i style="width:${c.stats[k]}%"></i></div></div>`).join("");
 }
-function exportCatalogueJSON(){
-  if(!Array.isArray(ninjaCatalogue)||!ninjaCatalogue.length){alert("The Ninja Catalogue is empty. Save at least one ninja before exporting.");return}
+function exportCatalogueHTML(){
+  if(!Array.isArray(ninjaCatalogue)||!ninjaCatalogue.length){alert("The Ninja Catalogue is empty. Save at least one ninja before downloading.");return}
   const payload={format:"ninja-generator-catalogue",version:1,exportedAt:new Date().toISOString(),count:ninjaCatalogue.length,ninjas:ninjaCatalogue};
-  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
-  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="ninja-catalogue.json";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const escapeHTML=value=>String(value??"").replace(/[&<>\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;"}[ch]));
+  const rows=ninjaCatalogue.map((n,i)=>{const js=Array.isArray(n.jutsu)?n.jutsu:[];const ultimate=typeof n.ultimateJutsu==='object'?(n.ultimateJutsu?.name||''):n.ultimateJutsu;return `<tr><td>${i+1}</td><td>${escapeHTML(n.catalogueName||n.name||n.fullName||"Unnamed Ninja")}</td><td>${escapeHTML(n.type||n.status||"")}</td><td>${escapeHTML(n.rank||"")}</td><td>${escapeHTML(n.village||n.land||"")}</td><td>${escapeHTML(n.clan||"")}</td><td>${escapeHTML(n.weapon||n.weapons||"")}</td><td>${escapeHTML(n.specialty||js[0]||"")}</td><td>${escapeHTML(n.signature||js[1]||"")}</td><td>${escapeHTML(ultimate||"")}</td></tr>`}).join("\n");
+  // The readable HTML table is for people; the embedded payload preserves every catalogue field for re-import.
+  const embeddedJSON=JSON.stringify(payload,null,2).replace(/</g,"\\u003c");
+  const dataScriptOpen="<scr"+"ipt id=\"ninja-catalogue-data\" type=\"application/json\">";
+  const dataScriptClose="</scr"+"ipt>";
+  const html=`<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ninja Generator Catalogue</title>
+<style>body{font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;margin:2rem;color:#18212b}h1{margin-bottom:.25rem}p{color:#536170}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:1040px}th,td{border:1px solid #d5dbe2;padding:.55rem;text-align:left}th{background:#edf2f7}tbody tr:nth-child(even){background:#f8fafc}.note{margin:1rem 0;padding:.8rem;background:#eef6ff;border-left:4px solid #4285d4}</style></head><body>
+<h1>Ninja Generator Catalogue</h1><p>Exported ${escapeHTML(payload.exportedAt)} · ${ninjaCatalogue.length} ninja(s)</p>
+<div class="note">This is a readable HTML catalogue. The complete catalogue data is embedded in this file so it can be imported back into Ninja Generator without losing fields.</div>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Catalogue Name</th><th>Type / Status</th><th>Rank</th><th>Village / Land</th><th>Clan</th><th>Weapon / Tool</th><th>Jutsu 1</th><th>Jutsu 2</th><th>Ultimate Jutsu</th></tr></thead><tbody>${rows}</tbody></table></div>
+${dataScriptOpen}${embeddedJSON}${dataScriptClose}
+</body></html>`;
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="ninja-catalogue.html";document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
 }
-
+async function importCatalogueFile(input){
+  const file=input?.files?.[0];if(!file)return;
+  try{
+    const fileText=await file.text();
+    let parsed;
+    // Prefer the embedded full-fidelity payload in an exported HTML catalogue. Older JSON exports remain accepted for backward compatibility.
+    if(/^\s*\{/.test(fileText)||/^\s*\[/.test(fileText)){
+      parsed=JSON.parse(fileText);
+    }else{
+      const doc=new DOMParser().parseFromString(fileText,"text/html");
+      const dataNode=doc.getElementById("ninja-catalogue-data");
+      if(!dataNode)throw new Error("This HTML file does not contain an embedded Ninja Generator Catalogue. Please choose an HTML catalogue previously downloaded from the Ninja Catalogue page.");
+      parsed=JSON.parse(dataNode.textContent||"");
+    }
+    let incoming=Array.isArray(parsed)?parsed:
+      (parsed&&Array.isArray(parsed.ninjas)?parsed.ninjas:
+      (parsed&&typeof parsed==="object"&&(parsed.name||parsed.fullName||parsed.catalogueName)?[parsed]:null));
+    if(!incoming)throw new Error("This file does not contain a supported Ninja Catalogue.");
+    incoming=incoming.filter(x=>x&&typeof x==="object"&&!Array.isArray(x)).map(normaliseCatalogueNinja);
+    if(!incoming.length)throw new Error("No valid ninja entries were found in this file.");
+    const replace=confirm("Choose OK to REPLACE the current Ninja Catalogue with "+incoming.length+" imported ninja(s). Choose Cancel to MERGE them into the current catalogue.");
+    let next;
+    if(replace){
+      next=incoming;
+    }else{
+      next=ninjaCatalogue.slice();
+      const ids=new Set(next.map(c=>c?.catalogueId).filter(Boolean));
+      incoming.forEach(c=>{
+        if(c.catalogueId&&ids.has(c.catalogueId))return;
+        if(!c.catalogueId)c.catalogueId=Date.now()+"_"+Math.random().toString(36).slice(2,10);
+        ids.add(c.catalogueId);next.push(c);
+      });
+    }
+    const previous=ninjaCatalogue;
+    ninjaCatalogue=next;
+    if(!saveNinjaCatalogue()){
+      ninjaCatalogue=previous;
+      throw new Error("The browser could not save the imported catalogue. The existing catalogue has been kept unchanged; try a smaller file or free browser storage.");
+    }
+    selectedCatalogueIndex=ninjaCatalogue.length?0:null;catalogueEditingIndex=null;
+    populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogueOptions();
+    const sel=document.getElementById("catalogueSelect");if(sel)sel.value=selectedCatalogueIndex===null?"":String(selectedCatalogueIndex);
+    renderCatalogueEntry();
+    alert("Successfully imported "+incoming.length+" ninja(s). Catalogue now contains "+ninjaCatalogue.length+" ninja(s).");
+  }catch(err){alert("Catalogue import failed: "+(err?.message||"Unable to read this file."));}
+  finally{if(input)input.value="";}
+}
 function exportJSON(){
   if(!lastCharacter){alert("Generate a character first.");return}
   const blob=new Blob([JSON.stringify(lastCharacter,null,2)],{type:"application/json"});
@@ -7604,6 +7672,7 @@ function populateManualCatalogueOptions(){
   fillCatalogueSelect('manualCatalogueEightGates',gatesVals); fillCatalogueSelect('manualCatalogueEightGatesLevel',gatesLevelVals); fillCatalogueSelect('manualCatalogueForbidden',forbiddenVals); fillCatalogueSelect('manualCatalogueForbiddenTechnique',forbiddenTechniqueVals); fillCatalogueSelect('manualCatalogueHeritage',heritageVals); fillCatalogueSelect('manualCatalogueExceptional',exceptionalVals);
   fillCatalogueSelect('manualCatalogueMoral',moralVals); fillCatalogueSelect('manualCatalogueMotivation',motivationVals); fillCatalogueSelect('manualCatalogueGoal',goalVals);
   syncManualBinaryGroup('manualCatalogueJinchuriki',''); syncManualBinaryGroup('manualCatalogueSummoning',''); renderManualCatalogueStatInputs();
+  applyArenaCatalogueEditorMode();
 }
 function renderManualCatalogueStatInputs(values){
   const grid=document.getElementById('manualCatalogueStatGrid'); if(!grid||typeof STAT_NAMES==='undefined')return;
@@ -7634,6 +7703,13 @@ function createManualCatalogueNinja(){
     heritage:manualCatalogueValue("manualCatalogueHeritage")||"", exceptional:manualCatalogueValue("manualCatalogueExceptional")||"", moral:manualCatalogueValue("manualCatalogueMoral")||"", motivation:manualCatalogueValue("manualCatalogueMotivation")||"", currentGoal:manualCatalogueValue("manualCatalogueGoal")||"",
     notes:manualCatalogueValue("manualCatalogueNotes")||"", stats:Object.assign({},existing.stats||{})
   });
+  // New Orb Arena records only store the focused combat schema. When editing an imported
+  // legacy record, retain its other fields so HTML import/edit/export remains lossless.
+  if(!isEditing){
+    ['age','minorLand','occupation','ageBand','hiden','relationship','legendary','legendaryTarget',
+     'otsutsuki','otsutsukiMember','otsutsukiLevel','forbidden','forbiddenTechnique','heritage',
+     'exceptional','moral','motivation','currentGoal','notes'].forEach(key=>delete c[key]);
+  }
   c.natureNames=natures.slice(); c.chakraNatures=natures.slice();
   c.kekkeiGenkaiAccess=c.kekkeiGenkai&&c.kekkeiGenkai!=='None'?'Yes':'No';
   c.jutsu=[c.specialty,c.signature,c.ultimateJutsu].filter(v=>v&&v!=='None');
@@ -7684,7 +7760,7 @@ function editSelectedCatalogueNinja(){
   if(submit)submit.textContent='Save Changes to Ninja';
   document.getElementById('manualCatalogueName')?.scrollIntoView({behavior:'smooth',block:'center'});
 }
-function clearManualCatalogueForm(){catalogueEditingIndex=null;const title=document.getElementById("manualCatalogueFormTitle"),submit=document.getElementById("manualCatalogueSubmit");if(title)title.textContent="Create Ninja Directly";if(submit)submit.textContent="Add Ninja to Catalogue";["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueAgeBand","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning",""); renderManualCatalogueStatInputs();}
+function clearManualCatalogueForm(){catalogueEditingIndex=null;const title=document.getElementById("manualCatalogueFormTitle"),submit=document.getElementById("manualCatalogueSubmit");if(title)title.textContent="Create Orb Arena Ninja";if(submit)submit.textContent="Add Ninja to Catalogue";["manualCatalogueName","manualCatalogueAge","manualCatalogueType","manualCatalogueRank","manualCatalogueLand","manualCatalogueMinorLand","manualCatalogueVillage","manualCatalogueClan","manualCatalogueOccupation","manualCatalogueAgeBand","manualCatalogueCombat","manualCatalogueKG","manualCatalogueBloodline","manualCatalogueHiden","manualCatalogueDojutsu","manualCatalogueDojutsuEyes","manualCatalogueDojutsuStage","manualCatalogueSusanoo","manualCatalogueWeapon","manualCatalogueJutsu1","manualCatalogueJutsu2","manualCatalogueUltimate","manualCatalogueSenjutsu","manualCatalogueSageType","manualCatalogueBeast","manualCatalogueRelationship","manualCatalogueSummonType","manualCatalogueLegendary","manualCatalogueLegendaryTarget","manualCatalogueSixPaths","manualCatalogueSixPathsLevel","manualCatalogueOtsutsuki","manualCatalogueOtsutsukiMember","manualCatalogueOtsutsukiLevel","manualCatalogueSpaceTime","manualCatalogueEightGates","manualCatalogueEightGatesLevel","manualCatalogueForbidden","manualCatalogueForbiddenTechnique","manualCatalogueHeritage","manualCatalogueExceptional","manualCatalogueMoral","manualCatalogueMotivation","manualCatalogueGoal","manualCatalogueNotes",...Array.from({length:5},(_,i)=>"manualCatalogueNature"+(i+1))].forEach(id=>{const e=document.getElementById(id);if(e)e.value=""}); syncManualBinaryGroup("manualCatalogueJinchuriki",""); syncManualBinaryGroup("manualCatalogueSummoning",""); renderManualCatalogueStatInputs();}
 
 function addSelectedNinjaToCatalogue(){
   const source=document.getElementById("catalogueSourceSelect")?.value;
@@ -7715,7 +7791,7 @@ function renderCatalogueEntry(){
   const c=ninjaCatalogue[selectedCatalogueIndex]; editor.style.display="block";empty.style.display="none";
   if(nameEl)nameEl.textContent=catalogueEntryName(c);
   grid.innerHTML=STAT_NAMES.map(([key,label])=>{const value=Math.max(1,Math.min(100,Number(c.stats?.[key]??1)));return `<div class="catalogue-stat-card"><label>${esc(label)}</label><select id="catalogueStat_${esc(key)}">${Array.from({length:100},(_,i)=>{const v=i+1;return `<option value="${v}"${v===value?" selected":""}>${v}</option>`}).join("")}</select></div>`}).join("");
-  detail.innerHTML=characterDetailHTML(c);
+  detail.innerHTML=catalogueArenaDetailHTML(c);
 }
 function saveCatalogueStats(){
   if(selectedCatalogueIndex===null||!ninjaCatalogue[selectedCatalogueIndex])return;
@@ -7738,11 +7814,40 @@ function loadCatalogueIntoDevelopment(){
   const c=ninjaCatalogue[selectedCatalogueIndex];
   try{const devSel=document.getElementById('devNinjaSource'); if(devSel){devSourceOptions();devSel.value='catalogue:'+selectedCatalogueIndex;} if(typeof loadDevelopmentNinja==='function'){loadDevelopmentNinja();showGeneratorView();document.getElementById('ninjaDevelopmentPanel')?.scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('devWheelPanel')?.scrollIntoView({behavior:'smooth',block:'start'})}else alert('Development loading is not available yet.')}catch(e){console.warn(e);alert('This ninja could not be loaded into Development.')}
 }
+function applyArenaCatalogueEditorMode(){
+  const keep=new Set([
+    'manualCatalogueName','manualCatalogueType','manualCatalogueRank','manualCatalogueLand','manualCatalogueVillage','manualCatalogueClan','manualCatalogueCombat',
+    'manualCatalogueKG','manualCatalogueBloodline','manualCatalogueDojutsu','manualCatalogueDojutsuEyes','manualCatalogueDojutsuStage','manualCatalogueSusanoo',
+    'manualCatalogueWeapon','manualCatalogueJutsu1','manualCatalogueJutsu2','manualCatalogueUltimate','manualCatalogueSenjutsu','manualCatalogueSageType',
+    'manualCatalogueJinchuriki','manualCatalogueBeast','manualCatalogueSummoning','manualCatalogueSummonType','manualCatalogueSixPaths','manualCatalogueSixPathsLevel',
+    'manualCatalogueSpaceTime','manualCatalogueEightGates','manualCatalogueEightGatesLevel',
+    'manualCatalogueNature1','manualCatalogueNature2','manualCatalogueNature3','manualCatalogueNature4','manualCatalogueNature5'
+  ]);
+  document.querySelectorAll('#ninjaCataloguePage .catalogue-manual-grid > div').forEach(wrap=>{
+    const control=wrap.querySelector('input,select,textarea,button');
+    if(!control)return;
+    const id=control.id||'';
+    const isStats=wrap.classList.contains('catalogue-stats-editor');
+    const shouldShow=isStats||[...keep].some(k=>wrap.querySelector('#'+CSS.escape(k)));
+    wrap.classList.toggle('catalogue-arena-hidden-field',!shouldShow);
+  });
+  const formTitle=document.getElementById('manualCatalogueFormTitle');
+  if(formTitle && !formTitle.dataset.arenaLabelled){formTitle.dataset.arenaLabelled='1';}
+}
+function catalogueArenaDetailHTML(c){
+  const row=(label,value)=>value!==undefined&&value!==null&&String(value).trim()&&String(value).trim()!=='None'?`<div class="detail-row"><span>${esc(label)}</span><b>${esc(Array.isArray(value)?value.join(', '):String(value))}</b></div>`:'';
+  const natures=Array.isArray(c.natures)?c.natures:(Array.isArray(c.natureNames)?c.natureNames:(Array.isArray(c.chakraNatures)?c.chakraNatures:[]));
+  const jutsu=Array.isArray(c.jutsu)?c.jutsu:[];
+  const j1=c.specialty||jutsu[0]||'';
+  const j2=c.signature||jutsu[1]||'';
+  const ult=typeof c.ultimateJutsu==='object'?(c.ultimateJutsu?.name||''):c.ultimateJutsu;
+  return `<div class="character-detail-grid">${row('Type / Status',c.type||c.status)}${row('Rank',c.rank)}${row('Village / Settlement',c.village)}${row('Land',c.land)}${row('Clan',c.clan)}${row('Combat Specialization',c.primary||c.combatSpecialization||c.primaryCombatStyle)}${row('Chakra Natures',natures)}${row('Kekkei Genkai',c.kekkeiGenkai||c.bloodline||c.kekkei)}${row('Dōjutsu',c.dojutsu||c.dōjutsu)}${row('Weapon / Tool',Array.isArray(c.weapon)?c.weapon.join(', '):c.weapon||c.weapons)}${row('Jutsu 1',j1)}${row('Jutsu 2',j2)}${row('Ultimate Jutsu',ult)}${row('Jinchūriki / Tailed Beast',c.jinchuriki==='Yes'?(c.beast||'Jinchūriki'):c.jinchuriki)}${row('Susanoo Access',c.susanooAccess)}${row('Senjutsu / Sage Type',[c.senjutsu,c.sageType].filter(x=>x&&x!=='None').join(' — '))}${row('Summoning Contract',c.summonType||c.summoningType||((c.summoning==='Yes')?'Yes':''))}${row('Six Paths',c.sixPaths==='Yes'?[c.sixPaths,c.sixPathsLevel].filter(Boolean).join(' — '):c.sixPaths)}${row('Space-Time Ninjutsu',c.spaceTime)}${row('Eight Gates',c.eightGates&&c.eightGates!=='No'?[c.eightGates,c.eightGatesLevel&&c.eightGatesLevel!=='None'?'Level '+c.eightGatesLevel:''].filter(Boolean).join(' — '):'')}</div><p class="small" style="margin-top:10px">Imported legacy fields not needed for Orb Arena remain preserved in the HTML catalogue, even when they are not shown in this focused editor.</p>`;
+}
 function showCatalogueView(){
   document.getElementById("generatorContent").style.display="none";
   document.getElementById("characterLogPage").style.display="none";
   document.getElementById("ninjaCataloguePage").style.display="block";
-  populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogueOptions();renderCatalogueEntry();
+  populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogueOptions();applyArenaCatalogueEditorMode();renderCatalogueEntry();
   requestAnimationFrame(()=>{try{populateManualCatalogueOptions();}catch(e){console.warn("Catalogue option refresh failed",e)}});
   document.getElementById("ninjaCataloguePage")?.scrollIntoView({behavior:"smooth",block:"start"});
 }
