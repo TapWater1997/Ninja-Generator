@@ -8322,7 +8322,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,
       combatMode:weaponCombatMode({weapon}), /* Every fighter has either a ranged profile or a tangible melee weapon. */ rangedCooldown:0, rangedPulse:0,
       j1Meter:0,j2Meter:0,ultMeter:0,j1Active:0,j2Active:0,ultActive:0,
-      ultActivations:0,tailedBeastCloak:false,cloakTails:0,cloakColor:'#ff8b24',
+      ultActivations:0,tailedBeastCloak:false,cloakTails:0,cloakColor:'#ff8b24',susanooForm:false,susanooStartedAt:0,susanooColor:'#9d8aff',
       j1Prep:0,j2Prep:0,ultPrep:0,ultWindup:0,ultWindupReady:false,ultimateAfterglow:0,recovery:0,stagger:0,bindTimer:0,abilityFlash:0,abilityName:'',abilityKind:'',
       cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,
       isPuppetUser:isPuppetUser(ninja),puppet:null,puppets:[],puppetRespawnFlash:0,puppetOriginalCount:puppetOriginalCountFor(ninja),puppetSummonCooldown:0,
@@ -8950,7 +8950,11 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   }
 
   function isJinchurikiFighter(f){
-    return !!(f&&f.ninja&&(String(f.ninja.jinchuriki||'').toLowerCase()==='yes'||String(f.ninja.beast||f.ninja.tailedBeast||'').trim()));
+    // The explicit Jinchūriki flag is authoritative. A stray/legacy beast field
+    // must never grant a non-host access to the cloak transformation.
+    if(!f || !f.ninja) return false;
+    const status=String(f.ninja.jinchuriki??'').trim().toLowerCase();
+    return status==='yes' || status==='true' || status==='1';
   }
   function tailedBeastCloakProfile(f){
     const beast=String(f?.ninja?.beast||f?.ninja?.tailedBeast||'').toLowerCase();
@@ -8967,6 +8971,9 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     return{tails:9,color:'#ff8b24'};
   }
   function activateTailedBeastCloak(f){
+    // Defense in depth: never transform unless the catalogue explicitly marks
+    // this fighter as a Jinchūriki, even if this helper is called elsewhere.
+    if(!isJinchurikiFighter(f)) return false;
     const profile=tailedBeastCloakProfile(f),oldMax=f.maxHp;
     f.tailedBeastCloak=true;f.cloakTails=profile.tails;f.cloakColor=profile.color;
     // A modest +8 to every rolled stat (capped at 100), permanent for this fight.
@@ -8979,6 +8986,39 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     orbImpactMarks.push({x:f.x,y:f.y,r:12,life:125,max:125,color:profile.color,kind:'ultimate'});
     orbSpectacleBanner('JINCHŪRIKI TRANSFORMATION','TAILED BEAST CLOAK',`${f.name} manifests ${profile.tails} ${profile.tails===1?'tail':'tails'} · permanent combat boost`,1900);
     log(`${f.name} transforms into Tailed Beast Cloak (${profile.tails} ${profile.tails===1?'tail':'tails'}). All stats increase by 8, capped at 100, for the rest of the combat.`);
+    return true;
+  }
+
+  function hasSusanooAccess(f){
+    if(!f || !f.ninja) return false;
+    return String(f.ninja.susanooAccess??'').trim().toLowerCase()==='yes';
+  }
+  function activateSusanooForm(f){
+    // The catalogue's explicit Susanoo Access field is the eligibility gate.
+    if(!hasSusanooAccess(f) || f.susanooForm) return false;
+    const oldMax=f.maxHp;
+    f.susanooForm=true;
+    f.susanooStartedAt=performance.now();
+    // Susanoo provides a modest permanent combat-wide stat increase, matching
+    // the Tailed Beast Cloak's +8 boost while keeping all values capped at 100.
+    for(const [key] of STAT_KEYS)f.ninja.stats[key]=clamp((Number(f.ninja.stats[key])||50)+8,1,100);
+    const d=derived(f.ninja);f.maxHp=d.hp;f.hp=Math.min(f.maxHp,f.hp+Math.max(0,d.hp-oldMax));
+    f.dmg=d.dmg;f.speed=d.speed;f.range=d.range;f.evade=d.evade;f.stats=f.ninja.stats;
+    f.abilityName='Susanoo';f.abilityKind='susanoo';f.abilityFlash=60;f.ultimateAfterglow=95;f.ultActive=0;
+    // A rising chakra column, a broad shock ring, and violet/blue sparks sell
+    // the avatar forming around the user without altering combat hitboxes.
+    spawnParticles(f.x,f.y,'#a58cff',64,8.5,48);
+    spawnParticles(f.x,f.y,'#d9f5ff',28,6,38);
+    for(let i=0;i<18;i++){
+      const a=i*Math.PI*2/18;
+      particles.push({x:f.x+Math.cos(a)*8,y:f.y+Math.sin(a)*8,
+        vx:Math.cos(a)*(2.8+(i%3)*.7),vy:Math.sin(a)*(2.8+(i%3)*.7),
+        life:34+(i%5)*4,color:i%2?'#b9a5ff':'#e5f7ff',r:2.2+(i%3)*.6});
+    }
+    orbImpactMarks.push({x:f.x,y:f.y,r:18,life:150,max:150,color:'#a58cff',kind:'ultimate'});
+    orbSpectacleBanner('DŌJUTSU AWAKENING','SUSANOO',`${f.name} manifests a spectral chakra warrior · permanent combat boost`,1900);
+    log(`${f.name} manifests Susanoo. All stats increase by 8, capped at 100, for the rest of the combat.`);
+    return true;
   }
 
   function activateAbility(f,slot){
@@ -9000,6 +9040,13 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(slot==='ult'&&isJinchurikiFighter(f)&&f.ultActivations===1&&!f.tailedBeastCloak){
       f.ultMeter=0;f.ultActivations=2;f.recovery=24;f.ultPrep=0;f.ultWindup=0;
       activateTailedBeastCloak(f);return true;
+    }
+    // A non-Jinchūriki with explicit Susanoo Access awakens the avatar on
+    // their second ultimate. If a fighter qualifies for both forms, the
+    // Jinchūriki cloak above takes precedence.
+    if(slot==='ult'&&hasSusanooAccess(f)&&f.ultActivations===1&&!f.susanooForm&&!f.tailedBeastCloak){
+      f.ultMeter=0;f.ultActivations=2;f.recovery=24;f.ultPrep=0;f.ultWindup=0;
+      activateSusanooForm(f);return true;
     }
     const puppetSource=f.isPuppetUser?ensurePuppetForTechnique(f,name):null;
     if(f.isPuppetUser&&!puppetSource)return false;
@@ -10126,6 +10173,55 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       }else if(archetype===35){ctx.strokeStyle='#d7b9ff';ctx.lineWidth=3;for(let i=0;i<7;i++){const r=12+i*9+age*40;ctx.beginPath();ctx.arc(tx,ty,r,ang-.7,ang+.7);ctx.stroke()}
       }else{ctx.strokeStyle=f.color;ctx.lineWidth=e.slot==='ult'?7:4;ctx.beginPath();ctx.arc(tx,ty,baseR+age*travel*.4,0,Math.PI*2);ctx.stroke()}
     }
+    /* Per-technique signature pass (visual-only): every catalogue name receives
+       a stable, name-seeded glyph, trajectory rhythm, and accent palette on top
+       of its existing family animation. This deliberately does not touch combat
+       timing, hitboxes, meters, cooldowns, catalogue records, or import/export. */
+    {
+      const nm=String(e.name||kind||'Technique').toLowerCase();
+      const seed=(sig.seed>>>0)||1,phase=sig.phase+age*(.8+(seed%17)/8);
+      const pal= /fire|flame|amaterasu|scorch|ash|phoenix/.test(nm)?['#ff4d1f','#ffd166','#fff0b0']:
+        /lightning|chidori|raikiri|kirin|thunder/.test(nm)?['#6de7ff','#d7f8ff','#7c91ff']:
+        /water|shark|bubble|ice|hy[oō]ton/.test(nm)?['#3ccfff','#c4f5ff','#4e83ff']:
+        /wood|flower|forest|plant|insect|poison|snake/.test(nm)?['#79d66d','#d6ff9b','#2f9e69']:
+        /earth|mud|sand|rock|meteor|dust|lava|crystal/.test(nm)?['#e2b879','#fff0c2','#b18bff']:
+        /shadow|genjutsu|illusion|mind|soul|kamui|space|time|gravity|black/.test(nm)?['#bd8cff','#f2d9ff','#6354c7']:
+        /blade|sword|slash|kunai|shuriken|weapon/.test(nm)?['#e9f5ff','#9adfff','#ffffff']:
+        /rasengan|spiral|chakra|tailed beast|bij[uū]dama/.test(nm)?['#68caff','#fff0a6','#a4aaff']:
+        ['#'+(seed%0xffffff).toString(16).padStart(6,'0'),'#effaff','#ffda85'];
+      const primary=pal[seed%pal.length],secondary=pal[(seed>>>5)%pal.length],tertiary=pal[(seed>>>11)%pal.length];
+      const count=3+(seed%7),reach=(22+(seed%23))+age*(35+(seed%72));
+      ctx.save();ctx.globalAlpha=fade*(.24+(seed%5)*.045);
+      // The outer sigil varies in polygon count, eccentricity, orientation and rotation for each exact technique name.
+      ctx.translate(tx,ty);ctx.rotate(phase*(seed%2?1:-1));
+      const rx=18+(seed%19)+age*(seed%31),ry=12+((seed>>>4)%17)+age*((seed>>>9)%25);
+      ctx.strokeStyle=primary;ctx.lineWidth=e.slot==='ult'?3.5:1.7;ctx.shadowBlur=9;ctx.shadowColor=primary;
+      ctx.beginPath();
+      for(let i=0;i<=count*2;i++){
+        const a=i*Math.PI/count,rad=i%2?0.62:1;
+        const px=Math.cos(a)*rx*rad,py=Math.sin(a)*ry*rad;
+        if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+      }
+      ctx.closePath();ctx.stroke();ctx.shadowBlur=0;
+      // Each named jutsu has a different number and orbit spacing of chakra marks.
+      for(let i=0;i<3+(seed%6);i++){
+        const a=phase+(i*Math.PI*2/(3+(seed%6))),r=reach*(.25+.75*((i*7+seed)%13)/13);
+        const px=Math.cos(a)*r,py=Math.sin(a)*r*.72,size=2+((seed>>>(i%16))%5);
+        ctx.fillStyle=i%2?secondary:tertiary;ctx.beginPath();
+        if((seed+i)%3===0){ctx.moveTo(px,py-size*1.8);ctx.lineTo(px+size,py);ctx.lineTo(px,py+size*1.8);ctx.lineTo(px-size,py);ctx.closePath();}
+        else if((seed+i)%3===1){ctx.ellipse(px,py,size*1.5,size*.7,a,0,Math.PI*2);}
+        else{ctx.arc(px,py,size,0,Math.PI*2);}
+        ctx.fill();
+      }
+      ctx.restore();
+      // Signature motion trace: unique segmented / curved cadence for the exact name.
+      ctx.save();ctx.globalAlpha=fade*.22;ctx.strokeStyle=secondary;ctx.lineWidth=1.5+(seed%3);
+      ctx.setLineDash([3+(seed%9),2+((seed>>>3)%7)]);
+      ctx.beginPath();ctx.moveTo(x,y);
+      const bend=((seed%101)-50)*.55,midX=(x+tx)/2-Math.sin(ang)*bend,midY=(y+ty)/2+Math.cos(ang)*bend;
+      ctx.quadraticCurveTo(midX,midY,tx,ty);ctx.stroke();ctx.setLineDash([]);
+      ctx.restore();
+    }
     ctx.restore();
   }
 
@@ -10286,9 +10382,61 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     ctx.beginPath();ctx.arc(f.x,f.y,f.r+5,0,Math.PI*2);ctx.fill();ctx.restore();
   }
 
+  function drawSusanooForm(f){
+    if(!f?.susanooForm||!f.alive)return;
+    const elapsed=Math.max(0,(performance.now()-(f.susanooStartedAt||0))/1000);
+    const build=clamp(elapsed/1.35,0,1);
+    const pulse=1+Math.sin(performance.now()/210)*.025;
+    const R=(f.r+15+15*build)*pulse;
+    const cx=f.x,cy=f.y;
+    ctx.save();ctx.lineCap='round';ctx.lineJoin='round';
+    // A large translucent spectral torso and shoulder frame, enclosing the orb.
+    ctx.globalAlpha=.12+.06*Math.sin(performance.now()/300);
+    const aura=ctx.createRadialGradient(cx,cy,4,cx,cy,R*1.45);
+    aura.addColorStop(0,'rgba(186,166,255,.32)');aura.addColorStop(.58,'rgba(120,100,235,.18)');aura.addColorStop(1,'rgba(85,170,255,0)');
+    ctx.fillStyle=aura;ctx.beginPath();ctx.ellipse(cx,cy,R*1.25,R*1.42,0,0,Math.PI*2);ctx.fill();
+    ctx.globalAlpha=.7;ctx.strokeStyle='#a994ff';ctx.shadowBlur=16;ctx.shadowColor='#9275ff';ctx.lineWidth=4.5;
+    // Helmet / crown silhouette.
+    ctx.beginPath();ctx.moveTo(cx-R*.46,cy-R*.22);ctx.lineTo(cx-R*.48,cy-R*.72);
+    ctx.lineTo(cx-R*.22,cy-R*.58);ctx.lineTo(cx,cy-R*1.02);
+    ctx.lineTo(cx+R*.22,cy-R*.58);ctx.lineTo(cx+R*.48,cy-R*.72);
+    ctx.lineTo(cx+R*.46,cy-R*.22);ctx.stroke();
+    // Broad shoulder plates and upper torso.
+    ctx.beginPath();ctx.moveTo(cx-R*.43,cy-R*.2);
+    ctx.quadraticCurveTo(cx-R*.95,cy-R*.38,cx-R*1.03,cy+R*.02);
+    ctx.lineTo(cx-R*.72,cy+R*.42);ctx.lineTo(cx-R*.38,cy+R*.26);
+    ctx.moveTo(cx+R*.43,cy-R*.2);
+    ctx.quadraticCurveTo(cx+R*.95,cy-R*.38,cx+R*1.03,cy+R*.02);
+    ctx.lineTo(cx+R*.72,cy+R*.42);ctx.lineTo(cx+R*.38,cy+R*.26);
+    ctx.moveTo(cx-R*.38,cy+R*.26);ctx.quadraticCurveTo(cx,cy+R*.7,cx+R*.38,cy+R*.26);ctx.stroke();
+    // Rib plates curve around the fighter, readable even at small arena scale.
+    ctx.globalAlpha=.78;ctx.strokeStyle='#d7ccff';ctx.lineWidth=2.8;ctx.shadowBlur=8;
+    for(let i=0;i<4;i++){
+      const yy=cy-R*.16+i*R*.17;
+      ctx.beginPath();ctx.moveTo(cx-R*(.52-i*.035),yy);
+      ctx.quadraticCurveTo(cx,yy+R*.18,cx+R*(.52-i*.035),yy);ctx.stroke();
+    }
+    // Spectral arm and a long chakra blade form during the opening animation.
+    const armLift=(1-build)*R*.42;
+    ctx.globalAlpha=.78;ctx.strokeStyle='#b5a5ff';ctx.lineWidth=5;
+    ctx.beginPath();ctx.moveTo(cx+R*.52,cy-R*.1);ctx.lineTo(cx+R*.78,cy-R*.34-armLift);ctx.lineTo(cx+R*.92,cy-R*.5-armLift);ctx.stroke();
+    ctx.strokeStyle='#e3faff';ctx.lineWidth=2;ctx.shadowColor='#a8eaff';ctx.shadowBlur=13;
+    ctx.beginPath();ctx.moveTo(cx+R*.92,cy-R*.5-armLift);ctx.lineTo(cx+R*1.35,cy-R*1.08-armLift);ctx.stroke();
+    // A rotating chakra seal beneath the avatar reinforces the transformation.
+    ctx.globalAlpha=.46;ctx.strokeStyle='#8c7aff';ctx.lineWidth=1.8;ctx.setLineDash([5,4]);
+    ctx.beginPath();ctx.ellipse(cx,cy+R*.05,R*1.15,R*.52,-.15,performance.now()/900,performance.now()/900+Math.PI*1.6);ctx.stroke();ctx.setLineDash([]);
+    // Initial flare is time-based, so it plays once while the armor remains.
+    if(build<1){
+      ctx.globalAlpha=(1-build)*.42;ctx.strokeStyle='#efffff';ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(cx,cy,R*(1.08+build*.35),0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   function drawFighter(f){
     if(!f.alive)ctx.globalAlpha=.28;
     drawTailedBeastCloak(f);
+    drawSusanooForm(f);
     drawWeapon(f);
     ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fillStyle=f.hitFlash>0?'#f4e9d2':f.color;ctx.fill();if(f.hitFlash>0){ctx.save();ctx.globalAlpha=Math.min(.28,f.hitFlash/24);ctx.strokeStyle='#fff0ce';ctx.lineWidth=2;ctx.beginPath();ctx.arc(f.x,f.y,f.r+3+(14-f.hitFlash)*.35,0,Math.PI*2);ctx.stroke();ctx.restore();}
     if(f.ultWindup>0){const pulse=1+Math.sin(performance.now()/180)*.035;ctx.save();ctx.globalAlpha=.42+Math.sin(performance.now()/220)*.05;ctx.strokeStyle='#ffe58c';ctx.lineWidth=3;ctx.shadowBlur=10;ctx.shadowColor='#ffd86b';ctx.beginPath();ctx.arc(f.x,f.y,(f.r+12+(20-f.ultWindup)*.8)*pulse,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(f.x,f.y,f.r+20,-performance.now()/150,-performance.now()/150+Math.PI*1.45);ctx.stroke();ctx.restore();}
@@ -10298,6 +10446,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     ctx.fillStyle='#0b1020';ctx.beginPath();ctx.arc(ex-Math.sin(face)*4,ey+Math.cos(face)*4,2.2,0,Math.PI*2);ctx.arc(ex+Math.sin(face)*4,ey-Math.cos(face)*4,2.2,0,Math.PI*2);ctx.fill();
     ctx.globalAlpha=1;ctx.fillStyle='rgba(232,238,248,.92)';ctx.font='700 12px system-ui';ctx.textAlign='center';ctx.fillText(f.name,f.x,f.y-f.r-12);
     if(f.tailedBeastCloak){ctx.fillStyle=f.cloakColor;ctx.font='800 9px system-ui';ctx.fillText(`TAILED BEAST CLOAK · ${f.cloakTails} TAIL${f.cloakTails===1?'':'S'}`,f.x,f.y+f.r+18);}
+    else if(f.susanooForm){ctx.fillStyle='#b8a6ff';ctx.font='800 9px system-ui';ctx.fillText('SUSANOO AWAKENED',f.x,f.y+f.r+18);}
     else if(f.hasConsumable){ctx.fillStyle='#9fe9ff';ctx.font='700 9px system-ui';ctx.fillText(f.consumableActive>0?'BOOST ACTIVE':'CONSUMABLE',f.x,f.y+f.r+18);}
     if(f.bindTimer>0){ctx.save();ctx.globalAlpha=.72;ctx.strokeStyle='#aaa0f0';ctx.lineWidth=3;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(f.x-35,f.y-16);ctx.lineTo(f.x+35,f.y+16);ctx.moveTo(f.x-35,f.y+16);ctx.lineTo(f.x+35,f.y-16);ctx.stroke();ctx.setLineDash([]);ctx.restore();}
     if(f.genjutsuStun>0){
