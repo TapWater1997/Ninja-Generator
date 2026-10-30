@@ -640,6 +640,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 @media(prefers-reduced-motion:reduce){#orbBattlePanel .orb-cinematic-title{animation:none}#orbBattlePanel.orb-shake .orb-canvas-wrap{animation:none}}
 </style>
 
+
+<style>
+#orbBattlePanel .orb-tune-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin:10px 0 16px}
+#orbBattlePanel .orb-tune-control{padding:10px;background:#0b111a;border:1px solid var(--orb-line);border-radius:9px}
+#orbBattlePanel .orb-tune-control label{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:#e4edf9;margin:0 0 5px}
+#orbBattlePanel .orb-tune-control small{display:block;color:var(--orb-muted);font-size:11px;line-height:1.4}
+#orbBattlePanel .orb-tune-control input[type=range]{width:100%;accent-color:#4ea1ff;margin:8px 0 0}
+#orbBattlePanel #orbTuningDetails>details{margin-top:10px;padding:10px;border:1px solid var(--orb-line);border-radius:9px;background:#0d141f}
+#orbBattlePanel #orbTuningDetails>details>summary{font-size:15px}
+</style>
+
 </head>
 <body>
 <div class="wrap">
@@ -2455,7 +2466,7 @@ function render(c){
 }
 function exportCatalogueHTML(){
   if(!Array.isArray(ninjaCatalogue)||!ninjaCatalogue.length){alert("The Ninja Catalogue is empty. Save at least one ninja before downloading.");return}
-  const payload={format:"ninja-generator-catalogue",version:1,exportedAt:new Date().toISOString(),count:ninjaCatalogue.length,ninjas:ninjaCatalogue};
+  const payload={format:"ninja-generator-catalogue",version:2,exportedAt:new Date().toISOString(),count:ninjaCatalogue.length,ninjas:ninjaCatalogue};
   const escapeHTML=value=>String(value??"").replace(/[&<>\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;"}[ch]));
   const rows=ninjaCatalogue.map((n,i)=>{const js=Array.isArray(n.jutsu)?n.jutsu:[];const ultimate=typeof n.ultimateJutsu==='object'?(n.ultimateJutsu?.name||''):n.ultimateJutsu;return `<tr><td>${i+1}</td><td>${escapeHTML(n.catalogueName||n.name||n.fullName||"Unnamed Ninja")}</td><td>${escapeHTML(n.type||n.status||"")}</td><td>${escapeHTML(n.rank||"")}</td><td>${escapeHTML(n.village||n.land||"")}</td><td>${escapeHTML(n.clan||"")}</td><td>${escapeHTML(n.weapon||n.weapons||"")}</td><td>${escapeHTML(n.specialty||js[0]||"")}</td><td>${escapeHTML(n.signature||js[1]||"")}</td><td>${escapeHTML(ultimate||"")}</td></tr>`}).join("\n");
   // The readable HTML table is for people; the embedded payload preserves every catalogue field for re-import.
@@ -7953,6 +7964,23 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
         <div class="orb-log" id="orbLog"><div>Ninja defeats Ninja.</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Fight: Ninja vs Ninja</div></div>
       </section>
     </div>
+
+    <div class="orb-panel" style="margin-top:16px">
+      <details id="orbTuningDetails">
+        <summary>⚙️ Orb Arena Tuning Controls</summary>
+        <p class="orb-hint">Adjust a broad set of live Orb Arena balance values for the current browser session, including movement, attacks, projectiles, jutsu, dogs, clones, summons, puppets, gauges, and visual impact. Most values affect new attacks or new matches; export the settings JSON to share tested values.</p>
+        <div class="orb-actions"><button type="button" onclick="orbExportTuning()">Export Tuning JSON</button><button type="button" class="secondary" onclick="orbResetTuning()">Reset Tuning Defaults</button></div>
+        <details open><summary>Movement &amp; Combat Pace</summary><div id="orbTuneMovement" class="orb-tune-grid"></div></details>
+        <details><summary>Dog / Ninken Balance</summary><div id="orbTuneDog" class="orb-tune-grid"></div></details>
+        <details><summary>Clone Balance</summary><div id="orbTuneClone" class="orb-tune-grid"></div></details>
+        <details><summary>Summon Balance</summary><div id="orbTuneSummon" class="orb-tune-grid"></div></details>
+        <details><summary>Puppet Balance</summary><div id="orbTunePuppet" class="orb-tune-grid"></div></details>
+        <details><summary>Combat Gauges</summary><div id="orbTuneGauges" class="orb-tune-grid"></div></details>
+        <details><summary>Projectile &amp; Jutsu Behaviour</summary><div id="orbTuneProjectiles" class="orb-tune-grid"></div></details>
+        <details><summary>Visual Effects</summary><div id="orbTuneVisual" class="orb-tune-grid"></div></details>
+        <div id="orbTuningStatus" class="orb-hint" aria-live="polite"></div>
+      </details>
+    </div>
   </div>
 </section>
 
@@ -8008,6 +8036,90 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   ];
 
   let fighters=[],clones=[],particles=[],floating=[],effects=[],projectiles=[],running=false,winner=null,lastTs=0;
+
+  const ORB_TUNING_DEFAULTS={
+    combatSpeed:1, movementAcceleration:1, maxMovementSpeed:1, pursuit:1, repositioning:1, orbiting:1,
+    meleeDamage:1, unarmedDamage:0.75, weaponProjectileDamage:0.75, jutsuDamage:1, attackRate:1,
+    knockback:1, evasion:1, hitInvulnerability:1, fighterHealth:1,
+    dogHp:0.42,dogDamage:0.62,dogSpeed:1.45,dogAttackRate:1,
+    cloneHp:0.13,cloneDamage:0.48,cloneSpeed:1.0,cloneAttackRate:1,cloneLimit:6,
+    summonHp:0.27,summonDamage:0.50,summonSpeed:1.0,summonAttackRate:1,summonLimit:2,
+    puppetHp:1,puppetDamage:1,puppetSpeed:1,puppetAttackRate:1,puppetTether:190,puppetRespawnCooldown:70,puppetRespawnCount:1,
+    j1Charge:10,j2Charge:8,ultCharge:5,damageCharge:0.55,chakraControlCharge:1,ultimateReadiness:1,
+    projectileSpeed:1,projectileLifetime:1,cloneRespawnRate:1,summonRespawnRate:1,
+    effectIntensity:1, hitStop:1, ultimateSlowMotion:1
+  };
+  const orbTuning={...ORB_TUNING_DEFAULTS};
+  const ORB_TUNING_FIELDS=[
+    ['Movement & Combat Pace','combatSpeed','Combat simulation speed',0.5,2,0.05,'Speeds up or slows down the entire simulation.'],
+    ['Movement & Combat Pace','movementAcceleration','Fighter acceleration',0.4,2,0.05,'Higher values make fighters change velocity more quickly.'],
+    ['Movement & Combat Pace','maxMovementSpeed','Fighter top speed',0.4,2,0.05,'Scales the fighters’ normal movement speed.'],
+    ['Movement & Combat Pace','pursuit','Pursuit aggression',0.25,2,0.05,'Controls how strongly fighters close distance to a target.'],
+    ['Movement & Combat Pace','repositioning','Reposition frequency',0,2,0.05,'Zero disables roaming reposition bursts; higher values make them happen more often.'],
+    ['Movement & Combat Pace','orbiting','Close-range circling',0,2,0.05,'Controls lateral movement when fighters are within engagement range.'],
+    ['Movement & Combat Pace','meleeDamage','Melee weapon damage',0.25,2,0.05,'Scales normal melee weapon hits, including weapon contact with support bodies.'],
+    ['Movement & Combat Pace','unarmedDamage','Unarmed damage multiplier',0.1,1.5,0.05,'Scales fist attacks independently of weapon attacks.'],
+    ['Movement & Combat Pace','weaponProjectileDamage','Thrown / fired weapon damage',0.1,2,0.05,'Scales weapon projectiles such as kunai and shuriken.'],
+    ['Movement & Combat Pace','jutsuDamage','Jutsu damage multiplier',0.25,2.5,0.05,'Scales damage dealt by generated jutsu projectiles and damage zones.'],
+    ['Movement & Combat Pace','attackRate','Fighter attack frequency',0.35,2,0.05,'Higher values shorten weapon attack cooldowns.'],
+    ['Movement & Combat Pace','knockback','Hit knockback strength',0,2,0.05,'Scales pushback and stagger reactions from successful hits.'],
+    ['Movement & Combat Pace','evasion','Evasion effectiveness',0,2,0.05,'Scales the chance that speed, stealth, and battle IQ avoid an incoming hit.'],
+    ['Movement & Combat Pace','hitInvulnerability','Post-hit invulnerability duration',0.25,2,0.05,'Scales the short protection window after being hit.'],
+    ['Movement & Combat Pace','fighterHealth','Fighter maximum health',0.5,2,0.05,'Scales the starting health of both main fighters in new matches.'],
+    ['Dog / Ninken Balance','dogHp','Dog health (% of owner max HP)',0.15,0.8,0.01,'A higher value makes the Inuzuka dog harder to defeat.'],
+    ['Dog / Ninken Balance','dogDamage','Dog attack damage (% of owner damage)',0.2,1.2,0.02,'Scales each dog attack.'],
+    ['Dog / Ninken Balance','dogSpeed','Dog movement speed',0.5,2.2,0.05,'Scales the dog’s pursuit speed.'],
+    ['Dog / Ninken Balance','dogAttackRate','Dog attack frequency',0.35,2,0.05,'Higher values make the dog attack more often.'],
+    ['Clone Balance','cloneHp','Clone health (% of owner max HP)',0.05,0.35,0.01,'Scales the health of newly created clones.'],
+    ['Clone Balance','cloneDamage','Clone attack damage (% of owner damage)',0.15,0.8,0.01,'Scales clone attacks.'],
+    ['Clone Balance','cloneSpeed','Clone movement speed',0.5,1.8,0.05,'Scales clone pursuit speed.'],
+    ['Clone Balance','cloneAttackRate','Clone attack frequency',0.35,2,0.05,'Higher values make clones attack more often.'],
+    ['Clone Balance','cloneLimit','Maximum active clones per owner',1,12,1,'Caps how many ordinary clones one fighter may have active at once.'],
+    ['Clone Balance','cloneRespawnRate','Clone/puppet redeployment pacing',0.25,2,0.05,'Scales the cooldown before defeated support units can return.'],
+    ['Summon Balance','summonHp','Contract summon health (% of owner max HP)',0.1,0.65,0.01,'Scales contract summon health.'],
+    ['Summon Balance','summonDamage','Contract summon damage (% of owner damage)',0.2,1,0.02,'Scales contract summon attacks.'],
+    ['Summon Balance','summonSpeed','Contract summon movement speed',0.5,1.8,0.05,'Scales contract summon pursuit speed.'],
+    ['Summon Balance','summonAttackRate','Summon attack frequency',0.35,2,0.05,'Higher values make contract summons attack more often.'],
+    ['Summon Balance','summonLimit','Maximum active contract summons per owner',1,5,1,'Caps contract summons; the Inuzuka dog remains a one-per-match companion.'],
+    ['Puppet Balance','puppetHp','Puppet health multiplier',0.25,2.5,0.05,'Scales the health of each puppet type while preserving its relative design.'],
+    ['Puppet Balance','puppetDamage','Puppet damage multiplier',0.25,2.5,0.05,'Scales damage from all puppet variants, including swarm puppets.'],
+    ['Puppet Balance','puppetSpeed','Puppet movement speed',0.25,2.5,0.05,'Scales puppet movement while retaining each puppet’s relative speed.'],
+    ['Puppet Balance','puppetAttackRate','Puppet attack frequency',0.25,2.5,0.05,'Scales puppet attack cooldowns.'],
+    ['Puppet Balance','puppetTether','Maximum puppet distance from master',60,320,5,'Controls how far a puppet may travel from its puppeteer.'],
+    ['Puppet Balance','puppetRespawnCooldown','Puppet redeployment cooldown',10,180,5,'Frames before a defeated puppet group can be redeployed by the existing jutsu rule.'],
+    ['Puppet Balance','puppetRespawnCount','Puppet redeployment count multiplier',0.25,2,0.25,'Scales the number of puppets in a redeployed group.'],
+    ['Combat Gauges','j1Charge','Jutsu 1 base charge per hit',0,25,0.5,'Base gauge gained on a successful hit, before damage-based charge.'],
+    ['Combat Gauges','j2Charge','Jutsu 2 base charge per hit',0,25,0.5,'Base gauge gained on a successful hit, before damage-based charge.'],
+    ['Combat Gauges','ultCharge','Ultimate base charge per hit',0,20,0.5,'Base ultimate gauge gained on a successful hit.'],
+    ['Combat Gauges','damageCharge','Damage-based gauge factor',0,1.5,0.05,'Scales additional gauge gain based on damage dealt.'],
+    ['Combat Gauges','chakraControlCharge','Chakra-stat gauge contribution',0,2,0.05,'Scales the additional gauge charge from Chakra Control and Chakra Quantity.'],
+    ['Combat Gauges','ultimateReadiness','Ultimate gauge gain multiplier',0.25,2,0.05,'Multiplies ultimate gauge gain after base and damage contributions.'],
+    ['Projectile & Jutsu Behaviour','projectileSpeed','Projectile travel speed',0.35,2.5,0.05,'Scales the speed of thrown weapons and jutsu projectiles.'],
+    ['Projectile & Jutsu Behaviour','projectileLifetime','Projectile lifetime / range',0.25,2,0.05,'Scales how long projectiles remain in the arena.'],
+    ['Visual Effects','effectIntensity','Visual effect intensity',0,2,0.1,'Scales the visual shake/flash intensity from impacts and ultimates.'],
+    ['Visual Effects','hitStop','Impact hit-stop duration',0,2,0.1,'Scales brief hit-stop pauses on hits and clashes.'],
+    ['Visual Effects','ultimateSlowMotion','Ultimate slow-motion intensity',0,2,0.1,'Zero disables ultimate slow motion; higher values increase its strength.']
+  ];
+  function orbTuneNumber(key){return Number(orbTuning[key]??ORB_TUNING_DEFAULTS[key]);}
+  function orbTuneRender(){
+    const ids={'Movement & Combat Pace':'orbTuneMovement','Dog / Ninken Balance':'orbTuneDog','Clone Balance':'orbTuneClone','Summon Balance':'orbTuneSummon','Combat Gauges':'orbTuneGauges','Puppet Balance':'orbTunePuppet','Projectile & Jutsu Behaviour':'orbTuneProjectiles','Visual Effects':'orbTuneVisual'};
+    for(const [category,key,label,min,max,step,help] of ORB_TUNING_FIELDS){
+      const box=document.getElementById(ids[category]);if(!box)continue;
+      let control=box.querySelector(`[data-orb-tune="${key}"]`);
+      if(!control){control=document.createElement('div');control.className='orb-tune-control';control.dataset.orbTune=key;control.innerHTML=`<label><span>${label}</span><b data-value></b></label><small>${help}</small><input type="range" min="${min}" max="${max}" step="${step}" value="${orbTuneNumber(key)}" aria-label="${label}">`;box.appendChild(control);control.querySelector('input').addEventListener('input',e=>{orbTuning[key]=Number(e.target.value);orbTuneRender();if(key==='combatSpeed')orbSetSpeed(orbTuneNumber(key));});}
+      control.querySelector('input').value=orbTuneNumber(key);
+      control.querySelector('[data-value]').textContent=orbTuneNumber(key).toFixed(2).replace(/\\.00$/,'');
+    }
+  }
+  function orbExportTuning(){
+    const payload={format:'Ninja Generator Orb Arena Tuning',version:1,exportedAt:new Date().toISOString(),settings:{...orbTuning},defaults:{...ORB_TUNING_DEFAULTS},notes:'Version 2 includes movement, damage, projectile, support-unit, puppet, gauge, and spectacle controls. Return this JSON file after testing to compare tuning values and determine revised defaults.'};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='orb-arena-tuning.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const status=document.getElementById('orbTuningStatus');if(status)status.textContent='Tuning exported. Send orb-arena-tuning.json back for review.';
+  }
+  function orbResetTuning(){Object.assign(orbTuning,ORB_TUNING_DEFAULTS);orbTuneRender();orbSetSpeed(orbTuneNumber('combatSpeed'));const status=document.getElementById('orbTuningStatus');if(status)status.textContent='All tuning controls restored to their current defaults.';}
+  window.orbExportTuning=orbExportTuning;window.orbResetTuning=orbResetTuning;
+
   // Spectacle layer: visual events never alter combat outcomes.
   let orbEnvironment='training',orbCombatSpeed=1,orbDynamicCamera=true,orbFullEffects=true;
   let orbShake=0,orbFlash=0,orbHitStopUntil=0,orbCameraX=0,orbCameraY=0,orbCameraZoom=1,orbRoundStarted=0,orbReplayFrames=[],orbReplayMode=false,orbReplayIndex=0,orbReplayLastCapture=0,orbReplayCanvas=null,orbReplayCtx=null;
@@ -8029,14 +8141,14 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function orbEvent(kind,detail=''){
     if(!orbFullEffects)return;
     const p=el('orbBattlePanel');
-    if(kind==='hit'){orbShake=Math.max(orbShake,detail==='heavy'?4:1.8);orbFlash=Math.max(orbFlash,detail==='heavy'?2.5:.8);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+(detail==='heavy'?58:24));}
-    if(kind==='clash'){orbShake=Math.max(orbShake,2.2);orbFlash=Math.max(orbFlash,1);orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+22);}
-    if(kind==='ultimate'){orbShake=Math.max(orbShake,6);orbFlash=Math.max(orbFlash,3);orbSlowMo=.52;orbSlowMoUntil=performance.now()+520;}
-    if(kind==='win'){orbShake=Math.max(orbShake,4);orbFlash=Math.max(orbFlash,2);}
+    if(kind==='hit'){orbShake=Math.max(orbShake,(detail==='heavy'?4:1.8)*orbTuneNumber('effectIntensity'));orbFlash=Math.max(orbFlash,(detail==='heavy'?2.5:.8)*orbTuneNumber('effectIntensity'));orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+(detail==='heavy'?58:24)*orbTuneNumber('hitStop'));}
+    if(kind==='clash'){orbShake=Math.max(orbShake,2.2*orbTuneNumber('effectIntensity'));orbFlash=Math.max(orbFlash,1*orbTuneNumber('effectIntensity'));orbHitStopUntil=Math.max(orbHitStopUntil,performance.now()+22*orbTuneNumber('hitStop'));}
+    if(kind==='ultimate'){orbShake=Math.max(orbShake,6*orbTuneNumber('effectIntensity'));orbFlash=Math.max(orbFlash,3*orbTuneNumber('effectIntensity'));orbSlowMo=1-(1-.52)*orbTuneNumber('ultimateSlowMotion');orbSlowMoUntil=performance.now()+520*orbTuneNumber('hitStop');}
+    if(kind==='win'){orbShake=Math.max(orbShake,4*orbTuneNumber('effectIntensity'));orbFlash=Math.max(orbFlash,2*orbTuneNumber('effectIntensity'));}
     if(p&&kind==='ultimate'){p.classList.remove('orb-shake');void p.offsetWidth;p.classList.add('orb-shake');setTimeout(()=>p.classList.remove('orb-shake'),150);}
   }
   function orbSetEnvironment(v){orbEnvironment=['training','forest','volcanic','water','night'].includes(v)?v:'training';drawArena();}
-  function orbSetSpeed(v){orbCombatSpeed=clamp(Number(v)||1,.5,2);}
+  function orbSetSpeed(v){orbCombatSpeed=clamp(Number(v)||1,.5,2);if(typeof orbTuning!=='undefined')orbTuning.combatSpeed=orbCombatSpeed;}
   function orbSetCamera(v){orbDynamicCamera=!!v;}
   function orbSetEffects(v){orbFullEffects=!!v;if(!orbFullEffects){orbShake=0;orbFlash=0;}}
   function orbCaptureReplay(ts){
@@ -8316,7 +8428,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     return {
       side,name:cleanName(ninja.name||ninja.catalogueName||'Ninja '+side),color:isA?'#e74c3c':'#3498db',
       ninja,stats:ninja.stats,weapon,weaponType:wk,jutsu1:tech.j1,jutsu2:tech.j2,ult:tech.ult,
-      maxHp:d.hp,hp:d.hp,dmg:d.dmg,speed:d.speed,range:d.range,evade:d.evade,
+      maxHp:d.hp*orbTuneNumber('fighterHealth'),hp:d.hp*orbTuneNumber('fighterHealth'),dmg:d.dmg,speed:d.speed*orbTuneNumber('maxMovementSpeed'),range:d.range,evade:d.evade,
       r:22,x:CX+Math.cos(angle)*dist,y:CY+Math.sin(angle)*dist,vx:0,vy:0,lastSafeX:CX+Math.cos(angle)*dist,lastSafeY:CY+Math.sin(angle)*dist,
       weaponAngle:isA?0:Math.PI,prevWeaponAngle:isA?0:Math.PI,weaponSpin:weaponSpinSpeed(wk)*spinDir,weaponReach:weaponLength(wk),
       weaponClashCooldown:0,weaponHitCooldown:0,atkPulse:0,hitFlash:0,invuln:0,alive:true,shield:0,
@@ -8325,7 +8437,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       ultActivations:0,tailedBeastCloak:false,cloakTails:0,cloakColor:'#ff8b24',susanooForm:false,susanooStartedAt:0,susanooColor:'#9d8aff',
       j1Prep:0,j2Prep:0,ultPrep:0,ultWindup:0,ultWindupReady:false,ultimateAfterglow:0,recovery:0,stagger:0,bindTimer:0,abilityFlash:0,abilityName:'',abilityKind:'',
       cooldown:0,lastAbility:0,stamina:100,chakra:100,genjutsuStun:0,genjutsuSource:null,genjutsuFlash:0,
-      isPuppetUser:isPuppetUser(ninja),puppet:null,puppets:[],puppetRespawnFlash:0,puppetOriginalCount:puppetOriginalCountFor(ninja),puppetSummonCooldown:0,
+      isPuppetUser:isPuppetUser(ninja),puppet:null,puppets:[],puppetRespawnFlash:0,puppetOriginalCount:puppetOriginalCountFor(ninja),puppetSummonCooldown:0,hasNinken:!!(/inuzuka/i.test(String(ninja.clan||''))||/has a dog|ninken/i.test(String(ninja.bloodline||'')+' '+String(ninja.hiden||''))),ninkenSpawned:false,
       hasConsumable,consumable,consumableProfile:cp,consumableMeter:0,consumableCooldown:hasConsumable?80:Infinity,
       consumableActive:0,consumableBoosts:{},consumableUses:0,
       /* Arena traversal: periodic flank/reposition bursts keep exchanges from clustering at center. */
@@ -8504,8 +8616,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(!target||!target.alive)return;
     const ang=Math.atan2(target.y-f.y,target.x-f.x);
     const speed=slot==='ult'?4.8:4.1;
-    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015);
-    trimOldest(projectiles,ORB_MAX_PROJECTILES-1);projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05,vy:Math.sin(ang)*speed*f.speed/1.05,life:100,r:slot==='ult'?9:6,damage,hit:false});
+    const damage=f.dmg*(slot==='ult'?2.15:slot==='j2'?1.55:1.32)*(0.9+consumableStat(f,'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015)*orbTuneNumber('jutsuDamage');
+    trimOldest(projectiles,ORB_MAX_PROJECTILES-1);projectiles.push({f,casterOwner:f.parent||f,name,kind,slot,x:f.x+Math.cos(ang)*(f.r+10),y:f.y+Math.sin(ang)*(f.r+10),vx:Math.cos(ang)*speed*f.speed/1.05*orbTuneNumber('projectileSpeed'),vy:Math.sin(ang)*speed*f.speed/1.05*orbTuneNumber('projectileSpeed'),life:100*orbTuneNumber('projectileLifetime'),r:slot==='ult'?9:6,damage,hit:false});
   }
 
 
@@ -8587,7 +8699,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(kind==='kazekage'){speed*=.9;reach*=1.8;cooldown=26;}
     if(kind==='motherfather'){speed*=index===0?1.12:.9;reach*=index===0?1.25:1.05;cooldown=index===0?24:31;}
     if(kind==='bee'){speed*=1.35;reach*=.9;cooldown=24;}
-    return {hp:Math.max(4,f.maxHp*hpScale*0.5),damage:Math.max(1,f.dmg*damageScale*0.5),r:swarm?11:(kind==='motherfather'?16:19),speed,reach:Math.max(8,reach),cooldown};
+    return {hp:Math.max(4,f.maxHp*hpScale*0.5*orbTuneNumber('puppetHp')),damage:Math.max(1,f.dmg*damageScale*0.5*orbTuneNumber('puppetDamage')),r:swarm?11:(kind==='motherfather'?16:19),speed:speed*orbTuneNumber('puppetSpeed'),reach:Math.max(8,reach),cooldown:Math.max(4,cooldown/orbTuneNumber('puppetAttackRate'))};
   }
   function spawnPuppet(f,force=false,countOverride=null){
     if(!f||!f.isPuppetUser)return null;
@@ -8636,9 +8748,9 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const owner=attacker?.parent||attacker;
     if(!owner||!owner.ninja)return;
     const cc=stat(owner.ninja,'chakraControl'),cq=stat(owner.ninja,'chakraQuantity');
-    owner.j1Meter=clamp((owner.j1Meter||0)+10+dmg*.55+cc*.025,0,100);
-    owner.j2Meter=clamp((owner.j2Meter||0)+8+dmg*.45+cc*.018,0,100);
-    owner.ultMeter=clamp((owner.ultMeter||0)+5+dmg*.28+cq*.012,0,100);
+    owner.j1Meter=clamp((owner.j1Meter||0)+orbTuneNumber('j1Charge')+dmg*orbTuneNumber('damageCharge')+cc*.025*orbTuneNumber('chakraControlCharge'),0,100);
+    owner.j2Meter=clamp((owner.j2Meter||0)+orbTuneNumber('j2Charge')+dmg*(orbTuneNumber('damageCharge')*.82)+cc*.018*orbTuneNumber('chakraControlCharge'),0,100);
+    owner.ultMeter=clamp((owner.ultMeter||0)+(orbTuneNumber('ultCharge')+dmg*(orbTuneNumber('damageCharge')*.51)+cq*.012*orbTuneNumber('chakraControlCharge'))*orbTuneNumber('ultimateReadiness'),0,100);
   }
 
   function applySummonedHitReaction(target,source,dmg,color){
@@ -8646,7 +8758,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const dx=target.x-(source?.x??target.x),dy=target.y-(source?.y??target.y),[nx,ny]=norm(dx,dy);
     const wt=String(source?.weaponType||'').toLowerCase();
     const impactScale=({fists:.78,dagger:.88,kunai:.9,sword:1.08,kusanagi:1.12,spear:1.1,scythe:1.16,hammer:1.42,kabutowari:1.46,samehada:1.25,kubikiribocho:1.48,hiramekarei:1.2,chain:.95,whip:.92,fan:1.08,staff:1.1,shuriken:.82,launcher:1.22,custom:1})[wt]||1;
-    const force=Math.min(13,(2.8+Math.max(0,dmg)*.13)*impactScale);
+    const force=Math.min(13,(2.8+Math.max(0,dmg)*.13)*impactScale*orbTuneNumber('knockback'));
     target.vx=(target.vx||0)+nx*force;target.vy=(target.vy||0)+ny*force;
     target.hitFlash=Math.max(target.hitFlash||0,10);target.stagger=Math.max(target.stagger||0,dmg>18?10:4);
     target.recovery=Math.max(target.recovery||0,dmg>22?8:3);
@@ -8657,7 +8769,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function damagePuppet(p,dmg,source){
     if(!p||!p.alive)return;
     if((p.invuln||0)>0)return;
-    p.hp-=Math.max(0,dmg);p.invuln=22;p.weaponHitCooldown=4;
+    p.hp-=Math.max(0,dmg);p.invuln=22*orbTuneNumber('hitInvulnerability');p.weaponHitCooldown=4;
     applySummonedHitReaction(p,source,dmg,'#bfe9ff');
     if(p.hp<=0){
       p.hp=0;p.alive=false;p.poof=30;spawnCloneSmoke(p.x,p.y,'#9edcff');
@@ -8673,7 +8785,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       /* Puppets are physically tethered to their master. The chakra thread is
          cosmetic but unbreakable: the puppet can never drift arbitrarily far
          from its caster or acquire an unstable velocity. */
-      const tetherMax=190;
+      const tetherMax=orbTuneNumber('puppetTether');
       if(!Number.isFinite(p.x)||!Number.isFinite(p.y)||!Number.isFinite(p.vx)||!Number.isFinite(p.vy)){
         p.x=f.x+f.r+p.r+8;p.y=f.y;p.vx=0;p.vy=0;
       }
@@ -8709,7 +8821,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
         distPointSeg(foe.x,foe.y,prevTip.x,prevTip.y,tip.x,tip.y)
       );
       if((Number(p.recovery)||0)<=0&&(Number(p.stagger)||0)<=0&&!p.weaponClashedThisFrame&&d<=ideal+28&&contactDist<=contactRadius&&p.cooldown<=0&&p.weaponHitCooldown<=0&&(foe.invuln||0)<=0){
-        p.attackFlash=10;p.cooldown=(p.attackCooldown||30)+Math.random()*9;
+        p.attackFlash=10;p.cooldown=((p.attackCooldown||30)+Math.random()*9)/orbTuneNumber('puppetAttackRate');
         let dmg=p.damage*(.78+Math.random()*.25);
         if(p.kind==='kazekage')dmg*=1.12;
         if(p.kind==='hiruko')dmg*=1.08;
@@ -8718,7 +8830,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
         if(foe.parent){
           damageCombatBody(foe,dmg,p);awardDamageMeters(p,dmg);
         }else{
-          foe.hp-=dmg;foe.invuln=10;applySummonedHitReaction(foe,p,dmg,'#a8dcff');
+          foe.hp-=dmg;foe.invuln=10*orbTuneNumber('hitInvulnerability');applySummonedHitReaction(foe,p,dmg,'#a8dcff');
           if(p.kind==='kuroari')foe.bindTimer=Math.max(foe.bindTimer||0,24);
           if(p.kind==='kazekage')foe.stagger=Math.max(foe.stagger||0,8);
           awardDamageMeters(p,dmg);
@@ -8766,7 +8878,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function spawnClones(parent,name,slot){
     const count=cloneCountForTechnique(name,slot),kind=cloneKindForTechnique(name);
     const existing=clones.filter(c=>c.parent===parent&&c.alive).length;
-    const max=6;
+    const max=Math.max(1,Math.round(orbTuneNumber('cloneLimit')));
     const n=Math.min(count,Math.max(0,max-existing));
     if(!n)return;
     for(let i=0;i<n;i++){
@@ -8775,14 +8887,14 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       // Full-ring spawn points keep multiple clones from beginning overlapped.
       const a=facing+i*Math.PI*2/Math.max(1,n);
       const d=parent.r+17+10;
-      const hp=Math.max(22,parent.maxHp*.13);
+      const hp=Math.max(22,parent.maxHp*(kind==='dog'?orbTuneNumber('dogHp'):orbTuneNumber('cloneHp')));
       const c={
         id:'clone_'+Date.now()+'_'+Math.random().toString(36).slice(2),
         parent,side:parent.side,name:`${parent.name} Clone`,kind,alive:true,hp,maxHp:hp,
         r:17,x:parent.x+Math.cos(a)*d,y:parent.y+Math.sin(a)*d,vx:0,vy:0,
         weapon:parent.weapon,weaponType:parent.weaponType,weaponReach:Math.max(16,parent.weaponReach*.82),
         weaponAngle:a,prevWeaponAngle:a,weaponSpin:(parent.side==='A'?1:-1)*weaponSpinSpeed(parent.weaponType)*.9,
-        damage:Math.max(4,parent.dmg*.48),cooldown:0,recovery:0,stagger:0,weaponHitCooldown:0,weaponClashCooldown:0,weaponClashedThisFrame:false,hitFlash:0,poof:0,atkPulse:0,age:0
+        damage:Math.max(4,parent.dmg*(kind==='dog'?orbTuneNumber('dogDamage'):orbTuneNumber('cloneDamage'))),cooldown:0,recovery:0,stagger:0,weaponHitCooldown:0,weaponClashCooldown:0,weaponClashedThisFrame:false,hitFlash:0,poof:0,atkPulse:0,age:0
       };
       clones.push(c);spawnCloneSmoke(c.x,c.y,c.kind==='wood'?'#6dbb58':c.kind==='water'?'#77dfff':'#e8edf7');
     }
@@ -8806,18 +8918,20 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function spawnSummonedOrb(parent,name,slot){
     if(!parent||!parent.alive)return;
     const kind=summonKindFor(parent,name);
+    if(kind==='dog'&&parent.hasNinken&&parent.ninkenSpawned)return;
+    if(kind==='dog'&&parent.hasNinken)parent.ninkenSpawned=true;
     const owned=clones.filter(c=>c.alive&&c.parent===parent&&['dog','toad','snake','slug','bird','monkey','turtle','summon'].includes(c.kind)).length;
-    if(owned>=2)return;
+    if(owned>=(kind==='dog'?1:orbTuneNumber('summonLimit')))return;
     const foe=fighters.find(f=>f.alive&&f.side!==parent.side);
     const ang=foe?Math.atan2(foe.y-parent.y,foe.x-parent.x):0;
     const offset=owned?-.55:.55,dist=parent.r+22+owned*10;
-    const hp=Math.max(30,parent.maxHp*(kind==='summon'?.22:.27));
+    const hp=Math.max(30,parent.maxHp*(kind==='dog'?orbTuneNumber('dogHp'):orbTuneNumber('summonHp')));
     const type=kind==='dog'?'fists':kind==='snake'?'chain':kind==='toad'?'hammer':kind==='turtle'?'shield':'staff';
     const names={dog:'Ninken',toad:'Toad Summon',snake:'Snake Summon',slug:'Slug Summon',bird:'Bird Summon',monkey:'Monkey Summon',turtle:'Turtle Summon',summon:'Summoned Ally'};
     const c={id:'summon_'+Date.now()+'_'+Math.random().toString(36).slice(2),parent,side:parent.side,name:names[kind]||'Summoned Ally',kind,alive:true,hp,maxHp:hp,r:kind==='toad'||kind==='turtle'?21:18,
       x:parent.x+Math.cos(ang+offset)*dist,y:parent.y+Math.sin(ang+offset)*dist,vx:Math.cos(ang+offset)*1.2,vy:Math.sin(ang+offset)*1.2,
       weapon:kind==='dog'?'Claws':names[kind]||'Summon Strike',weaponType:type,weaponReach:kind==='dog'?13:kind==='toad'?23:18,
-      weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(parent.side==='A'?1:-1)*weaponSpinSpeed(type),damage:Math.max(4,parent.dmg*(kind==='dog'?.42:.5)),cooldown:12,invuln:0,hitFlash:0,poof:0,atkPulse:0,age:0,stagger:0,recovery:0};
+      weaponAngle:ang,prevWeaponAngle:ang,weaponSpin:(parent.side==='A'?1:-1)*weaponSpinSpeed(type),damage:Math.max(4,parent.dmg*(kind==='dog'?orbTuneNumber('dogDamage'):orbTuneNumber('summonDamage'))),cooldown:12/orbTuneNumber(kind==='dog'?'dogAttackRate':'summonAttackRate'),invuln:0,hitFlash:0,poof:0,atkPulse:0,age:0,stagger:0,recovery:0};
     clones.push(c);spawnCloneSmoke(c.x,c.y,kind==='dog'?'#e8c58e':'#f4c27a');
     floatText(parent.x,parent.y-parent.r-36,kind==='dog'?'NINKEN!':'SUMMON!',kind==='dog'?'#e8c58e':'#f4c27a');
     log(`${parent.name} summons ${c.name}.`);
@@ -8834,11 +8948,11 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   function cloneAttack(c,foe){
     if(!c.alive||!foe||!foe.alive||c.cooldown>0||(c.weaponClashedThisFrame)|| (foe.invuln||0)>0)return;
     if(!weaponTipContact(c,foe))return;
-    c.atkPulse=12;c.cooldown=(c.kind==='dog'?19:24)+Math.random()*10;
-    let dmg=c.damage*(.82+Math.random()*.3);
+    c.atkPulse=12;c.cooldown=((c.kind==='dog'?19:24)+Math.random()*10)/(c.kind==='dog'?orbTuneNumber('dogAttackRate'):c.kind==='summon'?orbTuneNumber('summonAttackRate'):orbTuneNumber('cloneAttackRate'));
+    let dmg=c.damage*(.82+Math.random()*.3)*(c.kind==='dog'?orbTuneNumber('dogDamage')/Math.max(.01,orbTuneNumber('dogDamage')):1);
     if(foe.shield>0){spawnParticles(foe.x,foe.y,'#9eeeff',7,3,16);floatText(foe.x,foe.y-foe.r-10,'BLOCKED','#a9efff');c.recovery=Math.max(c.recovery||0,4);return;}
     const evasion=foe.ninja?(stat(foe.ninja,'speed')*.003+stat(foe.ninja,'stealth')*.0015+stat(foe.ninja,'battleIQ')*.001):0;
-    if(Math.random()<Math.min(.22,evasion*.1)){spawnParticles(foe.x,foe.y,'#d9e9ff',5,2.5,16);floatText(foe.x,foe.y-foe.r-10,'DODGE!','#b9e8ff');return;}
+    if(Math.random()<Math.min(.45,evasion*.1*orbTuneNumber('evasion'))){spawnParticles(foe.x,foe.y,'#d9e9ff',5,2.5,16);floatText(foe.x,foe.y-foe.r-10,'DODGE!','#b9e8ff');return;}
     if(foe.parent)damageCombatBody(foe,dmg,c);
     else{
       foe.hp-=dmg;foe.invuln=10;applySummonedHitReaction(foe,c,dmg,c.kind==='dog'?'#e8c58e':'#d7e8ff');
@@ -8858,7 +8972,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       let ax=0,ay=0;
       if((Number(c.recovery)||0)<=0&&(Number(c.stagger)||0)<=0){if(d>ideal+10){ax=nx;ay=ny}else if(d<ideal-10){ax=-nx;ay=-ny}else{ax=-ny*(c.side==='A'?1:-1);ay=nx*(c.side==='A'?1:-1)}}
       c.vx+=ax*(c.kind==='dog'?.14:.12)*dt;c.vy+=ay*(c.kind==='dog'?.14:.12)*dt;c.vx*=.94;c.vy*=.94;
-      const sp=len(c.vx,c.vy),maxSp=1.45*parentSpeed(c.parent);
+      const sp=len(c.vx,c.vy),maxSp=1.45*parentSpeed(c.parent)*(c.kind==='dog'?orbTuneNumber('dogSpeed'):['toad','snake','slug','bird','monkey','turtle','summon'].includes(c.kind)?orbTuneNumber('summonSpeed'):orbTuneNumber('cloneSpeed'));
       if(sp>maxSp){c.vx=c.vx/sp*maxSp;c.vy=c.vy/sp*maxSp}
       c.x+=c.vx*dt;c.y+=c.vy*dt;applyCloneBounds(c);
       c.weaponAngle+=c.weaponSpin*dt;
@@ -8884,7 +8998,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   }
   function damageClone(c,dmg,source){
     if(!c||!c.alive||(c.invuln||0)>0)return;
-    c.hp-=Math.max(0,dmg);c.invuln=22;
+    c.hp-=Math.max(0,dmg);c.invuln=22*orbTuneNumber('hitInvulnerability');
     const ring=c.kind==='dog'?'#f0c78b':c.kind==='summon'?'#f4c27a':c.kind==='water'?'#8be9ff':c.kind==='wood'?'#8bd16c':'#d7e8ff';
     applySummonedHitReaction(c,source,dmg,ring);
     if(c.hp<=0){c.hp=0;c.alive=false;c.poof=24;spawnCloneSmoke(c.x,c.y,ring);log(`${c.name} is defeated.`)}
@@ -8933,7 +9047,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       if(h.life<=0)continue;
       for(const target of fighters){
         if(!target.alive||target.side===h.owner.side||Math.hypot(target.x-h.x,target.y-h.y)>h.r+target.r)continue;
-        if(h.type==='fire'&&h.tick>=18&&target.invuln<=0){h.tick=0;const dmg=Math.max(1,h.owner.dmg*.22*h.power);target.hp-=dmg;target.hitFlash=Math.max(target.hitFlash||0,4);floatText(target.x,target.y-target.r-12,'BURN','#ffad63');spawnParticles(target.x,target.y,'#ff783c',5,2.5,16);if(target.hp<=0){target.hp=0;target.alive=false;running=false;winner=h.owner;el('orbFightBtn').disabled=false;log(`${h.owner.name}'s burning zone defeats ${target.name}.`);}}
+        if(h.type==='fire'&&h.tick>=18&&target.invuln<=0){h.tick=0;const dmg=Math.max(1,h.owner.dmg*.22*h.power*orbTuneNumber('jutsuDamage'));target.hp-=dmg;target.hitFlash=Math.max(target.hitFlash||0,4);floatText(target.x,target.y-target.r-12,'BURN','#ffad63');spawnParticles(target.x,target.y,'#ff783c',5,2.5,16);if(target.hp<=0){target.hp=0;target.alive=false;running=false;winner=h.owner;el('orbFightBtn').disabled=false;log(`${h.owner.name}'s burning zone defeats ${target.name}.`);}}
         if(h.type==='water'){target.vx*=.91;target.vy*=.91;}
       }
     }
@@ -9128,7 +9242,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const chance=0.012 + iq*.00012 + will*.00008;
     if(f.isPuppetUser&&activePuppets(f).length===0&&f.puppetSummonCooldown<=0){
       const ready=f.j1Meter>=100||f.j2Meter>=100||f.ultMeter>=100;
-      if(ready){const count=Math.max(1,Math.floor((Number(f.puppetOriginalCount)||1)/3));spawnPuppet(f,false,count);f.j1Meter=0;f.j2Meter=0;f.ultMeter=0;f.puppetSummonCooldown=70;return;}
+      if(ready){const count=Math.max(1,Math.round(Math.floor((Number(f.puppetOriginalCount)||1)/3)*orbTuneNumber('puppetRespawnCount')));spawnPuppet(f,false,count);f.j1Meter=0;f.j2Meter=0;f.ultMeter=0;f.puppetSummonCooldown=orbTuneNumber('puppetRespawnCooldown')/orbTuneNumber('cloneRespawnRate');return;}
     }
     if(f.puppetSummonCooldown>0)f.puppetSummonCooldown=Math.max(0,f.puppetSummonCooldown-1);
     if(f.hasConsumable && f.consumableMeter>=100 && f.consumableActive<=0 && f.consumableCooldown<=0 && (f.hp/f.maxHp<.82 || Math.random()<.012)){activateConsumable(f);return;}
@@ -9204,8 +9318,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     if(d<70)return false;
     const angle=Math.atan2(dy,dx),ang=angle+(Math.random()-.5)*.08;
     const name=a.weapon||'Ranged Weapon';
-    const damage=a.dmg*(.72+Math.random()*.28)*(0.9+consumableStat(a,'weaponSkill')*.004)*1.08*.75; // Projectile damage reduced to 75% of the previous value.
-    trimOldest(projectiles,ORB_MAX_PROJECTILES-1);projectiles.push({f:a,name,kind:'weapon',x:a.x+Math.cos(ang)*(a.r+8),y:a.y+Math.sin(ang)*(a.r+8),vx:Math.cos(ang)*4.2*a.speed,vy:Math.sin(ang)*4.2*a.speed,life:95,r:4.5,damage,hit:false,weapon:true});
+    const damage=a.dmg*(.72+Math.random()*.28)*(0.9+consumableStat(a,'weaponSkill')*.004)*1.08*.75*orbTuneNumber('weaponProjectileDamage')/0.75; // Projectile damage reduced to 75% of the previous value.
+    trimOldest(projectiles,ORB_MAX_PROJECTILES-1);projectiles.push({f:a,name,kind:'weapon',x:a.x+Math.cos(ang)*(a.r+8),y:a.y+Math.sin(ang)*(a.r+8),vx:Math.cos(ang)*4.2*a.speed*orbTuneNumber('projectileSpeed'),vy:Math.sin(ang)*4.2*a.speed*orbTuneNumber('projectileSpeed'),life:95*orbTuneNumber('projectileLifetime'),r:4.5,damage,hit:false,weapon:true});
     a.rangedCooldown=26-Math.min(10,stat(a.ninja,'speed')*.08);a.rangedPulse=12;a.stamina=clamp(a.stamina-.25,0,100);
     return true;
   }
@@ -9291,7 +9405,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     /* Contact geometry is authoritative. The swept tip check already proves
        the striking end crossed the orb, so an angle gate cannot erase a valid
        hit at the exact moment the weapon reverses. */
-    let dmg=a.dmg*(.82+Math.random()*.36);
+    let dmg=a.dmg*(.82+Math.random()*.36)*orbTuneNumber('meleeDamage')*(a.weaponType==='fists'?orbTuneNumber('unarmedDamage')/0.75:1);
     if(a.j1Active>0)dmg*=1.18;
     if(a.j2Active>0)dmg*=1.26;
     if(a.ultActive>0)dmg*=1.5;
@@ -9362,7 +9476,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
       // can pass through several puppets. Each puppet's own invulnerability
       // window still prevents repeated damage to that same puppet.
       if((p.invuln||0)>0||!weaponTipContact(a,p))continue;
-      let dmg=a.dmg*(.82+Math.random()*.36);
+      let dmg=a.dmg*(.82+Math.random()*.36)*orbTuneNumber('meleeDamage')*(a.weaponType==='fists'?orbTuneNumber('unarmedDamage')/0.75:1);
       if(a.j1Active>0)dmg*=1.18;if(a.j2Active>0)dmg*=1.26;if(a.ultActive>0)dmg*=1.5;
       dmg*=.82+consumableStat(a,'weaponSkill')*.0035+consumableStat(a,'strength')*.0025;
       if(a.weaponType==='fists')dmg*=.75; // Apply the unarmed damage reduction to puppet contacts too.
@@ -9381,7 +9495,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const targets=clones.filter(c=>c.alive&&c.side!==a.side);
     for(const c of targets){
       if((c.invuln||0)>0||a.weaponHitCooldown>0||!weaponTipContact(a,c))continue;
-      let dmg=a.dmg*(.82+Math.random()*.36);
+      let dmg=a.dmg*(.82+Math.random()*.36)*orbTuneNumber('meleeDamage')*(a.weaponType==='fists'?orbTuneNumber('unarmedDamage')/0.75:1);
       if(a.j1Active>0)dmg*=1.18;if(a.j2Active>0)dmg*=1.26;if(a.ultActive>0)dmg*=1.5;
       dmg*=.82+consumableStat(a,'weaponSkill')*.0035+consumableStat(a,'strength')*.0025;
       if(a.weaponType==='fists')dmg*=.75; // Apply the unarmed damage reduction to clone contacts too.
@@ -9532,14 +9646,14 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     const preparing=f.ultPrep>0||f.j1Prep>0||f.j2Prep>0;
     const abilityActive=f.ultActive>0||f.j1Active>0||f.j2Active>0;
     if(!preparing&&!abilityActive){
-      f.roamTimer-=dt;
+      f.roamTimer-=dt*Math.max(0,orbTuneNumber('repositioning'));
       if(f.roamTimer<=0){
         const angle=Math.random()*Math.PI*2;
         const radius=ARENA_R*(.48+Math.random()*.24);
         f.roamX=clamp(CX+Math.cos(angle)*radius,CX-ARENA_R+f.r+12,CX+ARENA_R-f.r-12);
         f.roamY=clamp(CY+Math.sin(angle)*radius,CY-ARENA_R+f.r+12,CY+ARENA_R-f.r-12);
-        f.repositionTimer=26+Math.random()*22;
-        f.roamTimer=105+Math.random()*100;
+        f.repositionTimer=(26+Math.random()*22)/Math.max(.25,orbTuneNumber('repositioning'));
+        f.roamTimer=orbTuneNumber('repositioning')<=0?1e9:(105+Math.random()*100)/Math.max(.25,orbTuneNumber('repositioning'));
       }
       if(f.repositionTimer>0)f.repositionTimer=Math.max(0,f.repositionTimer-dt);
     }else{f.repositionTimer=0;}
@@ -9569,12 +9683,12 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     else if(f.ultActive>0||f.j1Active>0||f.j2Active>0){ax=nx;ay=ny;acc=2.0;maxMul=1.9}
     else if(dist>ideal+18){ax=nx;ay=ny}
     else if(dist<ideal-12){ax=-nx;ay=-ny}
-    else{const side=f.side==='A'?1:-1;ax=-ny*side;ay=nx*side;if(Math.random()<.02){ax+=nx;ay+=ny}}
+    else{const side=f.side==='A'?1:-1;ax=-ny*side*orbTuneNumber('orbiting');ay=nx*side*orbTuneNumber('orbiting');if(Math.random()<.02){ax+=nx;ay+=ny}}
     const controlFactor=f.bindTimer>0 ? .18 : f.stagger>0 ? .52 : f.ultWindup>0 ? .35 : f.recovery>0 ? .48 : 1;
-    const accel=.15*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*controlFactor;
+    const accel=.15*f.speed*(1+stat(f.ninja,'battleIQ')*.002)*acc*controlFactor*orbTuneNumber('movementAcceleration')*orbTuneNumber('pursuit');
     f.vx+=ax*accel*dt;f.vy+=ay*accel*dt;
     f.vx*=.955;f.vy*=.955;
-    const sp=len(f.vx,f.vy),maxSp=2.05*f.speed*maxMul*controlFactor;
+    const sp=len(f.vx,f.vy),maxSp=2.05*f.speed*maxMul*controlFactor*orbTuneNumber('maxMovementSpeed');
     if(sp>maxSp){f.vx=f.vx/sp*maxSp;f.vy=f.vy/sp*maxSp}
     f.x+=f.vx*dt;f.y+=f.vy*dt;stabilizeFighter(f);
     /* A puppet is the master's frontline support, not a combat lock. The
@@ -10631,7 +10745,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
     clones=[];particles=[];floating=[];effects=[];projectiles=[];winner=null;orbWinnerHandled=null;orbImpactMarks=[];orbHazards=[];orbBarriers=[];orbHitStopUntil=0;orbFightEndedAt=0;orbReplayFrames=[];orbReplayMode=false;orbSlowMo=1;running=true;lastTs=0;orbRoundStarted=performance.now();
     const replayLabel=el('orbReplayLabel');if(replayLabel)replayLabel.classList.remove('show');const replayBtn=el('orbReplayBtn');if(replayBtn)replayBtn.textContent='▶ Replay Last Moments';
     /* Puppet Masters deploy their puppet before the opening movement begins. */
-    for(const f of fighters){ if(f.isPuppetUser) spawnPuppet(f,true); }
+    for(const f of fighters){ if(f.isPuppetUser) spawnPuppet(f,true); if(f.hasNinken)spawnSummonedOrb(f,'Ninken', 'start'); }
     el('orbFightBtn').disabled=true;
     orbSpectacleBanner('NINJA GENERATOR · MATCHUP',`${fighters[0].name} VS ${fighters[1].name}`,`${fighters[0].weapon||'Weapon'}  ·  ${fighters[1].weapon||'Weapon'}`,1450);log(`Fight: ${fighters[0].name} vs ${fighters[1].name}`);
     const a=fighters[0],b=fighters[1],dx=b.x-a.x,dy=b.y-a.y,L=len(dx,dy);
@@ -10660,6 +10774,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   window.orbRefreshSources=orbRefreshSources;
 
   updateSources();
+  orbTuneRender();
   orbResetArena(false);
   // Ensure canvas buffer matches layout after first paint (mobile layout is often 0-width at parse time).
   requestAnimationFrame(()=>{resizeOrbCanvas();drawArena();});
