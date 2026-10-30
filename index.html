@@ -10913,4 +10913,680 @@ document.addEventListener('DOMContentLoaded',()=>{tourneyBuildNameInputs();try{c
 }
 </style>
 
+
+<style id="tourneyBracketRecordingRedesign">
+/* Tournament-only recording redesign: keep the bracket as the camera's canvas. */
+#tournamentBracketPage .tourney-contender.defeated{
+  color:#7f8a9b!important;background:#111722!important;border-color:#334155!important;
+  text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:#f87171;
+  opacity:.72;filter:saturate(.55)
+}
+#tournamentBracketPage .tourney-contender.winner{position:relative;font-weight:900}
+#tournamentBracketPage.tourney-presenting .tourney-cinema{display:none!important}
+#tournamentBracketPage.tourney-presenting .tourney-viewport,
+#tournamentBracketPage.tourney-presenting.tourney-show-bracket .tourney-viewport{
+  display:block!important;width:100%;height:calc(100svh - 155px);min-height:360px;max-height:none;
+  overflow:auto;overscroll-behavior:contain;scroll-behavior:smooth;
+  padding:clamp(8px,2vw,20px);border-color:#253750;border-radius:12px;
+  background:radial-gradient(ellipse at 50% 0,#17263b 0%,#080d16 68%,#05070c 100%);
+  -webkit-overflow-scrolling:touch;scrollbar-width:none
+}
+#tournamentBracketPage.tourney-presenting .tourney-viewport::-webkit-scrollbar{display:none}
+#tournamentBracketPage.tourney-presenting .tourney-stage{
+  transform:none!important;display:flex;align-items:flex-start;gap:clamp(12px,2vw,24px);
+  min-width:max-content;padding:10px 8px 45px;transition:none;will-change:scroll-position
+}
+#tournamentBracketPage.tourney-presenting .tourney-round{width:clamp(220px,25vw,290px);flex:0 0 auto;transform:none!important;filter:none!important;transition:none}
+#tournamentBracketPage.tourney-presenting .tourney-match{transition:border-color .35s,box-shadow .35s,opacity .35s;scroll-margin:30px}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-focus{
+  transform:none;border-color:#fbbf24;box-shadow:0 0 0 2px #fbbf2466,0 0 28px #fbbf2433,0 12px 30px #0009;z-index:5
+}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-reveal .tourney-contender.winner{
+  background:#143a31;border-color:#22c55e;color:#bbf7d0;animation:tourneyWinnerPulse .9s ease both
+}
+#tournamentBracketPage.tourney-presenting .tourney-round h3{position:sticky;top:0;z-index:3;padding:9px 8px;border-radius:8px;background:#0b1320ed;border:1px solid #253750;backdrop-filter:blur(8px)}
+#tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar{bottom:max(8px,env(safe-area-inset-bottom));width:min(96vw,760px);background:rgba(5,9,16,.96)}
+#tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar button{font-size:clamp(11px,1.5vw,14px);padding:9px 12px}
+#tournamentBracketPage.tourney-presenting .tourney-contender.defeated{opacity:.8}
+@media(max-width:800px){
+ #tournamentBracketPage.tourney-presenting .tourney-viewport{height:calc(100svh - 145px);min-height:300px;padding:5px}
+ #tournamentBracketPage.tourney-presenting .tourney-stage{gap:12px;padding:6px 5px 30px}
+ #tournamentBracketPage.tourney-presenting .tourney-round{width:min(78vw,320px)}
+ #tournamentBracketPage.tourney-presenting .tourney-round h3{font-size:14px}
+ #tournamentBracketPage.tourney-presenting .tourney-match{padding:8px}
+ #tournamentBracketPage.tourney-presenting .tourney-contender{font-size:clamp(12px,3.4vw,15px);padding:9px 8px}
+ #tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar{gap:5px;padding:6px;border-radius:12px}
+ #tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar button{flex:1 1 25%;min-height:40px;padding:7px 5px;font-size:11px}
+}
+@media(orientation:landscape) and (max-height:520px){
+ #tournamentBracketPage.tourney-presenting .tourney-viewport{height:calc(100svh - 95px);min-height:220px}
+ #tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar{bottom:4px;padding:4px}
+ #tournamentBracketPage.tourney-presenting .tourney-presentation-toolbar button{min-height:32px;padding:5px 8px}
+}
+@media(prefers-reduced-motion:reduce){#tournamentBracketPage.tourney-presenting .tourney-viewport{scroll-behavior:auto}}
+</style>
+<script id="tourneyBracketRecordingRedesignLogic">
+/* Isolated overrides for tournament rendering/playback only. */
+(function(){
+  const originalRender=window.tourneyRender;
+  if(typeof originalRender==='function'){
+    window.tourneyRender=function(){
+      originalRender.apply(this,arguments);
+      const stage=document.getElementById('tourneyBracketStage');if(!stage)return;
+      stage.querySelectorAll('.tourney-match').forEach(match=>{
+        const contenders=[...match.querySelectorAll('.tourney-contender:not(.bye)')];
+        const winner=contenders.find(el=>el.classList.contains('winner'));
+        contenders.forEach(el=>el.classList.toggle('defeated',!!winner&&el!==winner));
+      });
+    };
+    window.tourneyRender();
+  }
+  function page(){return document.getElementById('tournamentBracketPage')}
+  function viewport(){return document.getElementById('tourneyBracketViewport')}
+  function stage(){return document.getElementById('tourneyBracketStage')}
+  function playLabel(){const b=document.getElementById('tourneyPresentationPlayBtn');if(b)b.textContent=tourneyPresentationState.paused?'▶ Play':'⏸ Pause'}
+  function focusMatch(index, smooth=true){
+    const st=stage(),vp=viewport(),items=tourneyPresentationState.items;if(!st||!vp||!items.length)return;
+    st.querySelectorAll('.tourney-match-focus').forEach(el=>el.classList.remove('tourney-match-focus'));
+    if(index<0||index>=items.length){return}
+    const match=items[index],round=match.closest('.tourney-round');match.classList.add('tourney-match-focus');
+    const left=Math.max(0,round.offsetLeft-8);
+    const top=Math.max(0,st.offsetTop+round.offsetTop+match.offsetTop-vp.clientHeight*.34);
+    vp.scrollTo({left,top,behavior:smooth?'smooth':'auto'});
+    match.classList.remove('tourney-match-reveal');void match.offsetWidth;match.classList.add('tourney-match-reveal');
+  }
+  window.tourneyPresentationShowItem=function(index){
+    if(!tourneyPresentationState.active)return;
+    tourneyPresentationClearTimers();tourneyPresentationState.index=index;
+    const items=tourneyPresentationState.items;
+    if(index<0){
+      const vp=viewport();if(vp)vp.scrollTo({left:0,top:0,behavior:'smooth'});
+      const st=stage();st?.querySelectorAll('.tourney-match-focus').forEach(el=>el.classList.remove('tourney-match-focus'));
+      tourneyPresentationState.remaining=1200;
+      if(!tourneyPresentationState.paused)tourneyPresentationState.phaseTimer=setTimeout(()=>window.tourneyPresentationShowItem(0),1200);
+      playLabel();return;
+    }
+    if(index>=items.length){
+      const champion=customTournament.champion||((customTournament.rounds.at(-1)||[])[0]?.winner);
+      const finalRound=stage()?.querySelector('.tourney-round:last-child');
+      if(finalRound){const vp=viewport();vp?.scrollTo({left:Math.max(0,finalRound.offsetLeft-8),top:0,behavior:'smooth'});}
+      if(champion){const last=items[items.length-1];last?.classList.add('tourney-match-focus','tourney-match-reveal');}
+      tourneyPresentationState.paused=true;playLabel();tourneyPresentationArmAutoHide();return;
+    }
+    focusMatch(index,true);
+    const match=items[index],round=match.closest('.tourney-round');
+    const roundName=round?.querySelector('h3')?.textContent||'TOURNAMENT';
+    const roundItems=items.filter(el=>el.closest('.tourney-round')===round);
+    const position=roundItems.indexOf(match)+1;
+    const label=document.getElementById('tourneyPresentationBracketBtn');if(label)label.textContent='Show Full Bracket';
+    const status=document.getElementById('tourneyStatus');
+    if(status)status.textContent=`Recording · ${roundName} · Match ${position} of ${roundItems.length}`;
+    const duration=tourneyPresentationDuration();tourneyPresentationState.remaining=duration;tourneyPresentationState.phaseStarted=Date.now();
+    playLabel();tourneyPresentationArmAutoHide();
+    if(!tourneyPresentationState.paused)tourneyPresentationState.timer=setTimeout(()=>window.tourneyPresentationShowItem(index+1),duration);
+  };
+  window.tourneyEnterPresentation=function(){
+    if(!customTournament.rounds.length){alert('Build a bracket before entering Recording Mode.');return;}
+    const pg=page(),st=stage(),vp=viewport();if(!pg||!st||!vp)return;
+    tourneyPresentationClearTimers();
+    tourneyPresentationState={active:true,paused:false,index:-1,timer:null,hideTimer:null,items:tourneyPresentationCollectItems(),phaseTimer:null,showBracket:true,phase:'bracket',remaining:1200,phaseStarted:Date.now()};
+    pg.classList.add('tourney-presenting','tourney-show-bracket');document.documentElement.classList.add('tourney-recording-active');pg.classList.remove('tourney-controls-hidden');
+    st.classList.remove('tourney-zooming');st.style.transform='none';st.querySelectorAll('.tourney-match-focus,.tourney-match-reveal,.tourney-focused,.tourney-champion-reveal').forEach(el=>el.classList.remove('tourney-match-focus','tourney-match-reveal','tourney-focused','tourney-champion-reveal'));
+    vp.scrollTo({left:0,top:0,behavior:'auto'});playLabel();
+    pg.addEventListener('pointermove',tourneyPresentationArmAutoHide);pg.addEventListener('pointerdown',tourneyPresentationArmAutoHide);document.addEventListener('keydown',tourneyPresentationKeyHandler);
+    window.tourneyPresentationShowItem(-1);
+  };
+  window.tourneyPresentationToggle=function(){if(!tourneyPresentationState.active)return;tourneyPresentationState.paused=!tourneyPresentationState.paused;if(tourneyPresentationState.paused)tourneyPresentationClearTimers();else window.tourneyPresentationShowItem(tourneyPresentationState.index);playLabel();tourneyPresentationArmAutoHide()};
+  window.tourneyPresentationNext=function(){if(!tourneyPresentationState.active)return;tourneyPresentationClearTimers();tourneyPresentationState.paused=true;window.tourneyPresentationShowItem(Math.min(tourneyPresentationState.items.length,tourneyPresentationState.index+1));tourneyPresentationState.paused=true;playLabel();tourneyPresentationArmAutoHide()};
+  window.tourneyPresentationReplay=function(){if(!tourneyPresentationState.active)return;tourneyPresentationClearTimers();tourneyPresentationState.paused=false;playLabel();window.tourneyPresentationShowItem(-1)};
+  window.tourneyPresentationReplayFinal=function(){if(!tourneyPresentationState.active)return;const items=tourneyPresentationState.items;let i=items.length-1;for(let n=items.length-1;n>=0;n--){if((items[n].closest('.tourney-round')?.querySelector('h3')?.textContent||'').toLowerCase()==='final'){i=n;break}}tourneyPresentationClearTimers();tourneyPresentationState.paused=false;playLabel();window.tourneyPresentationShowItem(i)};
+  window.tourneyPresentationToggleBracket=function(){const pg=page(),vp=viewport();if(!pg||!vp)return;const showFull=!tourneyPresentationState.showBracket;tourneyPresentationState.showBracket=showFull;pg.classList.toggle('tourney-show-bracket',showFull);const b=document.getElementById('tourneyPresentationBracketBtn');if(b)b.textContent=showFull?'Focus Current Match':'Show Full Bracket';if(showFull)vp.scrollTo({left:0,top:0,behavior:'smooth'});else focusMatch(tourneyPresentationState.index,true);tourneyPresentationArmAutoHide()};
+  window.tourneyExitPresentation=function(){const pg=page(),st=stage();tourneyPresentationClearTimers();tourneyPresentationState.active=false;tourneyPresentationState.paused=true;if(pg){pg.classList.remove('tourney-presenting','tourney-controls-hidden','tourney-show-bracket');document.documentElement.classList.remove('tourney-recording-active');pg.removeEventListener('pointermove',tourneyPresentationArmAutoHide);pg.removeEventListener('pointerdown',tourneyPresentationArmAutoHide)}document.removeEventListener('keydown',tourneyPresentationKeyHandler);if(st){st.classList.remove('tourney-zooming');st.querySelectorAll('.tourney-match-focus,.tourney-match-reveal,.tourney-focused,.tourney-champion-reveal').forEach(el=>el.classList.remove('tourney-match-focus','tourney-match-reveal','tourney-focused','tourney-champion-reveal'));st.style.transform=''}if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});window.tourneyRender()};
+})();
+</script>
+
+
+<style id="tourneyRevealAnimationStyles">
+/* Reveal pacing: no loss is visually revealed until its matchup is on camera. */
+#tournamentBracketPage.tourney-presenting .tourney-contender.defeated{ text-decoration:none!important; position:relative; opacity:1; filter:none; color:#e2e8f0!important; background:#1e293b!important; border-color:transparent!important; }
+#tournamentBracketPage.tourney-presenting .tourney-match:not(.tourney-result-revealed) .tourney-contender.defeated{color:#e2e8f0!important;opacity:1}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-result-revealed .tourney-contender.defeated{color:#8994a5!important;opacity:.66;background:#111722!important;border-color:#334155!important}
+#tournamentBracketPage.tourney-presenting .tourney-contender.defeated:after{content:"";position:absolute;left:5%;top:50%;width:0;height:3px;border-radius:4px;background:linear-gradient(90deg,#fb7185,#ef4444,#fecaca);box-shadow:0 0 9px #ef4444aa;transform:rotate(-7deg);pointer-events:none}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-crossout-start .tourney-contender.defeated:after{animation:tourneyDrawStrike .62s cubic-bezier(.2,.75,.25,1) forwards}
+@keyframes tourneyDrawStrike{0%{width:0;opacity:.3}65%{width:94%;opacity:1}100%{width:94%;opacity:1}}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-focus{transform:scale(1.035);transform-origin:center center;z-index:10;animation:tourneyMatchFocusIn .7s cubic-bezier(.2,.8,.2,1) both}
+@keyframes tourneyMatchFocusIn{0%{transform:scale(.94);filter:brightness(.8)}100%{transform:scale(1.035);filter:brightness(1.08)}}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-result-revealed .tourney-contender.winner{background:#143a31!important;border-color:#22c55e!important;color:#bbf7d0!important;animation:tourneyAdvanceGlow .9s ease both}
+@keyframes tourneyAdvanceGlow{0%{box-shadow:0 0 0 0 #22c55e00;transform:scale(1)}35%{box-shadow:0 0 0 5px #22c55e55;transform:scale(1.035)}100%{box-shadow:0 0 0 0 #22c55e00;transform:scale(1)}}
+.tourney-advance-ghost{position:fixed;z-index:1000000;pointer-events:none;display:flex;align-items:center;justify-content:center;padding:10px 14px;min-width:130px;max-width:260px;border:1px solid #4ade80;border-radius:9px;background:linear-gradient(135deg,#14532d,#064e3b);color:#dcfce7;font-weight:900;text-align:center;box-shadow:0 0 30px #22c55e66,0 12px 35px #0008;overflow-wrap:anywhere}
+.tourney-champion-overlay{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,#3a2b0bde 0%,#111827ed 48%,#030712f5 100%);opacity:0;pointer-events:none;transition:opacity .55s ease}
+.tourney-champion-overlay.is-active{opacity:1;pointer-events:auto}
+.tourney-champion-card{position:relative;z-index:2;width:min(88%,620px);padding:clamp(22px,5vw,48px) 18px;text-align:center;border:2px solid #facc15;border-radius:24px;background:linear-gradient(145deg,#1f2937f5,#0b1220f7);box-shadow:0 0 0 1px #fde68a55,0 0 70px #f59e0b66,0 25px 80px #000b;transform:translateY(28px) scale(.72);opacity:0}
+.tourney-champion-overlay.is-active .tourney-champion-card{animation:tourneyChampionArrival 1.15s cubic-bezier(.16,1,.3,1) .15s forwards}
+.tourney-champion-crown{font-size:clamp(42px,10vw,84px);line-height:1;filter:drop-shadow(0 0 18px #facc15);animation:tourneyCrownBounce 1.5s ease-in-out .9s infinite alternate}
+.tourney-champion-eyebrow{margin:12px 0 8px;color:#fde68a;font-size:clamp(12px,2.5vw,17px);font-weight:900;letter-spacing:.22em;text-transform:uppercase}
+.tourney-champion-name{margin:0;color:#fff7cc;font-size:clamp(27px,7vw,58px);line-height:1.08;font-weight:1000;text-shadow:0 0 24px #f59e0b77;overflow-wrap:anywhere}
+.tourney-champion-subtitle{margin:14px 0 0;color:#e5e7eb;font-size:clamp(12px,2.6vw,18px);letter-spacing:.12em;text-transform:uppercase}
+.tourney-champion-confetti{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.tourney-champion-confetti i{position:absolute;top:-12%;left:var(--x);width:var(--w);height:var(--h);border-radius:2px;background:var(--c);opacity:0;transform:rotate(var(--r));}
+.tourney-champion-overlay.is-active .tourney-champion-confetti i{animation:tourneyConfettiFall var(--d) linear var(--delay) infinite}
+@keyframes tourneyChampionArrival{0%{transform:translateY(28px) scale(.72);opacity:0}58%{transform:translateY(-7px) scale(1.04);opacity:1}78%{transform:translateY(3px) scale(.99)}100%{transform:translateY(0) scale(1);opacity:1}}
+@keyframes tourneyCrownBounce{from{transform:translateY(0) rotate(-4deg)}to{transform:translateY(-9px) rotate(4deg)}}
+@keyframes tourneyConfettiFall{0%{top:-12%;opacity:0;transform:translateX(0) rotate(0deg)}8%{opacity:1}100%{top:112%;opacity:.9;transform:translateX(var(--drift)) rotate(740deg)}}
+@media(prefers-reduced-motion:reduce){#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-focus,.tourney-champion-overlay.is-active .tourney-champion-card,.tourney-champion-overlay.is-active .tourney-champion-confetti i{animation:none!important;opacity:1;transform:none}}
+</style>
+<script id="tourneyRevealAnimationLogic">
+(function(){
+ const $=id=>document.getElementById(id);
+ const originalWindow={};
+ function page(){return $('tournamentBracketPage')} function vp(){return $('tourneyBracketViewport')} function stage(){return $('tourneyBracketStage')}
+ function state(){return tourneyPresentationState}
+ function playLabel(){const b=$('tourneyPresentationPlayBtn');if(b)b.textContent=state().paused?'▶ Play':'⏸ Pause'}
+ function clear(){if(typeof window.tourneyPresentationClearTimers==='function')window.tourneyPresentationClearTimers();else ['timer','hideTimer','phaseTimer'].forEach(k=>{if(state()?.[k])clearTimeout(state()[k]);if(state())state()[k]=null})}
+ function items(){return state().items||[]}
+ function winnerFor(match){return match?.querySelector('.tourney-contender.winner')||null}
+ function loserFor(match){const cs=[...match.querySelectorAll('.tourney-contender:not(.bye)')],w=winnerFor(match);return w?cs.find(x=>x!==w):null}
+ function nameOf(el){return (el?.textContent||'').replace('✓','').trim()}
+ function focusMatch(index,behavior='smooth'){
+  const matches=items(),v=vp(),s=stage();if(!v||!s||index<0||index>=matches.length)return;
+  s.querySelectorAll('.tourney-match-focus').forEach(m=>m.classList.remove('tourney-match-focus'));
+  const match=matches[index],round=match.closest('.tourney-round');match.classList.add('tourney-match-focus');
+  const left=Math.max(0,round.offsetLeft-4),top=Math.max(0,round.offsetTop+match.offsetTop-v.clientHeight*.36);
+  v.scrollTo({left,top,behavior});
+ }
+ function findNextTarget(match,winner){
+  const all=stage()?.querySelectorAll('.tourney-round');if(!all||!winner)return null;
+  const round=match.closest('.tourney-round'),rounds=[...all],ri=rounds.indexOf(round),next=rounds[ri+1];if(!next)return null;
+  const nm=nameOf(winner);return [...next.querySelectorAll('.tourney-contender:not(.bye)')].find(el=>nameOf(el)===nm)||null;
+ }
+ function animateAdvance(match,winner){
+  if(!winner)return;const target=findNextTarget(match,winner);if(!target)return;
+  const a=winner.getBoundingClientRect(),b=target.getBoundingClientRect();if(!a.width||!a.height)return;
+  const ghost=document.createElement('div');ghost.className='tourney-advance-ghost';ghost.textContent=nameOf(winner);ghost.style.left=a.left+'px';ghost.style.top=a.top+'px';ghost.style.width=a.width+'px';ghost.style.height=a.height+'px';document.body.appendChild(ghost);
+  const dx=b.left-a.left,dy=b.top-a.top;
+  const anim=ghost.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${dx*.55}px,${dy*.2-22}px) scale(1.08)`,opacity:1,offset:.58},{transform:`translate(${dx}px,${dy}px) scale(.78)`,opacity:.05}],{duration:1050,easing:'cubic-bezier(.2,.75,.2,1)',fill:'forwards'});
+  anim.onfinish=()=>ghost.remove();
+ }
+ function reveal(index){
+  const match=items()[index];if(!match)return;
+  const w=winnerFor(match),loser=loserFor(match);
+  if(!w){match.classList.add('tourney-result-pending');const status=$('tourneyStatus');if(status)status.textContent='Recording paused: select a winner for this matchup, then resume.';state().paused=true;playLabel();return false}
+  match.classList.remove('tourney-result-revealed','tourney-crossout-start');
+  if(loser){loser.classList.remove('defeated');void loser.offsetWidth;loser.classList.add('defeated')}
+  const speed=Number($('tourneyPresentationSpeed')?.value||7000);
+  const revealDelay=Math.max(900,Math.min(2200,speed*.28));
+  const advanceDelay=Math.max(revealDelay+600,Math.min(speed*.67,revealDelay+1500));
+  state().phase='matchup';state().remaining=speed;state().phaseStarted=Date.now();
+  state().phaseTimer=setTimeout(()=>{
+   if(!state().active||state().paused)return;
+   if(loser){match.classList.add('tourney-crossout-start');match.classList.add('tourney-result-revealed')}
+   else match.classList.add('tourney-result-revealed');
+   state().phaseTimer=setTimeout(()=>{
+    if(!state().active||state().paused)return;
+    animateAdvance(match,w);
+    const status=$('tourneyStatus');if(status)status.textContent=`${nameOf(w)} advances.`;
+   },Math.max(450,advanceDelay-revealDelay));
+  },revealDelay);
+  return true;
+ }
+ function ensureChampionOverlay(){
+  const v=vp();if(!v)return null;let overlay=$('tourneyChampionOverlay');if(overlay)return overlay;
+  overlay=document.createElement('div');overlay.id='tourneyChampionOverlay';overlay.className='tourney-champion-overlay';overlay.setAttribute('aria-live','polite');
+  const conf=document.createElement('div');conf.className='tourney-champion-confetti';
+  const colors=['#facc15','#fb7185','#60a5fa','#4ade80','#c084fc','#f8fafc'];
+  for(let i=0;i<54;i++){const bit=document.createElement('i');bit.style.setProperty('--x',(Math.random()*100)+'%');bit.style.setProperty('--w',(4+Math.random()*7)+'px');bit.style.setProperty('--h',(8+Math.random()*12)+'px');bit.style.setProperty('--c',colors[i%colors.length]);bit.style.setProperty('--r',(Math.random()*360)+'deg');bit.style.setProperty('--d',(3.2+Math.random()*3.4)+'s');bit.style.setProperty('--delay',(Math.random()*2.2)+'s');bit.style.setProperty('--drift',(-100+Math.random()*200)+'px');conf.appendChild(bit)}
+  const card=document.createElement('div');card.className='tourney-champion-card';card.innerHTML='<div class="tourney-champion-crown">🏆</div><div class="tourney-champion-eyebrow">Tournament Champion</div><h2 class="tourney-champion-name"></h2><div class="tourney-champion-subtitle">The strongest fighter stands alone</div>';
+  overlay.append(conf,card);v.appendChild(overlay);return overlay;
+ }
+ function showChampion(){
+  clear();const rounds=customTournament.rounds||[],champ=customTournament.champion||rounds[rounds.length-1]?.[0]?.winner;
+  const matches=items(),last=matches[matches.length-1],v=vp();if(last){last.classList.add('tourney-result-revealed','tourney-champion-reveal');const winner=winnerFor(last);if(winner)winner.classList.add('winner')}
+  if(v&&last){const r=last.closest('.tourney-round');v.scrollTo({left:Math.max(0,r.offsetLeft-4),top:Math.max(0,r.offsetTop+last.offsetTop-v.clientHeight*.28),behavior:'smooth'})}
+  const overlay=ensureChampionOverlay();if(overlay){overlay.querySelector('.tourney-champion-name').textContent=champ?.name||'Champion Not Confirmed';overlay.classList.remove('is-active');void overlay.offsetWidth;overlay.classList.add('is-active')}
+  state().index=matches.length;state().phase='champion';state().paused=true;playLabel();const status=$('tourneyStatus');if(status)status.textContent=champ?`🏆 ${champ.name} is the tournament champion!`:'Final match complete — confirm the winner to crown the champion.';window.tourneyPresentationArmAutoHide?.();
+ }
+ function setItem(index){
+  if(!state()?.active)return;clear();state().index=index;
+  if(index<0){const v=vp();stage()?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal').forEach(m=>m.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal'));const o=$('tourneyChampionOverlay');o?.classList.remove('is-active');state().phase='overview';state().remaining=1100;if(v)v.scrollTo({left:0,top:0,behavior:'smooth'});playLabel();if(!state().paused)state().phaseTimer=setTimeout(()=>setItem(0),1100);return}
+  if(index>=items().length){showChampion();return}
+  const match=items()[index],round=match.closest('.tourney-round'),prev=index>0?items()[index-1].closest('.tourney-round'):null;
+  const status=$('tourneyStatus'),roundName=round?.querySelector('h3')?.textContent||'Tournament';
+  if(prev!==round){const v=vp();if(v)v.scrollTo({left:Math.max(0,round.offsetLeft-4),top:Math.max(0,round.offsetTop-4),behavior:'smooth'});state().phase='round-transition';state().phaseTimer=setTimeout(()=>{if(!state().active||state().paused)return;focusMatch(index);reveal(index);},650)}
+  else {focusMatch(index);reveal(index)}
+  const roundMatches=items().filter(m=>m.closest('.tourney-round')===round);if(status)status.textContent=`${roundName} · Match ${roundMatches.indexOf(match)+1} of ${roundMatches.length}`;
+  const duration=tourneyPresentationDuration();if(!state().paused)state().timer=setTimeout(()=>{if(state().active&&!state().paused)setItem(index+1)},duration);
+  playLabel();window.tourneyPresentationArmAutoHide?.();
+ }
+ window.tourneyPresentationShowItem=setItem;
+ window.tourneyEnterPresentation=function(){
+  if(!customTournament.rounds.length){alert('Build a bracket before entering Recording Mode.');return}
+  const pg=page(),s=stage(),v=vp();if(!pg||!s||!v)return;clear();
+  tourneyPresentationState={active:true,paused:false,index:-1,timer:null,hideTimer:null,items:window.tourneyPresentationCollectItems(),phaseTimer:null,showBracket:false,phase:'overview',remaining:1100,phaseStarted:Date.now()};
+  pg.classList.add('tourney-presenting');document.documentElement.classList.add('tourney-recording-active');pg.classList.remove('tourney-controls-hidden','tourney-show-bracket');s.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal').forEach(m=>m.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal'));
+  s.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));
+  $('tourneyChampionOverlay')?.classList.remove('is-active');v.scrollTo({left:0,top:0,behavior:'auto'});playLabel();pg.addEventListener('pointermove',window.tourneyPresentationArmAutoHide);pg.addEventListener('pointerdown',window.tourneyPresentationArmAutoHide);document.addEventListener('keydown',window.tourneyPresentationKeyHandler);setItem(-1);
+ };
+ window.tourneyPresentationToggle=function(){if(!state()?.active)return;state().paused=!state().paused;if(state().paused)clear();else setItem(state().index);playLabel();window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationNext=function(){if(!state()?.active)return;clear();state().paused=true;setItem(Math.min(items().length,state().index+1));state().paused=true;playLabel();window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationReplay=function(){if(!state()?.active)return;clear();state().paused=false;playLabel();setItem(-1)};
+ window.tourneyPresentationReplayFinal=function(){if(!state()?.active)return;let i=items().length-1;for(let n=items().length-1;n>=0;n--)if((items()[n].closest('.tourney-round')?.querySelector('h3')?.textContent||'').toLowerCase()==='final'){i=n;break}clear();state().paused=false;playLabel();setItem(i)};
+ window.tourneyPresentationToggleBracket=function(){const pg=page(),v=vp();if(!pg||!v)return;state().showBracket=!state().showBracket;pg.classList.toggle('tourney-show-bracket',state().showBracket);const b=$('tourneyPresentationBracketBtn');if(b)b.textContent=state().showBracket?'Focus Current Match':'Show Full Bracket';if(state().showBracket)v.scrollTo({left:0,top:0,behavior:'smooth'});else focusMatch(state().index);window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyExitPresentation=function(){const pg=page(),s=stage();clear();if(state()) {state().active=false;state().paused=true}if(pg){pg.classList.remove('tourney-presenting','tourney-controls-hidden','tourney-show-bracket');document.documentElement.classList.remove('tourney-recording-active');pg.removeEventListener('pointermove',window.tourneyPresentationArmAutoHide);pg.removeEventListener('pointerdown',window.tourneyPresentationArmAutoHide)}document.removeEventListener('keydown',window.tourneyPresentationKeyHandler);s?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal').forEach(m=>m.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal'));s?.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));document.querySelectorAll('.tourney-advance-ghost').forEach(el=>el.remove());$('tourneyChampionOverlay')?.classList.remove('is-active');window.tourneyRender()};
+})();
+</script>
+
+
+
+<style id="tourneyRecordingVerifiedStyles">
+/* Final tournament-only recording presentation override. */
+#tournamentBracketPage.tourney-presenting .tourney-cinema{display:none!important}
+#tournamentBracketPage.tourney-presenting .tourney-viewport{height:calc(100svh - 145px);min-height:420px;max-height:none;overflow:auto;scroll-behavior:smooth;scrollbar-width:none;}
+#tournamentBracketPage.tourney-presenting .tourney-viewport::-webkit-scrollbar{display:none}
+#tournamentBracketPage.tourney-presenting .tourney-stage{transform:none!important;transition:none!important;align-items:flex-start;min-height:100%;padding:16px 12px 100px;gap:clamp(12px,2vw,24px)}
+#tournamentBracketPage.tourney-presenting .tourney-match{transform-origin:center center;transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .45s,filter .45s,box-shadow .45s,border-color .45s;}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-focus{transform:scale(var(--tourney-focus-scale,1.2));z-index:30;border-color:#facc15;box-shadow:0 0 0 2px #facc1555,0 0 32px #f59e0b55,0 16px 35px #000b;filter:brightness(1.13);}
+#tournamentBracketPage.tourney-presenting .tourney-stage.tourney-match-is-focused .tourney-match:not(.tourney-match-focus){opacity:.30;filter:saturate(.55) brightness(.62)}
+#tournamentBracketPage.tourney-presenting .tourney-contender.defeated{text-decoration:none!important;position:relative;opacity:1!important;filter:none!important;color:#e2e8f0!important;background:#1e293b!important;border-color:transparent!important}
+#tournamentBracketPage.tourney-presenting .tourney-match:not(.tourney-result-revealed) .tourney-contender.defeated:after{content:none!important;animation:none!important}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-result-revealed .tourney-contender.defeated{color:#a3adbb!important;opacity:.66!important;background:#111722!important;border-color:#334155!important}
+#tournamentBracketPage.tourney-presenting .tourney-contender.defeated:after{content:"";position:absolute;left:4%;top:50%;width:0;height:3px;border-radius:4px;background:linear-gradient(90deg,#fb7185,#ef4444,#fecaca);box-shadow:0 0 10px #ef4444bb;transform:rotate(-6deg);pointer-events:none}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-crossout-start .tourney-contender.defeated:after{animation:tourneyVerifiedStrike .72s cubic-bezier(.2,.75,.25,1) forwards}
+@keyframes tourneyVerifiedStrike{0%{width:0;opacity:.2}70%{width:94%;opacity:1}100%{width:94%;opacity:1}}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-result-revealed .tourney-contender.winner{background:#124534!important;border-color:#4ade80!important;color:#dcfce7!important;animation:tourneyVerifiedWinner .9s ease both}
+@keyframes tourneyVerifiedWinner{0%{transform:scale(1);box-shadow:0 0 0 0 #4ade8000}40%{transform:scale(1.055);box-shadow:0 0 0 6px #4ade8055}100%{transform:scale(1);box-shadow:0 0 0 0 #4ade8000}}
+.tourney-advance-ghost{position:fixed!important;z-index:1000000!important;pointer-events:none!important;display:flex;align-items:center;justify-content:center;padding:9px 12px;min-width:120px;max-width:250px;border:2px solid #4ade80;border-radius:9px;background:linear-gradient(135deg,#14532d,#064e3b);color:#dcfce7;font-weight:900;text-align:center;box-shadow:0 0 28px #22c55e88,0 12px 35px #000b;overflow-wrap:anywhere}
+#tourneyChampionOverlay{position:fixed!important;inset:0!important;z-index:1000001!important}
+@media(max-width:800px){#tournamentBracketPage.tourney-presenting .tourney-viewport{height:calc(100svh - 125px);min-height:360px;padding:6px}#tournamentBracketPage.tourney-presenting .tourney-stage{padding:12px 8px 110px;gap:12px}#tournamentBracketPage.tourney-presenting .tourney-round{width:78vw;max-width:270px}}
+@media(orientation:landscape) and (max-height:520px){#tournamentBracketPage.tourney-presenting .tourney-viewport{height:calc(100svh - 100px);min-height:230px}}
+@media(prefers-reduced-motion:reduce){#tournamentBracketPage.tourney-presenting .tourney-match,#tournamentBracketPage.tourney-presenting .tourney-contender.winner{animation:none!important;transition:none!important}}
+</style>
+<script id="tourneyRecordingVerifiedLogic">
+(function(){
+ const $=id=>document.getElementById(id);
+ const page=()=>$('tournamentBracketPage'), viewport=()=>$('tourneyBracketViewport'), stage=()=>$('tourneyBracketStage');
+ const st=()=>tourneyPresentationState;
+ const getItems=()=>{const s=stage();return s?[...s.querySelectorAll('.tourney-match')].filter(m=>!m.querySelector('.tourney-contender.bye')&&m.querySelectorAll('.tourney-contender:not(.bye)').length>=2):[]};
+ const clearTimers=()=>{['timer','hideTimer','phaseTimer'].forEach(k=>{if(st()?.[k])clearTimeout(st()[k]);if(st())st()[k]=null})};
+ const label=()=>{const b=$('tourneyPresentationPlayBtn');if(b)b.textContent=st()?.paused?'▶ Play':'⏸ Pause'};
+ const name=el=>(el?.textContent||'').replace(/✓/g,'').trim();
+ const winner=m=>m?.querySelector('.tourney-contender.winner')||null;
+ const loser=m=>{const w=winner(m),cs=[...m.querySelectorAll('.tourney-contender:not(.bye)')];return w?cs.find(c=>c!==w):null};
+ function focus(index,behavior='smooth'){
+  const list=st()?.items||[],v=viewport(),s=stage();if(!v||!s||index<0||index>=list.length)return;
+  s.classList.add('tourney-match-is-focused');s.querySelectorAll('.tourney-match-focus').forEach(m=>m.classList.remove('tourney-match-focus'));
+  const m=list[index],r=m.closest('.tourney-round');m.classList.add('tourney-match-focus');const cardWidth=m.getBoundingClientRect().width||240;m.style.setProperty('--tourney-focus-scale',String(Math.min(2.35,Math.max(1.18,(v.clientWidth/cardWidth)*.74))));
+  // Center the selected matchup vertically and the current round horizontally.
+  const targetLeft=Math.max(0,Math.min(v.scrollWidth-v.clientWidth,r.offsetLeft+m.offsetLeft*0-v.clientWidth*.04));
+  const targetTop=Math.max(0,Math.min(v.scrollHeight-v.clientHeight,r.offsetTop+m.offsetTop-v.clientHeight*.39));
+  v.scrollTo({left:targetLeft,top:targetTop,behavior});
+ }
+ function nextRoundTarget(match,w){
+  const rounds=[...(stage()?.querySelectorAll('.tourney-round')||[])],ri=rounds.indexOf(match.closest('.tourney-round'));if(ri<0||ri>=rounds.length-1)return null;
+  const n=name(w);return [...rounds[ri+1].querySelectorAll('.tourney-contender:not(.bye)')].find(el=>name(el)===n)||null;
+ }
+ function advanceAnimation(match,w){
+  if(!w)return;const target=nextRoundTarget(match,w);if(!target)return;
+  const a=w.getBoundingClientRect(),b=target.getBoundingClientRect();if(!a.width||!a.height)return;
+  const ghost=document.createElement('div');ghost.className='tourney-advance-ghost';ghost.textContent=name(w);Object.assign(ghost.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});document.body.appendChild(ghost);
+  const dx=b.left-a.left,dy=b.top-a.top;
+  const animation=ghost.animate([
+   {transform:'translate(0,0) scale(1)',opacity:1},
+   {transform:`translate(${dx*.48}px,${dy*.25-24}px) scale(1.12)`,opacity:1,offset:.52},
+   {transform:`translate(${dx}px,${dy}px) scale(.72)`,opacity:.08}
+  ],{duration:1150,easing:'cubic-bezier(.18,.78,.22,1)',fill:'forwards'});
+  animation.onfinish=()=>ghost.remove();animation.oncancel=()=>ghost.remove();
+ }
+ function reveal(index){
+  const m=st().items[index];if(!m)return false;const w=winner(m),l=loser(m);
+  if(!w){st().paused=true;label();const status=$('tourneyStatus');if(status)status.textContent='Recording paused: choose a winner for this matchup, then press Play to continue.';return false}
+  m.classList.remove('tourney-result-revealed','tourney-crossout-start','tourney-result-pending');
+  if(l){l.classList.remove('defeated');void l.offsetWidth;l.classList.add('defeated')}
+  const pace=Number($('tourneyPresentationSpeed')?.value||7000),crossAt=Math.max(1400,Math.min(2600,pace*.34)),advanceAt=Math.max(crossAt+850,Math.min(pace*.67,crossAt+1500));
+  st().phase='matchup';st().phaseTimer=setTimeout(()=>{
+   if(!st().active||st().paused)return;
+   if(l){m.classList.add('tourney-crossout-start');m.classList.add('tourney-result-revealed')}else m.classList.add('tourney-result-revealed');
+   st().phaseTimer=setTimeout(()=>{if(!st().active||st().paused)return;advanceAnimation(m,w);const status=$('tourneyStatus');if(status)status.textContent=name(w)+' advances.'},Math.max(500,advanceAt-crossAt));
+  },crossAt);return true;
+ }
+ function champion(){
+  clearTimers();const list=st().items,rounds=window.customTournament?.rounds||[],champ=window.customTournament?.champion||rounds[rounds.length-1]?.[0]?.winner,last=list[list.length-1],v=viewport();
+  if(last){last.classList.add('tourney-result-revealed','tourney-champion-reveal');last.classList.add('tourney-match-focus')}
+  const overlay=$('tourneyChampionOverlay')||createChampionOverlay();if(overlay){const n=overlay.querySelector('.tourney-champion-name');if(n)n.textContent=champ?.name||'Champion Not Confirmed';overlay.classList.remove('is-active');void overlay.offsetWidth;overlay.classList.add('is-active')}
+  st().index=list.length;st().phase='champion';st().paused=true;label();const status=$('tourneyStatus');if(status)status.textContent=champ?'🏆 '+champ.name+' is the tournament champion!':'Final match complete — confirm the winner to crown the champion.';window.tourneyPresentationArmAutoHide?.();
+ }
+ function createChampionOverlay(){
+  const v=viewport();if(!v)return null;const o=document.createElement('div');o.id='tourneyChampionOverlay';o.className='tourney-champion-overlay';o.setAttribute('aria-live','polite');
+  const conf=document.createElement('div');conf.className='tourney-champion-confetti';const colors=['#facc15','#fb7185','#60a5fa','#4ade80','#c084fc','#fff'];
+  for(let i=0;i<65;i++){const bit=document.createElement('i');for(const [k,val] of Object.entries({'--x':Math.random()*100+'%','--w':4+Math.random()*7+'px','--h':8+Math.random()*13+'px','--c':colors[i%colors.length],'--r':Math.random()*360+'deg','--d':3+Math.random()*3+'s','--delay':Math.random()*1.8+'s','--drift':-100+Math.random()*200+'px'}))bit.style.setProperty(k,val);conf.appendChild(bit)}
+  const card=document.createElement('div');card.className='tourney-champion-card';card.innerHTML='<div class="tourney-champion-crown">🏆</div><div class="tourney-champion-eyebrow">Tournament Champion</div><h2 class="tourney-champion-name"></h2><div class="tourney-champion-subtitle">The strongest fighter stands alone</div>';o.append(conf,card);v.appendChild(o);return o;
+ }
+ function showItem(index){
+  if(!st()?.active)return;clearTimers();st().index=index;
+  if(index<0){stage()?.classList.remove('tourney-match-is-focused');stage()?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal').forEach(m=>m.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal'));stage()?.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));$('tourneyChampionOverlay')?.classList.remove('is-active');const v=viewport();v?.scrollTo({left:0,top:0,behavior:'smooth'});st().phase='overview';label();if(!st().paused)st().phaseTimer=setTimeout(()=>showItem(0),1450);return}
+  if(index>=st().items.length){champion();return}
+  const m=st().items[index],round=m.closest('.tourney-round'),prev=index>0?st().items[index-1].closest('.tourney-round'):null;
+  if(prev!==round){const v=viewport();if(v)v.scrollTo({left:Math.max(0,round.offsetLeft-6),top:0,behavior:'smooth'});st().phase='round-transition';st().phaseTimer=setTimeout(()=>{if(!st().active||st().paused)return;focus(index);if(!reveal(index))return},800)}
+  else{focus(index);if(!reveal(index))return}
+  const same=st().items.filter(x=>x.closest('.tourney-round')===round),status=$('tourneyStatus');if(status)status.textContent=(round?.querySelector('h3')?.textContent||'Round')+' · Match '+(same.indexOf(m)+1)+' of '+same.length;
+  const pace=Number($('tourneyPresentationSpeed')?.value||7000);if(!st().paused)st().timer=setTimeout(()=>{if(!st().active||st().paused)return;if(st().manualStep){st().manualStep=false;st().paused=true;label();return}showItem(index+1)},pace);label();window.tourneyPresentationArmAutoHide?.();
+ }
+ window.tourneyPresentationShowItem=showItem;
+ window.tourneyPresentationCollectItems=getItems;
+ window.tourneyEnterPresentation=function(){
+  if(!customTournament?.rounds?.length){alert('Build a bracket before entering Recording Mode.');return}
+  const pg=page(),s=stage(),v=viewport();if(!pg||!s||!v)return;clearTimers();
+  tourneyPresentationState={active:true,paused:false,index:-1,timer:null,hideTimer:null,items:getItems(),phaseTimer:null,showBracket:false,phase:'overview',remaining:1450,phaseStarted:Date.now(),manualStep:false};
+  pg.classList.add('tourney-presenting');document.documentElement.classList.add('tourney-recording-active');pg.classList.remove('tourney-controls-hidden','tourney-show-bracket');
+  s.classList.remove('tourney-zooming','tourney-match-is-focused');s.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal,.tourney-result-pending').forEach(el=>el.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal','tourney-result-pending'));s.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));document.querySelectorAll('.tourney-advance-ghost').forEach(el=>el.remove());$('tourneyChampionOverlay')?.classList.remove('is-active');v.scrollTo({left:0,top:0,behavior:'auto'});
+  label();pg.addEventListener('pointermove',window.tourneyPresentationArmAutoHide);pg.addEventListener('pointerdown',window.tourneyPresentationArmAutoHide);document.addEventListener('keydown',window.tourneyPresentationKeyHandler);showItem(-1);
+ };
+ window.tourneyPresentationToggle=function(){if(!st()?.active)return;if(st().paused){st().paused=false;if(st().phase==='overview')showItem(-1);else showItem(st().index)}else{st().paused=true;clearTimers()}label();window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationNext=function(){if(!st()?.active)return;clearTimers();st().paused=false;st().manualStep=true;showItem(Math.min(st().items.length,st().index+1));window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationReplay=function(){if(!st()?.active)return;clearTimers();st().paused=false;showItem(-1)};
+ window.tourneyPresentationReplayFinal=function(){if(!st()?.active)return;let i=st().items.length-1;for(let n=st().items.length-1;n>=0;n--)if((st().items[n].closest('.tourney-round')?.querySelector('h3')?.textContent||'').toLowerCase()==='final'){i=n;break}clearTimers();st().paused=false;showItem(i)};
+ window.tourneyPresentationToggleBracket=function(){const pg=page(),v=viewport();if(!pg||!v)return;st().showBracket=!st().showBracket;pg.classList.toggle('tourney-show-bracket',st().showBracket);const b=$('tourneyPresentationBracketBtn');if(b)b.textContent=st().showBracket?'Focus Current Match':'Show Full Bracket';if(st().showBracket){stage()?.classList.remove('tourney-match-is-focused');v.scrollTo({left:0,top:0,behavior:'smooth'})}else focus(st().index);window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyExitPresentation=function(){const pg=page(),s=stage();clearTimers();if(st()){st().active=false;st().paused=true}if(pg){pg.classList.remove('tourney-presenting','tourney-controls-hidden','tourney-show-bracket');document.documentElement.classList.remove('tourney-recording-active');pg.removeEventListener('pointermove',window.tourneyPresentationArmAutoHide);pg.removeEventListener('pointerdown',window.tourneyPresentationArmAutoHide)}document.removeEventListener('keydown',window.tourneyPresentationKeyHandler);s?.classList.remove('tourney-match-is-focused');s?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal,.tourney-result-pending').forEach(el=>{el.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal','tourney-result-pending');el.style.removeProperty('--tourney-focus-scale')});s?.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));document.querySelectorAll('.tourney-advance-ghost').forEach(el=>el.remove());$('tourneyChampionOverlay')?.classList.remove('is-active');window.tourneyRender?.()};
+})();
+</script>
+
+
+<style id="tourneyRecordingNoSpoilersAndRoundPreview">
+/* Recording mode hides result-selection UI and normalizes both contenders until reveal. */
+#tournamentBracketPage.tourney-presenting .tourney-match label,
+#tournamentBracketPage.tourney-presenting .tourney-match select,
+#tournamentBracketPage.tourney-presenting .tourney-match .match-result{display:none!important}
+#tournamentBracketPage.tourney-presenting .tourney-match:not(.tourney-result-revealed) .tourney-contender.winner{
+  background:#172235!important;color:#f1f5f9!important;border-color:#334155!important;box-shadow:none!important;filter:none!important
+}
+#tournamentBracketPage.tourney-presenting .tourney-match:not(.tourney-result-revealed) .tourney-contender.defeated{
+  color:#f1f5f9!important;background:#172235!important;border-color:#334155!important;opacity:1!important;text-decoration:none!important
+}
+#tournamentBracketPage.tourney-presenting .tourney-match:not(.tourney-result-revealed) .tourney-contender.defeated:after{display:none!important}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-round-preview-match{border-color:#60a5fa!important;box-shadow:0 0 0 1px #60a5fa44,0 0 18px #3b82f633!important}
+#tournamentBracketPage.tourney-presenting .tourney-match.tourney-match-focus{transform:scale(1.055);z-index:12}
+#tournamentBracketPage.tourney-presenting .tourney-contender{transition:background .3s,color .3s,border-color .3s,opacity .3s}
+#tournamentBracketPage.tourney-presenting .tourney-champion-overlay{z-index:1000001}
+</style>
+<script id="tourneyRecordingRoundPreviewController">
+(function(){
+ const $=id=>document.getElementById(id);
+ const pg=()=>$('tournamentBracketPage'), vp=()=>$('tourneyBracketViewport'), stage=()=>$('tourneyBracketStage');
+ const state=()=>tourneyPresentationState;
+ const getItems=()=>state()?.items||[];
+ const label=()=>{const b=$('tourneyPresentationPlayBtn');if(b)b.textContent=state()?.paused?'▶ Play':'⏸ Pause'};
+ const clear=()=>{
+   const s=state(); if(!s)return;
+   ['timer','hideTimer','phaseTimer'].forEach(k=>{if(s[k])clearTimeout(s[k]);s[k]=null});
+   if(s.previewRaf){cancelAnimationFrame(s.previewRaf);s.previewRaf=null}
+   if(s.advanceTimer){clearTimeout(s.advanceTimer);s.advanceTimer=null}
+ };
+ const contenderName=el=>(el?.textContent||'').replace(/\s*✓\s*$/,'').trim();
+ const winner=match=>match?.querySelector('.tourney-contender.winner')||null;
+ const loser=match=>{const list=[...match.querySelectorAll('.tourney-contender:not(.bye)')],w=winner(match);return w?list.find(el=>el!==w):null};
+ function cleanWinnerMarks(){if(!pg()?.classList.contains('tourney-presenting'))return;stage()?.querySelectorAll('.tourney-contender').forEach(el=>{if(/\s*✓\s*$/.test(el.textContent||''))el.textContent=(el.textContent||'').replace(/\s*✓\s*$/,'')})}
+ const baseRender=window.tourneyRender;
+ if(typeof baseRender==='function')window.tourneyRender=function(){baseRender.apply(this,arguments);cleanWinnerMarks()};
+ function focus(index){
+   const items=getItems(),v=vp(),s=stage();if(!v||!s||index<0||index>=items.length)return;
+   s.querySelectorAll('.tourney-match-focus').forEach(el=>el.classList.remove('tourney-match-focus'));
+   const match=items[index],round=match.closest('.tourney-round');match.classList.add('tourney-match-focus');
+   const x=Math.max(0,round.offsetLeft-4),y=Math.max(0,round.offsetTop+match.offsetTop-v.clientHeight*.34);
+   v.scrollTo({left:x,top:y,behavior:'smooth'});
+ }
+ function previewRound(ri,done){
+   const s=state(),v=vp(),rounds=[...(stage()?.querySelectorAll('.tourney-round')||[])],round=rounds[ri];
+   if(!s||!v||!round){done?.();return}
+   s.phase='round-preview';s.previewedRound=null;
+   stage()?.querySelectorAll('.tourney-round-preview-match').forEach(el=>el.classList.remove('tourney-round-preview-match'));
+   const allMatches=[...round.querySelectorAll('.tourney-match')];allMatches.forEach(el=>el.classList.add('tourney-round-preview-match'));
+   const start=Math.max(0,round.offsetTop-4);
+   const maxScroll=Math.max(0,v.scrollHeight-v.clientHeight);
+   const end=Math.min(maxScroll,Math.max(start,round.offsetTop+round.offsetHeight-v.clientHeight+8));
+   v.scrollTo({left:Math.max(0,round.offsetLeft-4),top:start,behavior:'auto'});
+   const span=end-start;
+   const duration=Math.max(1500,Math.min(3400,1350+allMatches.length*190));
+   const status=$('tourneyStatus');if(status)status.textContent=(round.querySelector('h3')?.textContent||'Tournament Round')+' · Matchups';
+   if(!span){s.phaseTimer=setTimeout(()=>{allMatches.forEach(el=>el.classList.remove('tourney-round-preview-match'));s.previewedRound=ri;done?.()},Math.min(1600,duration));return}
+   const startTime=performance.now();
+   const tick=now=>{
+     if(!s.active||s.paused){s.previewRaf=null;return}
+     const t=Math.min(1,(now-startTime)/duration),ease=t*t*(3-2*t);
+     v.scrollTop=start+span*ease;
+     if(t<1)s.previewRaf=requestAnimationFrame(tick);
+     else{s.previewRaf=null;allMatches.forEach(el=>el.classList.remove('tourney-round-preview-match'));s.previewedRound=ri;s.phaseTimer=setTimeout(()=>{if(s.active&&!s.paused)done?.()},350)}
+   };
+   s.previewRaf=requestAnimationFrame(tick);
+ }
+ function nextTarget(match,w){
+   const rounds=[...(stage()?.querySelectorAll('.tourney-round')||[])],ri=rounds.indexOf(match.closest('.tourney-round')),next=rounds[ri+1];if(!next||!w)return null;
+   const n=contenderName(w);return [...next.querySelectorAll('.tourney-contender:not(.bye)')].find(el=>contenderName(el)===n)||null;
+ }
+ function animateWinner(match,w){
+   const target=nextTarget(match,w);if(!target)return;
+   const a=w.getBoundingClientRect(),b=target.getBoundingClientRect();if(!a.width||!a.height||!b.width||!b.height)return;
+   const ghost=document.createElement('div');ghost.className='tourney-advance-ghost';ghost.textContent=contenderName(w);
+   Object.assign(ghost.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});document.body.appendChild(ghost);
+   const dx=b.left-a.left,dy=b.top-a.top;
+   const anim=ghost.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${dx*.5}px,${dy*.25-22}px) scale(1.12)`,opacity:1,offset:.5},{transform:`translate(${dx}px,${dy}px) scale(.72)`,opacity:0}],{duration:1050,easing:'cubic-bezier(.18,.78,.22,1)',fill:'forwards'});
+   anim.onfinish=()=>ghost.remove();anim.oncancel=()=>ghost.remove();
+ }
+ function reveal(index){
+   const s=state(),match=getItems()[index];if(!match)return false;
+   cleanWinnerMarks();const w=winner(match),l=loser(match);
+   if(!w){s.paused=true;label();const status=$('tourneyStatus');if(status)status.textContent='This matchup needs a winner selected before recording can continue.';return false}
+   match.classList.remove('tourney-result-revealed','tourney-crossout-start','tourney-result-pending');
+   if(l){l.classList.remove('defeated');void l.offsetWidth;l.classList.add('defeated')}
+   s.phase='match-reveal';const speed=Number($('tourneyPresentationSpeed')?.value||7000);
+   const revealDelay=Math.max(1500,Math.min(2600,speed*.3));
+   s.phaseTimer=setTimeout(()=>{
+     if(!s.active||s.paused)return;
+     match.classList.add('tourney-result-revealed');if(l)match.classList.add('tourney-crossout-start');
+     s.advanceTimer=setTimeout(()=>{if(!s.active||s.paused)return;animateWinner(match,w)},850);
+   },revealDelay);
+   return true;
+ }
+ function ensureChampionOverlay(){
+   const v=vp();if(!v)return null;let o=$('tourneyChampionOverlay');if(o)return o;
+   o=document.createElement('div');o.id='tourneyChampionOverlay';o.className='tourney-champion-overlay';o.setAttribute('aria-live','polite');
+   const conf=document.createElement('div');conf.className='tourney-champion-confetti';const colors=['#facc15','#fb7185','#60a5fa','#4ade80','#c084fc','#fff'];
+   for(let i=0;i<90;i++){const bit=document.createElement('i');for(const [k,val] of Object.entries({'--x':Math.random()*100+'%','--w':4+Math.random()*8+'px','--h':8+Math.random()*15+'px','--c':colors[i%colors.length],'--r':Math.random()*360+'deg','--d':2.8+Math.random()*3.6+'s','--delay':Math.random()*1.3+'s','--drift':-130+Math.random()*260+'px'}))bit.style.setProperty(k,val);conf.appendChild(bit)}
+   const card=document.createElement('div');card.className='tourney-champion-card';card.innerHTML='<div class="tourney-champion-crown">🏆</div><div class="tourney-champion-eyebrow">TOURNAMENT CHAMPION</div><h2 class="tourney-champion-name"></h2><div class="tourney-champion-subtitle">THE STRONGEST FIGHTER STANDS ALONE</div>';
+   o.append(conf,card);v.appendChild(o);return o;
+ }
+ function showChampion(){
+   const s=state(),matches=getItems(),rounds=customTournament?.rounds||[],champ=customTournament?.champion||rounds[rounds.length-1]?.[0]?.winner,last=matches[matches.length-1];clear();
+   if(last){last.classList.add('tourney-result-revealed','tourney-champion-reveal','tourney-match-focus')}
+   const o=ensureChampionOverlay();if(o){const n=o.querySelector('.tourney-champion-name');if(n)n.textContent=champ?.name||'CHAMPION NOT CONFIRMED';o.classList.remove('is-active');void o.offsetWidth;o.classList.add('is-active')}
+   s.index=matches.length;s.phase='champion';s.paused=true;label();const status=$('tourneyStatus');if(status)status.textContent=champ?'🏆 Champion crowned!':'Final result needs confirmation.';window.tourneyPresentationArmAutoHide?.();
+ }
+ function showItem(index){
+   const s=state();if(!s?.active)return;clear();s.index=index;
+   if(index<0){s.previewedRound=null;stage()?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal,.tourney-round-preview-match').forEach(el=>el.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal','tourney-round-preview-match'));$('tourneyChampionOverlay')?.classList.remove('is-active');stage()?.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));const v=vp();v?.scrollTo({left:0,top:0,behavior:'auto'});s.phase='overview';label();if(!s.paused)previewRound(0,()=>showItem(0));return}
+   if(index>=getItems().length){showChampion();return}
+   const match=getItems()[index],round=match.closest('.tourney-round'),rounds=[...(stage()?.querySelectorAll('.tourney-round')||[])],ri=rounds.indexOf(round);
+   if(s.previewedRound!==ri){previewRound(ri,()=>{if(s.active&&!s.paused){s.previewedRound=ri;showItem(index)}});s.index=index;return}
+   focus(index);const all=getItems().filter(el=>el.closest('.tourney-round')===round),pos=all.indexOf(match)+1,status=$('tourneyStatus');
+   if(status)status.textContent=(round.querySelector('h3')?.textContent||'Round')+' · Match '+pos+' of '+all.length;
+   reveal(index);label();window.tourneyPresentationArmAutoHide?.();
+   const speed=Number($('tourneyPresentationSpeed')?.value||7000);
+   if(!s.paused)s.timer=setTimeout(()=>{if(!s.active||s.paused)return;if(s.manualStep){s.manualStep=false;s.paused=true;clear();label();return}showItem(index+1)},speed);
+ }
+ function enter(){
+   if(!customTournament?.rounds?.length){alert('Build a bracket before entering Recording Mode.');return}
+   const p=pg(),s=stage(),v=vp();if(!p||!s||!v)return;clear();
+   tourneyPresentationState={active:true,paused:false,index:-1,timer:null,hideTimer:null,items:window.tourneyPresentationCollectItems(),phaseTimer:null,showBracket:false,phase:'overview',remaining:1200,phaseStarted:Date.now(),previewedRound:null,previewRaf:null,advanceTimer:null,manualStep:false};
+   p.classList.add('tourney-presenting');document.documentElement.classList.add('tourney-recording-active');p.classList.remove('tourney-controls-hidden','tourney-show-bracket');
+   s.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal,.tourney-round-preview-match,.tourney-result-pending').forEach(el=>el.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal','tourney-round-preview-match','tourney-result-pending'));
+   s.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));document.querySelectorAll('.tourney-advance-ghost').forEach(el=>el.remove());$('tourneyChampionOverlay')?.classList.remove('is-active');v.scrollTo({left:0,top:0,behavior:'auto'});cleanWinnerMarks();label();
+   p.addEventListener('pointermove',window.tourneyPresentationArmAutoHide);p.addEventListener('pointerdown',window.tourneyPresentationArmAutoHide);document.addEventListener('keydown',window.tourneyPresentationKeyHandler);showItem(-1);
+ }
+ window.tourneyPresentationShowItem=showItem;window.tourneyEnterPresentation=enter;
+ window.tourneyPresentationToggle=function(){const s=state();if(!s?.active)return;if(s.paused){s.paused=false;label();showItem(s.index<0?-1:s.index)}else{s.paused=true;clear();label()}window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationNext=function(){const s=state();if(!s?.active)return;clear();s.paused=false;s.manualStep=true;showItem(Math.min(getItems().length,s.index+1));window.tourneyPresentationArmAutoHide?.()};
+ window.tourneyPresentationReplay=function(){const s=state();if(!s?.active)return;clear();s.paused=false;showItem(-1)};
+ window.tourneyPresentationReplayFinal=function(){const s=state();if(!s?.active)return;const list=getItems();let i=list.length-1;for(let n=list.length-1;n>=0;n--)if((list[n].closest('.tourney-round')?.querySelector('h3')?.textContent||'').toLowerCase()==='final'){i=n;break}clear();s.paused=false;s.previewedRound=null;showItem(i)};
+ window.tourneyPresentationToggleBracket=function(){const p=pg(),v=vp(),s=state();if(!p||!v||!s)return;s.showBracket=!s.showBracket;p.classList.toggle('tourney-show-bracket',s.showBracket);const b=$('tourneyPresentationBracketBtn');if(b)b.textContent=s.showBracket?'Focus Current Match':'Show Full Bracket';if(s.showBracket)v.scrollTo({left:0,top:0,behavior:'smooth'});else if(s.index>=0)focus(s.index)};
+ window.tourneyExitPresentation=function(){const p=pg(),s=stage();clear();if(state()){state().active=false;state().paused=true}if(p){p.classList.remove('tourney-presenting','tourney-controls-hidden','tourney-show-bracket');document.documentElement.classList.remove('tourney-recording-active');p.removeEventListener('pointermove',window.tourneyPresentationArmAutoHide);p.removeEventListener('pointerdown',window.tourneyPresentationArmAutoHide)}document.removeEventListener('keydown',window.tourneyPresentationKeyHandler);s?.querySelectorAll('.tourney-match-focus,.tourney-crossout-start,.tourney-result-revealed,.tourney-champion-reveal,.tourney-round-preview-match,.tourney-result-pending').forEach(el=>el.classList.remove('tourney-match-focus','tourney-crossout-start','tourney-result-revealed','tourney-champion-reveal','tourney-round-preview-match','tourney-result-pending'));s?.querySelectorAll('.tourney-contender.defeated').forEach(el=>el.classList.remove('defeated'));document.querySelectorAll('.tourney-advance-ghost').forEach(el=>el.remove());$('tourneyChampionOverlay')?.classList.remove('is-active');window.tourneyRender?.()};
+})();
+</script>
+
+
+<style id="tourneyChampionCloseControlStyles">
+#tourneyChampionOverlay .tourney-champion-close{
+  position:fixed!important;top:max(14px,env(safe-area-inset-top));right:max(14px,env(safe-area-inset-right));z-index:2147483647!important;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 16px;
+  border:1px solid #fcd34d;border-radius:999px;background:#111827f2;color:#fff;font:800 15px/1.1 system-ui,sans-serif;
+  box-shadow:0 8px 28px #0009;cursor:pointer;pointer-events:auto;touch-action:manipulation
+}
+#tourneyChampionOverlay .tourney-champion-close:hover{background:#374151}
+#tourneyChampionOverlay .tourney-champion-close:focus-visible{outline:3px solid #fde68a;outline-offset:3px}
+@media(max-width:600px){#tourneyChampionOverlay .tourney-champion-close{min-height:44px;padding:9px 13px;font-size:14px}}
+</style>
+<script id="tourneyChampionCloseControlLogic">
+(function(){
+  function addCloseControl(){
+    const overlay=document.getElementById('tourneyChampionOverlay');
+    if(!overlay || overlay.querySelector('.tourney-champion-close')) return;
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='tourney-champion-close';
+    button.textContent='✕ Close Celebration';
+    button.setAttribute('aria-label','Close champion celebration and return to tournament bracket');
+    button.addEventListener('click',function(ev){
+      ev.preventDefault();ev.stopPropagation();
+      if(typeof window.tourneyExitPresentation==='function') window.tourneyExitPresentation();
+      else overlay.classList.remove('is-active');
+    });
+    overlay.appendChild(button);
+  }
+  const observer=new MutationObserver(addCloseControl);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+  document.addEventListener('DOMContentLoaded',addCloseControl);
+  addCloseControl();
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){
+      const overlay=document.getElementById('tourneyChampionOverlay');
+      if(overlay?.classList.contains('is-active')){
+        ev.preventDefault();ev.stopImmediatePropagation();
+        if(typeof window.tourneyExitPresentation==='function')window.tourneyExitPresentation();
+        else overlay.classList.remove('is-active');
+      }
+    }
+  },true);
+})();
+</script>
+
+
+<style id="tourneyCatalogueDropdownStyles">
+#tourneyNameInputs .tourney-name-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+#tourneyNameInputs .tourney-name-field select,
+#tourneyNameInputs .tourney-name-field input{width:100%;min-width:0;box-sizing:border-box}
+#tourneyNameInputs .tourney-custom-name[hidden]{display:none!important}
+.tourney-catalogue-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0}
+.tourney-catalogue-tools .small{opacity:.82}
+</style>
+<script id="tourneyCatalogueDropdownIntegration">
+(function(){
+  const hostId='tourneyNameInputs';
+  function escapeHtml(v){return String(v??'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;');}
+  function catalogueNames(){
+    let items=[];
+    try{
+      if(typeof ninjaCatalogue!=='undefined' && Array.isArray(ninjaCatalogue)) items=ninjaCatalogue;
+      if(!items.length){const raw=localStorage.getItem('ninjaGeneratorCatalogue_v1');const parsed=raw?JSON.parse(raw):[];if(Array.isArray(parsed))items=parsed;}
+    }catch(e){}
+    const seen=new Set(),out=[];
+    for(const item of items){
+      let name='';
+      try{name=(typeof window.catalogueEntryName==='function'?window.catalogueEntryName(item):(item?.catalogueName||item?.name||item?.characterName||item?.displayName||''));}catch(e){}
+      name=String(name||'').trim();
+      if(!name)continue;
+      const key=name.toLocaleLowerCase();
+      if(seen.has(key))continue;
+      seen.add(key);out.push(name);
+    }
+    return out.sort((a,b)=>a.localeCompare(b,undefined,{sensitivity:'base'}));
+  }
+  function currentName(i){
+    const select=document.getElementById('tourneyNameSelect'+i);
+    if(!select)return '';
+    if(select.value==='__custom__')return (document.getElementById('tourneyNameCustom'+i)?.value||'').trim();
+    return select.value==='__none__'?'':select.value;
+  }
+  function renderInputs(){
+    const host=document.getElementById(hostId);if(!host)return;
+    const count=Math.max(2,Math.min(64,Number(document.getElementById('tourneyParticipantCount')?.value||8)));
+    const previous=Array.from({length:count},(_,i)=>currentName(i));
+    const names=catalogueNames();
+    host.innerHTML=Array.from({length:count},(_,i)=>{
+      const old=previous[i]||'';
+      const exact=names.find(n=>n===old);
+      const custom=!!old&&!exact;
+      const opts=['<option value="__none__">— Select a ninja —</option>',...names.map(n=>`<option value="${escapeHtml(n)}"${n===old?' selected':''}>${escapeHtml(n)}</option>`)];
+      opts.push(`<option value="__custom__"${custom||!names.length?' selected':''}>✏️ Enter a custom name…</option>`);
+      const value=custom?old:'';
+      return `<label class="tourney-name-field">Participant ${i+1}<select id="tourneyNameSelect${i}" aria-label="Select ninja for participant ${i+1}" onchange="tourneyCatalogueSelectionChanged(${i})">${opts.join('')}</select><input class="tourney-custom-name" id="tourneyNameCustom${i}" type="text" maxlength="80" placeholder="Enter custom participant name" value="${escapeHtml(value)}"${custom||!names.length?'':' hidden'}></label>`;
+    }).join('');
+    let tools=document.getElementById('tourneyCatalogueTools');
+    if(!tools){
+      tools=document.createElement('div');tools.id='tourneyCatalogueTools';tools.className='tourney-catalogue-tools';
+      host.parentNode.insertBefore(tools,host);
+    }
+    tools.innerHTML=`<button type="button" class="secondary" onclick="tourneyRefreshCatalogueNames()">↻ Refresh Catalogue Names</button><span class="small">${names.length?`${names.length} ninja${names.length===1?'':'s'} available from Ninja Catalogue.`:'No catalogue ninjas found. Import or add ninjas in Ninja Catalogue, or enter custom names.'}</span>`;
+  }
+  window.tourneyCatalogueSelectionChanged=function(i){
+    const select=document.getElementById('tourneyNameSelect'+i),input=document.getElementById('tourneyNameCustom'+i);
+    if(!select||!input)return;
+    const show=select.value==='__custom__';
+    input.hidden=!show;
+    if(show){input.focus();}
+  };
+  window.tourneyRefreshCatalogueNames=function(){
+    const before=Array.from(document.querySelectorAll('#tourneyNameInputs .tourney-name-field')).map((_,i)=>currentName(i));
+    renderInputs();
+    before.forEach((name,i)=>{
+      if(!name)return;
+      const select=document.getElementById('tourneyNameSelect'+i),custom=document.getElementById('tourneyNameCustom'+i);
+      if(!select||!custom)return;
+      if([...select.options].some(o=>o.value===name)){select.value=name;custom.value='';custom.hidden=true;}
+      else{select.value='__custom__';custom.value=name;custom.hidden=false;}
+    });
+  };
+  window.tourneyBuildNameInputs=renderInputs;
+  window.tourneyReadNames=function(){
+    const count=Math.max(2,Math.min(64,Number(document.getElementById('tourneyParticipantCount')?.value||8)));
+    return Array.from({length:count},(_,i)=>currentName(i)||`Participant ${i+1}`);
+  };
+  window.tourneyShuffleNames=function(){
+    const names=window.tourneyReadNames();
+    if(typeof window.tourneyHasRecordedResults==='function'&&window.tourneyHasRecordedResults()&&!confirm('This tournament already has recorded winners. Shuffle the participant names? The current bracket results will remain saved until you build the shuffled bracket.'))return;
+    for(let i=names.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[names[i],names[j]]=[names[j],names[i]];}
+    names.forEach((name,i)=>setName(i,name));
+    const status=document.getElementById('tourneyStatus');if(status)status.textContent=`Shuffled ${names.length} participant names. Build the bracket when you're ready.`;
+  };
+  function setName(i,name){
+    const select=document.getElementById('tourneyNameSelect'+i),input=document.getElementById('tourneyNameCustom'+i);
+    if(!select||!input)return;
+    const option=[...select.options].find(o=>o.value===name);
+    if(option){select.value=name;input.value='';input.hidden=true;}
+    else{select.value='__custom__';input.value=name;input.hidden=false;}
+  }
+  window.tourneyShuffleAndBuild=function(){
+    if(typeof window.tourneyHasRecordedResults==='function'&&window.tourneyHasRecordedResults()&&!confirm('This will replace the current bracket and its results with a newly shuffled bracket. Continue?'))return;
+    const names=window.tourneyReadNames();
+    for(let i=names.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[names[i],names[j]]=[names[j],names[i]];}
+    names.forEach((name,i)=>setName(i,name));
+    window.tourneySeedBracket();
+    const status=document.getElementById('tourneyStatus');if(status)status.textContent=`🎲 Shuffled and built a new bracket with ${names.length} participants.`;
+  };
+  // Keep the new selectors in sync when the participant count changes or the bracket page is revisited.
+  document.addEventListener('DOMContentLoaded',()=>{renderInputs();});
+  const countSelect=document.getElementById('tourneyParticipantCount');
+  if(countSelect)countSelect.addEventListener('change',()=>setTimeout(renderInputs,0));
+  // The existing document's inline scripts are parsed before this final integration block,
+  // so render immediately as well as on DOMContentLoaded for browser timing differences.
+  renderInputs();
+})();
+</script>
+
 </body></html>
