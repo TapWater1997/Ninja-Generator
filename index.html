@@ -7158,7 +7158,7 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
  #d20RollerPanel{border:0;border-radius:0;margin-top:18px}
  #d20RollerPanel .d20-stage{min-height:100vh;min-height:100svh;width:100%;gap:clamp(12px,4vh,30px);padding:9vh 4vw 10vh;padding:9svh 4vw 10svh}
  #d20RollerPanel .d20-caption{font-size:clamp(23px,6vw,40px);max-width:94vw}
- #d20RollerPanel .d20-stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;gap:0;padding:clamp(24px,7svh,62px) 3vw clamp(12px,3svh,25px)}
+ #d20RollerPanel .d20-stage{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow:hidden;gap:0;height:100vh;height:100svh;min-height:0;padding:clamp(24px,7svh,62px) 3vw clamp(12px,3svh,25px)}
  #d20RollerPanel .d20-caption{position:relative;z-index:2;flex:0 0 auto;margin:0 0 10px}
  #d20RollerPanel .d20-throw-zone{display:block;flex:1 1 auto;min-height:0;width:100%;overflow:hidden;position:relative}
  #d20RollerPanel .d20-dice-button{position:absolute;left:50%;bottom:clamp(26px,5svh,55px);width:min(78vw,37svh,370px);height:min(78vw,37svh,370px);transform:translate3d(-50%,0,0);will-change:transform;z-index:2}
@@ -7247,13 +7247,14 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
   let start=0,settleFrom=null;
   // On both desktop and mobile the throw enters from above, strikes a floor, then loses
   // energy over two successively smaller rebounds before its final face settles.
-  const duration=reducedMotion?450:3150;
-  const drop=!reducedMotion?Math.max(120,Math.min(390,throwZone.clientHeight*.70)):0;
+  // Always preserve the requested physical throw; reduced-motion devices use a gentler, shorter drop.
+  const duration=reducedMotion?2200:3150;
+  const availableHeight=Math.max(throwZone.clientHeight,throwZone.getBoundingClientRect().height,window.innerHeight*.45);
+  const drop=Math.max(120,Math.min(reducedMotion?200:390,availableHeight*(reducedMotion?.38:.70)));
   const easeOutCubic=u=>1-Math.pow(1-u,3);
   function setThrow(t){
-   if(reducedMotion)return;
    let y=0,shadow=1;
-   if(!reducedMotion){
+   {
     if(t<.41){const u=t/.41;y=-drop*(1-Math.pow(u,2.25));shadow=.18+.82*Math.pow(u,2)}
     else if(t<.64){const u=(t-.41)/.23;y=-Math.min(76,drop*.20)*Math.sin(Math.PI*u);shadow=.95-.40*Math.sin(Math.PI*u)}
     else if(t<.79){const u=(t-.64)/.15;y=-Math.min(23,drop*.067)*Math.sin(Math.PI*u);shadow=.95-.18*Math.sin(Math.PI*u)}
@@ -7264,15 +7265,15 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
    floorShadow.style.scale=String(.7+shadow*.3);
   }
   dice.classList.add('d20-rolling');dice.disabled=true;rollBtn.disabled=true;status.textContent='Rolling…';
-  if(!reducedMotion)setThrow(0);
+  setThrow(0);
   function tick(now){
    if(!start)start=now;
    const t=Math.min(1,(now-start)/duration);
-   const settleStart=!reducedMotion?.79:.72;
+   const settleStart=.79;
    if(t<settleStart){
-    const speed=reducedMotion?.11:.085;
+    const speed=reducedMotion?.060:.085;
     // Speed up during the drop and spin more slowly after each impact.
-    const motionSpeed=!reducedMotion?(t<.41?1.65:t<.64?1.1:.63):(1+.4*(1-t));
+    const motionSpeed=t<.41?1.65:t<.64?1.1:.63;
     orientation=mul(axisQ(unit([.7,1,.42]),speed*motionSpeed),orientation);
    }else{
     if(!settleFrom)settleFrom=orientation.slice();
