@@ -653,6 +653,24 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 #orbBattlePanel #orbTuningDetails>details{margin-top:10px;padding:10px;border:1px solid var(--orb-line);border-radius:9px;background:#0d141f}
 #orbBattlePanel #orbTuningDetails>details>summary{font-size:15px}
 </style>
+<style id="orbArenaLayoutPriority">
+/* Arena viewing hierarchy: Fight > both fighters' HUD bars > arena, with all other controls beneath. */
+#orbBattlePanel .orb-stage-wrap>.orb-stage-actions{width:min(100%,700px);max-width:700px;margin:0 auto 7px;display:block}
+#orbBattlePanel .orb-stage-wrap>.orb-stage-actions #orbFightBtn{width:100%;min-height:52px;font-size:19px;display:block;position:static}
+#orbBattlePanel .orb-stage-wrap>.orb-hud{width:min(100%,700px);max-width:700px;margin:0 auto 6px}
+#orbBattlePanel .orb-stage-wrap>.orb-canvas-wrap{margin:0 auto}
+#orbBattlePanel .orb-stage-wrap>.orb-secondary-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:7px;width:min(100%,700px);max-width:700px;margin:10px auto 8px}
+#orbBattlePanel .orb-stage-wrap>.orb-secondary-actions button{font-size:12px;min-height:39px;padding:8px 11px}
+#orbBattlePanel .orb-stage-wrap>.orb-spectator-tools{width:min(100%,700px);max-width:700px;margin:0 auto 9px}
+@media(max-width:900px){
+ #orbBattlePanel .orb-stage-wrap>.orb-stage-actions{display:block;margin:0 0 6px;width:100%}
+ #orbBattlePanel .orb-stage-wrap>.orb-stage-actions #orbFightBtn{grid-column:auto;position:static;top:auto;z-index:auto;min-height:52px;font-size:18px}
+ #orbBattlePanel .orb-stage-wrap>.orb-hud{width:100%;margin:0 0 6px}
+ #orbBattlePanel .orb-stage-wrap>.orb-secondary-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;margin:9px 0 8px}
+ #orbBattlePanel .orb-stage-wrap>.orb-secondary-actions button{font-size:12px;min-width:0}
+ #orbBattlePanel .orb-stage-wrap>.orb-spectator-tools{width:100%;margin:0 0 9px}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -7894,11 +7912,8 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 <p class="orb-hint">Every generated stat remains attached to the fighter. Combat calculations use the individual stats rather than replacing them with a single generic power value.</p>
 </aside>
 <section class="orb-stage-wrap">
-<div aria-label="Spectator settings" class="orb-spectator-tools">
-<label>Battlefield <select id="orbEnvironment" onchange="orbSetEnvironment(this.value)"><option value="training">Training Grounds</option><option value="forest">Hidden Forest</option><option value="volcanic">Volcanic Crater</option><option value="water">Water Arena</option><option value="night">Moonlit Ruins</option></select></label>
-<label>Combat speed <select id="orbSpeed" onchange="orbSetSpeed(this.value)"><option value="0.7">Cinematic</option><option selected="" value="1">Normal</option><option value="1.35">Fast</option><option value="1.8">Hyper</option></select></label>
-<label class="orb-check"><input checked="" id="orbCameraToggle" onchange="orbSetCamera(this.checked)" type="checkbox"/> Dynamic camera</label>
-<label class="orb-check"><input checked="" id="orbEffectsToggle" onchange="orbSetEffects(this.checked)" type="checkbox"/> Full effects</label>
+<div class="orb-actions orb-stage-actions" id="orbStageActions">
+<button id="orbFightBtn" onclick="orbStartFight()" type="button">⚔️ Fight</button>
 </div>
 <div class="orb-hud">
 <div class="orb-hud-card">
@@ -7922,19 +7937,24 @@ populateCatalogueSourceSelect();populateCatalogueSelect();populateManualCatalogu
 <div class="consumable-meta" id="orbConsumableTextB">No consumable</div>
 </div>
 </div>
-<div class="orb-actions orb-stage-actions" id="orbStageActions">
-<button id="orbFightBtn" onclick="orbStartFight()" type="button">⚔️ Fight</button>
-<button class="secondary" onclick="orbResetArena()" type="button">Reset</button>
-<button class="secondary" onclick="orbRandomizeFromCatalogue()" type="button">Randomize Catalogue Fighters</button>
-<button class="secondary" id="orbReplayBtn" onclick="orbPlayReplay()" type="button">▶ Replay Last Moments</button>
-<button class="secondary" id="orbTournamentBtn" onclick="orbStartTournament()" type="button">🏆 Tournament</button>
-</div>
 <div class="orb-canvas-wrap">
 <canvas height="1027" id="orbArena" width="1040"></canvas>
 <div aria-atomic="true" aria-live="polite" class="orb-cast-announcement" id="orbCastAnnouncement"><div class="caster" id="orbCastCaster"></div><div class="jutsu" id="orbCastJutsu"></div></div>
 <div aria-atomic="true" aria-live="polite" class="orb-cast-announcement secondary" id="orbCastAnnouncementSecondary"><div class="caster"></div><div class="jutsu"></div></div>
 <div aria-live="polite" class="orb-cinematic-overlay" id="orbCinematicOverlay"><div class="orb-cinematic-kicker" id="orbCinematicKicker">NINJA GENERATOR PRESENTS</div><div class="orb-cinematic-title" id="orbCinematicTitle">VERSUS</div><div class="orb-cinematic-sub" id="orbCinematicSub"></div></div>
 <div class="orb-replay-label" id="orbReplayLabel">INSTANT REPLAY</div>
+</div>
+<div class="orb-actions orb-secondary-actions" id="orbSecondaryActions">
+<button class="secondary" onclick="orbResetArena()" type="button">Reset</button>
+<button class="secondary" onclick="orbRandomizeFromCatalogue()" type="button">Randomize Catalogue Fighters</button>
+<button class="secondary" id="orbReplayBtn" onclick="orbPlayReplay()" type="button">▶ Replay Last Moments</button>
+<button class="secondary" id="orbTournamentBtn" onclick="orbStartTournament()" type="button">🏆 Tournament</button>
+</div>
+<div aria-label="Spectator settings" class="orb-spectator-tools">
+<label>Battlefield <select id="orbEnvironment" onchange="orbSetEnvironment(this.value)"><option value="training">Training Grounds</option><option value="forest">Hidden Forest</option><option value="volcanic">Volcanic Crater</option><option value="water">Water Arena</option><option value="night">Moonlit Ruins</option></select></label>
+<label>Combat speed <select id="orbSpeed" onchange="orbSetSpeed(this.value)"><option value="0.7">Cinematic</option><option selected="" value="1">Normal</option><option value="1.35">Fast</option><option value="1.8">Hyper</option></select></label>
+<label class="orb-check"><input checked="" id="orbCameraToggle" onchange="orbSetCamera(this.checked)" type="checkbox"/> Dynamic camera</label>
+<label class="orb-check"><input checked="" id="orbEffectsToggle" onchange="orbSetEffects(this.checked)" type="checkbox"/> Full effects</label>
 </div>
 <div class="orb-log" id="orbLog"><div>Ninja defeats Ninja.</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimension Breach.</div><div>Ninja uses Jōgan: Dimension Breach</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja uses Jōgan: Space–Time Portal</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Ninja raises a temporary defensive barrier with Jōgan: Dimensional Barrier Perception.</div><div>Ninja uses Jōgan: Dimensional Barrier Perception</div><div>Fight: Ninja vs Ninja</div></div>
 </section>
