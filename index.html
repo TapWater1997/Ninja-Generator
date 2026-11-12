@@ -19235,7 +19235,7 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
         <div class="tw-wheel-layout" id="twWheelLayout">
           <div class="tw-wheel-side" id="twRecordingWheel">
             <h3 class="tw-recording-title" id="twRecordingTitle">Round 1 — Choose your path</h3>
-            <div class="tw-wheel-frame" id="twWheelFrame"><div class="tw-wheel-rotor" id="twWheelRotor"><svg id="twWheelSvg" role="img" aria-label="Equally weighted training wheel" viewBox="0 0 400 400"></svg></div><div class="tw-wheel-pointer"></div><button type="button" class="tw-wheel-hub" id="twWheelHub" onclick="twSpinWheel()" title="Tap to spin" aria-label="Spin the Training Wheel">忍</button></div>
+            <div class="tw-wheel-frame" id="twWheelFrame"><div class="tw-wheel-clip"><div class="tw-wheel-rotor" id="twWheelRotor"><svg id="twWheelSvg" role="img" aria-label="Equally weighted training wheel" viewBox="0 0 400 400"></svg></div></div><div class="tw-wheel-pointer"></div><button type="button" class="tw-wheel-hub" id="twWheelHub" onclick="twSpinWheel()" title="Tap to spin" aria-label="Spin the Training Wheel">忍</button></div>
             <button type="button" class="tw-primary tw-spin-btn" id="twSpin" onclick="twSpinWheel()">SPIN</button>
             <p id="twWheelCaption" class="tw-wheel-caption">Each wedge has an equal chance.</p>
           </div>
@@ -19295,6 +19295,28 @@ function twCancelPendingSpin(){
  }
  const rotor=byId('twWheelRotor');if(rotor)rotor.style.transition='none';
 }
+function lockTrainingRecordingFrame(){
+ // Measure and lock the very FIRST wheel. Wedge count, page zoom during a
+ // rotating SVG, toolbars and Arena transitions cannot recompute its diameter.
+ if(!window.matchMedia?.('(max-width:710px)').matches)return;
+ const root=byId('trainingWheelSection');
+ if(!root||root.dataset.twSizeLocked==='1')return;
+ const wheel=byId('twWheelFrame'),screen=byId('twRecordingWheel');
+ if(!wheel||!screen||!wheel.getBoundingClientRect().width)return;
+ const width=Math.round(wheel.getBoundingClientRect().width);
+ const height=Math.round(screen.getBoundingClientRect().height);
+ if(width>0&&height>0){
+   root.style.setProperty('--tw-recording-disc',width+'px');
+   root.style.setProperty('--tw-recording-height',height+'px');
+   root.dataset.twSizeLocked='1';
+ }
+}
+function clearTrainingRecordingFrame(){
+ const root=byId('trainingWheelSection');if(!root)return;
+ root.dataset.twSizeLocked='';
+ root.style.removeProperty('--tw-recording-disc');
+ root.style.removeProperty('--tw-recording-height');
+}
 function recordingMode(mode){
  const stage=byId('twStage');if(!stage)return;
  stage.classList.remove('tw-mode-wheel','tw-mode-arena','tw-mode-complete');
@@ -19302,9 +19324,15 @@ function recordingMode(mode){
 }
 function revealMobileRecording(type){
  if(!window.matchMedia?.('(max-width:710px)').matches)return;
- const target=byId(type==='arena'?'twArenaHost':'twRecordingWheel');
- if(!target)return;
- requestAnimationFrame(()=>target.scrollIntoView({block:'start',behavior:window.__TW_FAST_TEST?'instant':'smooth'}));
+ // BOTH surfaces begin at the same position within #twStage. Never follow
+ // #twArenaHost: its position changes while it receives the real Arena DOM.
+ const anchor=byId('twStage');
+ if(!anchor||anchor.hidden)return;
+ requestAnimationFrame(()=>{
+   if(anchor.hidden)return;
+   const offset=anchor.getBoundingClientRect().top;
+   if(Math.abs(offset)>2)window.scrollTo({top:Math.max(0,window.scrollY+offset),behavior:'auto'});
+ });
 }
 function mountArenaRecordingFrame(){
  const stage=byId('orbBattlePanel')?.querySelector('.orb-stage-wrap');
@@ -19312,11 +19340,16 @@ function mountArenaRecordingFrame(){
  const a=byId('orbStageActions'),h=byId('orbMultiHud'),c=stage.querySelector('.orb-canvas-wrap');
  if(!a||!h||!c)return;
  const shell=document.createElement('div');shell.id='twCombatViewport';shell.className='tw-combat-viewport';
- stage.insertBefore(shell,a);shell.append(a,h,c);
+ // Keep the top bar/HUD together. On mobile they sit directly above the
+ // battlefield, while the battlefield uses the wheel's exact visual center.
+ const header=document.createElement('div');header.className='tw-combat-head';
+ stage.insertBefore(shell,a);shell.append(header,c);header.append(a,h);
 }
 function unmountArenaRecordingFrame(){
  const shell=byId('twCombatViewport');if(!shell)return;
- for(const child of [...shell.children])shell.parentNode.insertBefore(child,shell);
+ const header=shell.querySelector('.tw-combat-head');
+ if(header)for(const child of [...header.children])shell.parentNode.insertBefore(child,shell);
+ for(const child of [...shell.children])if(child!==header)shell.parentNode.insertBefore(child,shell);
  shell.remove();
 }
 
@@ -19439,6 +19472,7 @@ function enterWheel(phase,title,options,message=''){
  const legend=byId('twWheelLegend');legend.replaceChildren();
  for(let i=0;i<choices.length;i++){const div=document.createElement('div');const b=document.createElement('b');b.textContent=(i+1)+'.';div.append(b,document.createTextNode(choices[i].label));legend.append(div);}
  renderWheel(choices);
+ lockTrainingRecordingFrame();
  setStatus(title+' — spin the wheel.');revealMobileRecording('wheel');
 }
 function renderWheel(items){
@@ -19593,6 +19627,19 @@ function beginDuel(opponent,tag){
  const arena=byId('orbBattlePanel'),host=byId('twArenaHost');
  if(arena){
    if(!homeMarker){homeMarker=document.createComment('Orb Arena normal location (Training Wheels restores this)');arena.parentNode.insertBefore(homeMarker,arena);}
+   // Removing the standard Arena used to collapse ~2,000px ABOVE this section,
+   // causing native mobile scroll anchoring to throw the battle off-camera.
+   // Reserve its full original layout footprint until we return the panel.
+   if(!homeNode){
+     const computed=getComputedStyle(arena);
+     homeNode=document.createElement('div');homeNode.id='twArenaHomeSpace';
+     homeNode.setAttribute('aria-hidden','true');
+     homeNode.style.cssText='display:block;visibility:hidden;pointer-events:none;width:100%;box-sizing:border-box;';
+     homeNode.style.height=Math.ceil(arena.getBoundingClientRect().height)+'px';
+     homeNode.style.marginTop=computed.marginTop;
+     homeNode.style.marginBottom=computed.marginBottom;
+     arena.parentNode.insertBefore(homeNode,arena);
+   }
    host.append(arena);arena.style.marginTop='0';mountArenaRecordingFrame();
  }
  const format=byId('orbMatchFormat');if(format)format.value='1v1';
@@ -19613,8 +19660,9 @@ function detachArena(){
  // Reset before returning so the normal Arena cannot be left fighting hidden.
  try{window.orbResetArena?.(false);}catch(e){console.warn(e)}
  const arena=byId('orbBattlePanel');unmountArenaRecordingFrame();
- if(arena&&homeMarker?.parentNode)homeMarker.parentNode.insertBefore(arena,homeMarker.nextSibling);
+ if(arena&&homeMarker?.parentNode)homeMarker.parentNode.insertBefore(arena,homeNode||homeMarker.nextSibling);
  if(arena)arena.style.marginTop='24px';
+ if(homeNode){homeNode.remove();homeNode=null;}
  window.__ninjaTrainingArenaActive=false;
  window.__ninjaTrainingWorkingFighter=null;window.__ninjaTrainingOpponentFighter=null;
  try{
@@ -19768,7 +19816,7 @@ window.twRetrySave=function(){window.twCommitResults();};
 window.twStartNext=function(){
  if(state&&state.phase!=='saved'&&!window.confirm('Discard this unsaved training preview and all its rewards? The existing Ninja Catalogue will stay unchanged.'))return;
  clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
- detachArena();state=null;window.removeEventListener('beforeunload',beforeTabLeaves);
+ detachArena();state=null;clearTrainingRecordingFrame();window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;
  refreshTrainees();setStatus('Choose a Catalogue ninja to test another two-fight training arc.');
 };
@@ -19781,6 +19829,7 @@ window.twStartArc=function(){
  if(!src||byId('twTrainee')?.value===''){setStatus('Select a ninja from your saved Catalogue first.');return;}
  const previousSources={};for(const slot of ['A','A2','A3','B','B2','B3','C'])previousSources[slot]=byId('orbSource'+slot)?.value||'';
  const data=clone(src);setExistingJutsuFields(data);
+ clearTrainingRecordingFrame();
  state={phase:'category',index:idx,sourceId:String(src.catalogueId||''),sourceName:idName(src),original:clone(src),working:data,round:1,changes:[],rounds:[],path:'',opponent:null,current:null,rewardKind:'',rewardSlot:'',previousArena:{format:byId('orbMatchFormat')?.value||'1v1',sources:previousSources}};
  byId('twStage').hidden=false;byId('twCancel').hidden=false;byId('twCancel').textContent='Abandon unsaved arc';byId('twTrainee').disabled=true;byId('twStart').disabled=true;
  byId('twStatsPanel').open=true;renderTrainingStats();
@@ -19791,7 +19840,7 @@ window.twCancelArc=function(){
  if(!state||state.phase==='saved'){window.twStartNext();return;}
  if(!window.confirm('Discard this unsaved training arc and all preview rewards? The existing Ninja Catalogue will remain unchanged.'))return;
  clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
- detachArena();state=null;window.removeEventListener('beforeunload',beforeTabLeaves);
+ detachArena();state=null;clearTrainingRecordingFrame();window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;refreshTrainees();
  setStatus('Incomplete training arc abandoned. The Ninja Catalogue was not changed.');
 };
@@ -19937,4 +19986,95 @@ window.NINJA_TRAINING_WHEELS={version:2,getState:()=>state?{phase:state.phase,ro
  svg.style.transform='translateZ(0) rotate('+rotation+'deg)';
 })();
 </script>
+
+<style id="ninjaTrainingLockedRecordingFrame">
+/* All stages of one training arc share the same locked size, center and Y
+   coordinate. The recording surface is always exactly one captured viewport. */
+#trainingWheelSection .tw-wheel-clip {
+  position:absolute;inset:0;overflow:hidden;border-radius:50%;
+  clip-path:circle(50% at 50% 50%);contain:paint;isolation:isolate;
+}
+#trainingWheelSection .tw-wheel-clip .tw-wheel-rotor {
+  width:100%;height:100%;transform-origin:50% 50%;
+}
+#trainingWheelSection .tw-combat-head {width:100%;min-width:0;}
+@media (max-width:710px) {
+  #trainingWheelSection {
+    --tw-disc-size:var(--tw-recording-disc,min(90vw,53svh,390px));
+    --tw-screen-height:var(--tw-recording-height,100svh);
+    /* Enough room above the field for Fight + both HP/jutsu HUD cards. */
+    --tw-disc-center:clamp(calc(var(--tw-disc-size) * .5 + 166px),calc(var(--tw-screen-height) * .5),calc(var(--tw-screen-height) - var(--tw-disc-size) * .5 - 14px));
+  }
+  #trainingWheelSection .tw-stage {overflow-anchor:none;}
+  /* The stat panel was 100% wide PLUS 12px margins in a flex column,
+     making the whole page eleven pixels wider than the phone. */
+  #trainingWheelSection .tw-stage > .tw-stats-panel {
+    box-sizing:border-box;width:calc(100% - 24px)!important;
+    min-width:0!important;max-width:calc(100% - 24px)!important;
+    align-self:stretch;
+  }
+  /* Messages sit ABOVE the recording surface. Reserve their height so a
+     longer result message cannot move the framed shot during a spin. */
+  #trainingWheelSection #twStatus {
+    height:48px!important;min-height:48px!important;max-height:48px!important;
+    overflow:hidden;box-sizing:border-box;
+  }
+  #trainingWheelSection #twRecordingWheel,
+  #trainingWheelSection #twCombatViewport {
+    position:relative!important;display:block!important;
+    width:100%!important;height:var(--tw-screen-height)!important;
+    min-height:var(--tw-screen-height)!important;
+    max-height:var(--tw-screen-height)!important;
+    padding:0!important;margin:0!important;background:#000!important;
+    overflow:visible;box-sizing:border-box;
+  }
+  #trainingWheelSection #twRecordingTitle {
+    position:absolute!important;left:50%;top:auto!important;
+    bottom:calc(var(--tw-screen-height) - var(--tw-disc-center) + var(--tw-disc-size) * .5 + 24px);
+    width:96%;margin:0!important;transform:translateX(-50%);
+    text-align:center;font-size:clamp(15px,4.4vw,22px);
+  }
+  #trainingWheelSection #twWheelFrame {
+    position:absolute!important;left:50%;top:var(--tw-disc-center);
+    transform:translate(-50%,-50%);
+    width:var(--tw-disc-size)!important;height:var(--tw-disc-size)!important;
+    min-width:var(--tw-disc-size)!important;min-height:var(--tw-disc-size)!important;
+    max-width:var(--tw-disc-size)!important;max-height:var(--tw-disc-size)!important;
+    margin:0!important;flex:none!important;
+  }
+  #trainingWheelSection #twArenaHost,
+  #trainingWheelSection #twWheelLayout {width:100%!important;min-width:0;margin:0!important;}
+  #trainingWheelSection #orbBattlePanel #twCombatViewport > .orb-canvas-wrap {
+    position:absolute!important;
+    left:50%!important;top:var(--tw-disc-center)!important;
+    transform:translate(-50%,-50%);
+    width:var(--tw-disc-size)!important;height:var(--tw-disc-size)!important;
+    min-width:var(--tw-disc-size)!important;min-height:var(--tw-disc-size)!important;
+    max-width:var(--tw-disc-size)!important;max-height:var(--tw-disc-size)!important;
+    margin:0!important;flex:none!important;
+    aspect-ratio:1/1!important;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head {
+    position:absolute!important;left:50%!important;
+    bottom:calc(var(--tw-screen-height) - var(--tw-disc-center) + var(--tw-disc-size) * .5 + 9px);
+    transform:translateX(-50%);
+    width:var(--tw-disc-size)!important;max-width:var(--tw-disc-size)!important;
+    display:flex;flex-direction:column;gap:5px;z-index:1;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-stage-actions,
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud {
+    display:block;width:100%!important;min-width:0!important;max-width:100%!important;
+    margin:0!important;flex:0 0 auto;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud {
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
+  }
+  #trainingWheelSection #orbBattlePanel #twCombatViewport > .orb-canvas-wrap > #orbArena {
+    width:100%!important;height:100%!important;
+    min-width:100%!important;min-height:100%!important;
+    max-width:100%!important;max-height:100%!important;
+    aspect-ratio:1/1!important;
+  }
+}
+</style>
 </body></html>
