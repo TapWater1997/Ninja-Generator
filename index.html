@@ -8348,6 +8348,10 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
       }
     }catch(e){console.warn('Arena SFX unavailable:',e);}
   }
+  // Training Wheels moves this very Arena into its section for battles.
+  // Prime its existing, fully approved audio on the user's opponent-confirmation
+  // tap, before Fight is pressed. The ordinary Fight button still calls this too.
+  window.__ninjaTrainingPrimeArenaAudio=orbAudioUnlock;
   // Jutsu-first audio mix. Jutsu/ultimate releases stay in the foreground; clashes,
   // movement, impacts and companions remain audible but duck automatically while
   // major effects play. Three voices may be prominent; up to two more may play
@@ -8543,7 +8547,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     const play=()=>{if(running&&orbRoundStarted===round&&performance.now()<=deadline)
       orbAudioPlay('fight_start_urgent',{group:'start',priority:7,level:.38});};
     if(orbArenaAudio.buffers.has('fight_start_urgent')){play();return;}
-    orbArenaAudio.preload?.then(play).catch(()=>{});
+    (orbArenaAudio.decodePending?.get('fight_start_urgent')||orbArenaAudio.preload)?.then(play).catch(()=>{});
   }
   function orbAudioPlayEvent(id,group='cast',priority=3,source=null,level=0){
     const opts={group,priority,source,...(level>0?{level}:{})};
@@ -19070,7 +19074,7 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
  #trainingWheelSection #orbBattlePanel .orb-hud{width:100%}
  #trainingWheelSection .tw-modal-stat-list{grid-template-columns:1fr 1fr}
 }
-@media(prefers-reduced-motion:reduce){#trainingWheelSection .tw-wheel-rotor{transition-duration:0.01ms!important}}
+/* Reduced-motion timing is handled in twSpinWheel; never suppress the visible result animation. */
 </style>
 <style id="twCinematicMobileAndGeneratorTheme">
 /* One shinobi visual language shared by Generator and Training Wheels. No probability or combat edits. */
@@ -19201,9 +19205,7 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
  #trainingWheelSection #orbBattlePanel .tw-combat-viewport>.orb-hud,
  #trainingWheelSection #orbBattlePanel .tw-combat-viewport>.orb-canvas-wrap{width:min(94vw,49svh,360px)!important}
 }
-@media(prefers-reduced-motion:reduce){
- #trainingWheelSection .tw-wheel-rotor{transition-duration:.01ms!important}
-}
+/* Training-wheel animation keeps a shorter but visible turn when reduced motion is requested. */
 </style>
 
 <!-- TRAINING WHEELS: optional two-round combat arc; the real Arena is moved here for bouts. -->
@@ -19282,6 +19284,16 @@ const humanJutsu=(w,slot)=>{
 const wheelText=(v)=>String(v??'');
 const rand=n=>Math.min(n-1,Math.floor(Math.random()*n));
 let state=null,spinning=false,spinValue=0,choices=[],onModalClose=null,popupShown=false,homeMarker=null,homeNode=null,victoryTimer=null;
+let twSpinSerial=0,twSpinTimer=null,twSpinAudioToken=null;
+function twCancelPendingSpin(){
+ twSpinSerial++;
+ if(twSpinTimer!==null){clearTimeout(twSpinTimer);twSpinTimer=null;}
+ if(twSpinAudioToken!==null){
+   try{wheelSoundStopSpin();}catch(error){console.warn('Training wheel sound stop:',error);}
+   twSpinAudioToken=null;
+ }
+ const rotor=byId('twWheelRotor');if(rotor)rotor.style.transition='none';
+}
 function recordingMode(mode){
  const stage=byId('twStage');if(!stage)return;
  stage.classList.remove('tw-mode-wheel','tw-mode-arena','tw-mode-complete');
@@ -19415,6 +19427,7 @@ function eligibleWeapons(tier){
    .map(w=>({value:w.name,label:w.name}));
 }
 function enterWheel(phase,title,options,message=''){
+ twCancelPendingSpin();
  state.phase=phase;spinning=false;choices=options.slice();
  const layout=byId('twWheelLayout'),done=byId('twDone');layout.hidden=false;done.hidden=true;byId('twArenaHost').hidden=true;
  recordingMode('wheel');stageTitle(title);byId('twRecordingTitle').textContent=title;news(message);renderTrainingStats();
@@ -19452,25 +19465,61 @@ function renderWheel(items){
 function chooseResult(){return Math.min(choices.length-1,Math.floor(Math.random()*choices.length));}
 window.twSpinWheel=function(){
  if(!state||spinning||popupShown||!choices.length||!['category','opponent','reward','stat','jutsu','weapon'].includes(state.phase))return;
+ // IMPORTANT: iOS requires AudioContext creation/resume in the actual tap.
+ // Re-use the Generator wheel's embedded wedge clicks and landing cue,
+ // including its global sound-enable checkbox and volume slider.
+ try{wheelSoundUnlockFromGesture();}catch(error){console.warn('Training wheel audio unlock:',error);}
  const phase=state.phase,round=state.round,idx=chooseResult(),choice=choices[idx],rotor=byId('twWheelRotor');
+ const serial=++twSpinSerial;
  spinning=true;byId('twSpin').disabled=true;byId('twWheelHub').disabled=true;byId('twSpin').textContent='SPINNING…';
- // A sector starts at top; rotate its center to the fixed top pointer with whole turns.
- const sector=360/choices.length,targetMod=(((360-(idx+.5)*sector)%360)+360)%360;
- const current=((spinValue%360)+360)%360,advance=((targetMod-current+360)%360)+360*(5+rand(3));
- spinValue+=advance;const duration=window.__TW_FAST_TEST?30:(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?320:2920);
- rotor.style.transition=`transform ${duration}ms cubic-bezier(.08,.7,.12,1)`;
- requestAnimationFrame(()=>{rotor.style.transform=`rotate(${spinValue}deg)`});
- setTimeout(()=>{
-   if(!state||state.round!==round||state.phase!==phase)return;
-   spinning=false;byId('twSpin').textContent='SPIN';
-   byId('twWheelCaption').textContent='RESULT · '+choice.label;
-   setStatus('Wheel landed on '+choice.label+'. Waiting for the result to be acknowledged.');
-   // Do not change the wheel or start combat until the viewer closes this readable result card.
-   showSpinResult(phase,choice,()=>{
-     if(!state||state.phase!==phase||state.round!==round)return;
-     onSpin(phase,choice);
-   });
- },duration+65);
+ // Equal-size sector starts at top (0 degrees in the audio crossing model).
+ const sector=360/choices.length,targetMod=((360-(idx+.5)*sector)%360+360)%360;
+ const startRot=spinValue,current=((startRot%360)+360)%360;
+ const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+ const turns=reduced?(2+rand(2)):(5+rand(3));
+ const advance=((targetMod-current+360)%360)+360*turns;
+ const finalRot=startRot+advance;
+ const duration=window.__TW_FAST_TEST?30:(reduced?1450:3200);
+ const sectors=choices.map((option,i)=>({name:option.label,startAngle:i*sector,endAngle:(i+1)*sector,weight:1}));
+ // Establish a real, painted start state first. Mobile Safari may otherwise
+ // merge the reset and rotate writes, making the wheel jump to its destination.
+ rotor.style.transition='none';
+ rotor.style.transform=`translateZ(0) rotate(${startRot}deg)`;
+ void rotor.offsetWidth;
+ const play=()=>{
+   if(serial!==twSpinSerial||!state||state.phase!==phase||state.round!==round)return;
+   // A second rAF guarantees the browser has committed the starting position.
+   requestAnimationFrame(()=>requestAnimationFrame(()=>{
+     if(serial!==twSpinSerial||!state||state.phase!==phase||state.round!==round)return;
+     rotor.style.transition=`transform ${duration}ms cubic-bezier(.08,.7,.12,1)`;
+     rotor.style.transform=`translateZ(0) rotate(${finalRot}deg)`;
+     spinValue=finalRot;
+     try{twSpinAudioToken=wheelSoundStartSpin(sectors,startRot,finalRot,duration);}
+     catch(error){console.warn('Training wheel click sound:',error);}
+     twSpinTimer=setTimeout(()=>{
+       twSpinTimer=null;
+       if(serial!==twSpinSerial||!state||state.round!==round||state.phase!==phase)return;
+       if(twSpinAudioToken!==null){
+         try{wheelSoundFinishSpin(twSpinAudioToken);}catch(error){console.warn('Training wheel landing sound:',error);}
+         twSpinAudioToken=null;
+       }
+       spinning=false;byId('twSpin').textContent='SPIN';
+       byId('twWheelCaption').textContent='RESULT · '+choice.label;
+       setStatus('Wheel landed on '+choice.label+'. Waiting for the result to be acknowledged.');
+       // Never advance away from the wheel until the viewer presses Continue.
+       showSpinResult(phase,choice,()=>{
+         if(!state||state.phase!==phase||state.round!==round)return;
+         onSpin(phase,choice);
+       });
+     },duration+80);
+   }));
+ };
+ // Match the first click to the first visual frame. If a mobile browser needs
+ // to decode the two embedded sound files, allow a brief audio-ready pause;
+ // never let a decode failure block the wheel or change its result.
+ if(typeof wheelSoundReady==='function'&&typeof wheelSoundEnabled==='function'&&wheelSoundEnabled()&&!window.__TW_FAST_TEST){
+   Promise.race([Promise.resolve(wheelSoundReady()).catch(()=>{}),new Promise(ok=>setTimeout(ok,850))]).then(play,play);
+ }else play();
 };
 function prepareOpponentOptions(type){
  if(type==='Training')return [...(permanent().sensei||[]).map(n=>({value:n.permanentRosterId,label:idName(n),person:n})),{value:'self',label:'Self Guided',person:null}];
@@ -19526,6 +19575,9 @@ function weaponRankOf(name){
 }
 function beginDuel(opponent,tag){
  if(!state||!opponent)return;
+ // User-confirmed encounter: prepare the SAME Orb Arena audio engine/approved
+ // sound library while we stage the fighters; the Fight tap resumes it on iOS.
+ try{window.__ninjaTrainingPrimeArenaAudio?.();}catch(error){console.warn('Training Arena audio warmup:',error);}
  state.opponent=clone(opponent);state.opponentTag=tag;
  state.current={round:state.round,path:state.path,opponent:idName(opponent),opponentTag:tag,win:false,winner:'',winnerHp:0,winnerMaxHp:0,margin:0,draw:false};
  state.rounds.push(state.current);
@@ -19714,7 +19766,7 @@ window.twCommitResults=function(){
 window.twRetrySave=function(){window.twCommitResults();};
 window.twStartNext=function(){
  if(state&&state.phase!=='saved'&&!window.confirm('Discard this unsaved training preview and all its rewards? The existing Ninja Catalogue will stay unchanged.'))return;
- clearTimeout(victoryTimer);spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
+ clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
  detachArena();state=null;window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;
  refreshTrainees();setStatus('Choose a Catalogue ninja to test another two-fight training arc.');
@@ -19737,7 +19789,7 @@ window.twStartArc=function(){
 window.twCancelArc=function(){
  if(!state||state.phase==='saved'){window.twStartNext();return;}
  if(!window.confirm('Discard this unsaved training arc and all preview rewards? The existing Ninja Catalogue will remain unchanged.'))return;
- clearTimeout(victoryTimer);spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
+ clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
  detachArena();state=null;window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;refreshTrainees();
  setStatus('Incomplete training arc abandoned. The Ninja Catalogue was not changed.');
