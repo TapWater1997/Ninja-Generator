@@ -5758,15 +5758,16 @@ function spinVisual(finalValue,isStat=false,preSegments=null,forcedRoll=false){
       const turns = 5 + Math.floor(Math.random()*3);
       let soundToken=null;
       if(wheel){
+        const rotor=wheel.querySelector('#wheelSvg')||wheel;
         const prev = Number(wheel.dataset.rot||0);
         const currentMod = ((prev % 360) + 360) % 360;
         let delta = (360 - landingAngle) - currentMod;
         delta = ((delta % 360) + 360) % 360;
         const finalRot = prev + turns*360 + delta;
         wheel.dataset.rot = String(finalRot);
-        wheel.style.transition = 'transform 3.2s cubic-bezier(.08,.7,.12,1)';
+        rotor.style.transition = 'transform 3.2s cubic-bezier(.08,.7,.12,1)';
         // translateZ keeps a stable compositing layer so rotation never changes layout size
-        wheel.style.transform = `translateZ(0) rotate(${finalRot}deg)`;
+        rotor.style.transform = `translateZ(0) rotate(${finalRot}deg)`;
         soundToken=wheelSoundStartSpin(segments,prev,finalRot);
       }
 
@@ -19443,7 +19444,7 @@ function enterWheel(phase,title,options,message=''){
 function renderWheel(items){
  const svg=byId('twWheelSvg'),NS='http://www.w3.org/2000/svg';svg.replaceChildren();
  if(!items.length)return;
- const n=items.length,rad=176,mid=200,d=360/n,palette=['#d6a05e','#4e859f','#a65f64','#65886a','#8b6c9c','#b88946','#436781','#868851'];
+ const n=items.length,rad=190,mid=200,d=360/n,palette=['#d6a05e','#4e859f','#a65f64','#65886a','#8b6c9c','#b88946','#436781','#868851'];
  const polar=(deg,r=rad)=>[mid+Math.cos(deg*Math.PI/180)*r,mid+Math.sin(deg*Math.PI/180)*r];
  for(let i=0;i<n;i++){
    const a=-90+i*d,b=a+d,p1=polar(a),p2=polar(b),path=document.createElementNS(NS,'path');
@@ -19458,7 +19459,7 @@ function renderWheel(items){
    if(n<=16){let rotation=at+90;if(rotation>90&&rotation<270)rotation+=180;txt.setAttribute('transform',`rotate(${rotation} ${loc[0]} ${loc[1]})`);}
    svg.append(txt);
  }
- const circle=document.createElementNS(NS,'circle');circle.setAttribute('cx','200');circle.setAttribute('cy','200');circle.setAttribute('r','178');circle.setAttribute('fill','none');circle.setAttribute('stroke','#f1d3a5');circle.setAttribute('stroke-width','5');svg.append(circle);
+ const circle=document.createElementNS(NS,'circle');circle.setAttribute('cx','200');circle.setAttribute('cy','200');circle.setAttribute('r','193');circle.setAttribute('fill','none');circle.setAttribute('stroke','#f1d3a5');circle.setAttribute('stroke-width','5');svg.append(circle);
  byId('twWheelRotor').style.transition='none';spinValue=((spinValue%360)+360)%360;
  byId('twWheelRotor').style.transform=`rotate(${spinValue}deg)`;
 }
@@ -19806,5 +19807,134 @@ refreshTrainees();
 window.NINJA_TRAINING_WHEELS={version:2,getState:()=>state?{phase:state.phase,round:state.round,trainee:state.sourceName,saved:state.phase==='saved',rounds:clone(state.rounds),changes:clone(state.changes),previewStats:clone(state.working.stats)}:null,refreshCatalogue:refreshTrainees,renderStats:renderTrainingStats};
 })();
 
+</script>
+<style id="ninjaStableStageSizing">
+/* Stable-size rendering: one shared disc size, stationary outer chrome, and
+   a fixed Arena viewport independent of the canvas backing resolution.
+   This style intentionally changes no RNG, options, audio or combat rules. */
+:root { --ng-wheel-diameter: min(460px, 48vw); }
+#interactivePanel .wheel-wrap {
+  width:calc(var(--ng-wheel-diameter) + 20px)!important;
+  height:calc(var(--ng-wheel-diameter) + 20px)!important;
+  min-width:calc(var(--ng-wheel-diameter) + 20px)!important;
+  min-height:calc(var(--ng-wheel-diameter) + 20px)!important;
+  max-width:calc(var(--ng-wheel-diameter) + 20px)!important;
+  max-height:calc(var(--ng-wheel-diameter) + 20px)!important;
+  flex:0 0 auto; aspect-ratio:1/1; box-sizing:border-box;
+}
+#interactivePanel .wheel {
+  width:var(--ng-wheel-diameter)!important;
+  height:var(--ng-wheel-diameter)!important;
+  min-width:var(--ng-wheel-diameter)!important;
+  min-height:var(--ng-wheel-diameter)!important;
+  max-width:var(--ng-wheel-diameter)!important;
+  max-height:var(--ng-wheel-diameter)!important;
+  aspect-ratio:1/1;
+  /* Keep the gold outline and box shadow absolutely still during spins. */
+  transform:none!important;transition:none!important;
+  overflow:hidden;flex:0 0 auto;
+}
+#interactivePanel .wheel-svg {
+  width:100%!important;height:100%!important;
+  min-width:100%!important;min-height:100%!important;
+  max-width:100%!important;max-height:100%!important;
+  transform-origin:50% 50%;backface-visibility:hidden;
+  will-change:transform;overflow:hidden;
+}
+#interactivePanel .wheel-result-overlay {
+  width:var(--ng-wheel-diameter)!important;
+  height:var(--ng-wheel-diameter)!important;
+  min-width:var(--ng-wheel-diameter)!important;
+  min-height:var(--ng-wheel-diameter)!important;
+  max-width:var(--ng-wheel-diameter)!important;
+  max-height:var(--ng-wheel-diameter)!important;
+  aspect-ratio:1/1;
+}
+#trainingWheelSection .tw-wheel-frame {
+  width:var(--ng-wheel-diameter)!important;
+  height:var(--ng-wheel-diameter)!important;
+  min-width:var(--ng-wheel-diameter)!important;
+  min-height:var(--ng-wheel-diameter)!important;
+  max-width:var(--ng-wheel-diameter)!important;
+  max-height:var(--ng-wheel-diameter)!important;
+  aspect-ratio:1/1;flex:0 0 auto;margin-inline:auto;
+  box-sizing:border-box;
+}
+#trainingWheelSection .tw-wheel-rotor {
+  width:100%!important;height:100%!important;
+  flex:none;aspect-ratio:1/1;transform-origin:center center;
+  border-radius:50%;overflow:hidden;
+  backface-visibility:hidden;contain:paint;
+}
+#trainingWheelSection .tw-wheel-rotor svg {
+  width:100%!important;height:100%!important;
+  display:block;aspect-ratio:1/1;overflow:hidden;
+  /* Stable halo on the NON-rotating frame, not on a rotating SVG. */
+  filter:none!important;
+}
+/* Desktop: preserve the existing near-square viewport, but freeze its
+   dimensions so changing the canvas bitmap cannot resize it. */
+#orbBattlePanel .orb-stage-wrap .orb-canvas-wrap,
+#trainingWheelSection #orbBattlePanel .tw-combat-viewport > .orb-canvas-wrap {
+  width:min(100%,700px)!important;
+  max-width:700px!important;
+  aspect-ratio:1040/1027!important;
+  height:auto;
+  min-height:0;
+  overflow:hidden;
+  flex:0 0 auto;
+  box-sizing:border-box;
+}
+#orbBattlePanel .orb-stage-wrap .orb-canvas-wrap > #orbArena {
+  display:block;width:100%!important;height:100%!important;
+  max-width:100%;aspect-ratio:1040/1027;
+  box-sizing:border-box;
+}
+@media(max-width:900px){
+  :root {
+    --ng-wheel-diameter:min(90vw,53svh,390px);
+    --ng-arena-side:min(calc(100vw - 12px),calc(100svh - 180px),600px);
+  }
+  /* Wheel size is based on the fixed SMALL viewport, never the live address
+     bar height. Result popups, stage labels and opponent lists cannot resize it. */
+  #trainingWheelSection .tw-wheel-side {min-width:0;max-width:100%}
+  #orbBattlePanel .orb-stage-wrap .orb-canvas-wrap,
+  #trainingWheelSection #orbBattlePanel .tw-combat-viewport > .orb-canvas-wrap {
+    width:var(--ng-arena-side)!important;
+    height:var(--ng-arena-side)!important;
+    min-width:var(--ng-arena-side)!important;
+    min-height:var(--ng-arena-side)!important;
+    max-width:var(--ng-arena-side)!important;
+    max-height:var(--ng-arena-side)!important;
+    aspect-ratio:1/1!important;
+    margin-inline:auto!important;
+    flex:0 0 auto;box-sizing:border-box;
+  }
+  #orbBattlePanel .orb-stage-wrap .orb-canvas-wrap > #orbArena {
+    display:block;width:100%!important;height:100%!important;
+    min-width:0;min-height:0;max-width:100%!important;max-height:100%!important;
+    aspect-ratio:1/1!important;box-sizing:border-box;
+  }
+  /* All three recording elements follow the same locked width as the field. */
+  #trainingWheelSection #orbBattlePanel .tw-combat-viewport > .orb-stage-actions,
+  #trainingWheelSection #orbBattlePanel .tw-combat-viewport > .orb-hud {
+    width:var(--ng-arena-side)!important;
+    min-width:var(--ng-arena-side)!important;
+    max-width:var(--ng-arena-side)!important;
+    flex:0 0 auto;
+  }
+}
+</style>
+<script id="ninjaGeneratorStableRotorInit">
+/* Transfer the saved Generator rotation from its old framed rotor to the SVG.
+   Keeping the chrome fixed avoids a perceived size pulse during animation. */
+(()=>{
+ const frame=document.getElementById('fortuneWheel');
+ const svg=document.getElementById('wheelSvg');
+ if(!frame||!svg)return;
+ const rotation=Number(frame.dataset.rot)||0;
+ svg.style.transition='none';
+ svg.style.transform='translateZ(0) rotate('+rotation+'deg)';
+})();
 </script>
 </body></html>
