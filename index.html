@@ -19214,7 +19214,7 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
   <details id="twDisclosure">
     <summary>🥋 Training Wheels</summary>
     <div class="tw-body">
-      <p class="tw-intro">Select a ninja saved in your Ninja Catalogue. Each training arc has <strong>two real Orb Arena fights</strong> and two reward opportunities. Results are <strong>preview-only</strong> during testing: no stats, jutsu or weapons are written to your Catalogue unless you press <strong>Save / Update Catalogue</strong> after Training Over. You can discard an arc and test again without affecting the saved ninja.</p>
+      <p class="tw-intro">Select a ninja saved in your Ninja Catalogue. Each training arc has <strong>two real Orb Arena fights</strong> and <strong>a mandatory reward-wheel spin after each fight</strong>. Results are <strong>preview-only</strong> during testing: no stats, jutsu or weapons are written to your Catalogue unless you press <strong>Save / Update Catalogue</strong> after Training Over. You can discard an arc and test again without affecting the saved ninja.</p>
       <div class="tw-setup">
         <label for="twTrainee">Load catalogue ninja
           <select id="twTrainee" aria-label="Catalogue ninja to train"><option value="">Open the Catalogue and save a ninja first</option></select>
@@ -19235,11 +19235,11 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
         <div class="tw-wheel-layout" id="twWheelLayout">
           <div class="tw-wheel-side" id="twRecordingWheel">
             <h3 class="tw-recording-title" id="twRecordingTitle">Round 1 — Choose your path</h3>
-            <div class="tw-wheel-frame" id="twWheelFrame"><div class="tw-wheel-clip"><div class="tw-wheel-rotor" id="twWheelRotor"><svg id="twWheelSvg" role="img" aria-label="Equally weighted training wheel" viewBox="0 0 400 400"></svg></div></div><div class="tw-wheel-pointer"></div><button type="button" class="tw-wheel-hub" id="twWheelHub" onclick="twSpinWheel()" title="Tap to spin" aria-label="Spin the Training Wheel">忍</button></div>
+            <div class="tw-wheel-frame" id="twWheelFrame"><div class="tw-wheel-clip"><div class="tw-wheel-rotor" id="twWheelRotor"><svg id="twWheelSvg" role="img" aria-label="Training wheel with wedge sizes matching the listed odds" viewBox="0 0 400 400"></svg></div></div><div class="tw-wheel-pointer"></div><button type="button" class="tw-wheel-hub" id="twWheelHub" onclick="twSpinWheel()" title="Tap to spin" aria-label="Spin the Training Wheel">忍</button></div>
             <button type="button" class="tw-primary tw-spin-btn" id="twSpin" onclick="twSpinWheel()">SPIN</button>
             <p id="twWheelCaption" class="tw-wheel-caption">Each wedge has an equal chance.</p>
           </div>
-          <div class="tw-choices"><h4 id="twChoicesTitle">Possible results</h4><div id="twWheelLegend" class="tw-wheel-legend"></div><p>Every listed choice is a separate, evenly weighted wedge.</p></div>
+          <div class="tw-choices"><h4 id="twChoicesTitle">Possible results</h4><div id="twWheelLegend" class="tw-wheel-legend"></div><p>Each option listed is an actual wheel result. Most wheels are even; jutsu rewards use the Generation Wheels' eligible-category weights, shown beside each result.</p></div>
         </div>
         <div id="twArenaHost" class="tw-arena-wrap" hidden>
           <div class="tw-fight-cards"><div class="tw-fight-card"><strong id="twFighterA">Trainee</strong><span>Your saved ninja · Team A</span></div><div class="tw-fight-card"><strong id="twFighterB">Opponent</strong><span id="twOpponentKind">Teacher / Enemy / Sparring partner</span></div></div>
@@ -19251,15 +19251,17 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
     </div>
   </details>
   <div class="tw-modal" id="twModal" role="dialog" aria-modal="true" aria-labelledby="twModalTitle" hidden>
-    <div class="tw-modal-card"><h3 id="twModalTitle">Training results</h3><div id="twModalBody"></div><button type="button" class="tw-primary" id="twModalClose" onclick="twCloseModal()">Continue</button></div>
+    <div class="tw-modal-card"><h3 id="twModalTitle">Training results</h3><div id="twModalBody"></div><button type="button" class="tw-primary" id="twModalClose" onclick="twCloseModal()">Continue</button><button type="button" class="tw-muted" id="twKeepJutsu" onclick="twKeepCurrentJutsu()" hidden>Keep Current Jutsu</button></div>
   </div>
 </section>
 
 <script id="trainingWheelsLogic">
 /* Training Wheels v2 — two real fights; review first, explicit atomic Catalogue save only on request.
- * Equal sector probability. No changes to the Generator's wheel or Arena tuning.
- * For zero-combat Self Guided practice, a mirror-style shadow-clone bout provides
- * the required second-fight count; the +1-to-all drill is that round's reward.
+ * Standard training choices use equal weights; jutsu rewards reuse Generation category weighting.
+ * Signature-family protection and optional acceptance preserve distinct combat identities.
+ * No changes to the Generator's wheel or Arena tuning.
+ * Self Guided uses a real mirror-style shadow-clone bout. Its +1-to-all drill
+ * is a guaranteed practice bonus; EVERY completed bout also gets a reward spin.
  */
 (function(){
 'use strict';
@@ -19285,7 +19287,7 @@ const humanJutsu=(w,slot)=>{
 const wheelText=(v)=>String(v??'');
 const rand=n=>Math.min(n-1,Math.floor(Math.random()*n));
 let state=null,spinning=false,spinValue=0,choices=[],onModalClose=null,popupShown=false,homeMarker=null,homeNode=null,victoryTimer=null;
-let twSpinSerial=0,twSpinTimer=null,twSpinAudioToken=null;
+let twSpinSerial=0,twSpinTimer=null,twSpinAudioToken=null,pendingJutsu=null;
 function twCancelPendingSpin(){
  twSpinSerial++;
  if(twSpinTimer!==null){clearTimeout(twSpinTimer);twSpinTimer=null;}
@@ -19388,12 +19390,18 @@ function showModal(title,content,onClose,buttonLabel='Continue'){
  const dlg=byId('twModal');dlg.classList.remove('tw-result-modal-active');byId('twModalTitle').textContent=title;
  byId('twModalBody').innerHTML=content;onModalClose=onClose||null;popupShown=true;dlg.hidden=false;
  byId('twModalClose').textContent=buttonLabel;
+ const keep=byId('twKeepJutsu');if(keep)keep.hidden=true;
  byId('twModalClose').focus();
 }
 window.twCloseModal=function(){
  if(!popupShown)return;
  popupShown=false;byId('twModal').hidden=true;byId('twModal').classList.remove('tw-result-modal-active');
  const f=onModalClose;onModalClose=null;if(f)f();
+};
+window.twKeepCurrentJutsu=function(){
+ if(!pendingJutsu||!popupShown)return;
+ pendingJutsu.accept=false;
+ window.twCloseModal();
 };
 function showSpinResult(phase,choice,onContinue){
  const stages={category:'Training Path',opponent:'Your Opponent',reward:'Reward Outcome',stat:'Stat Chosen',jutsu:'New Technique',weapon:'Weapon Chosen'};
@@ -19442,22 +19450,174 @@ function applyJutsu(slot,technique){
  state.changes.push({kind:'jutsu',round:state.round,slot,before,after:technique,rankFrom:currentRank(before),rankTo:currentRank(technique)});
  renderTrainingStats();
 }
+/* Hybrid training rewards: use the same hard eligibility catalogue AND category
+ * weights as the Generator. Power rank is a soft progression floor, not a gate
+ * that strips away the last signature technique of a bloodline/weapon ninja. */
+const twKey=value=>String(value||'').normalize('NFKD').toLowerCase()
+ .replace(/[\u0300-\u036f]/g,'').replace(/[–—‑]/g,'-')
+ .replace(/\s+/g,' ').trim();
+function twCatalogueTechnique(name,owner,slot){
+ const key=twKey(name);
+ const regular=typeof LOCAL_JUTSU_CATALOG!=='undefined'?LOCAL_JUTSU_CATALOG:[];
+ const ultimate=typeof ULTIMATE_JUTSU_CATALOG!=='undefined'?ULTIMATE_JUTSU_CATALOG:[];
+ const catalogues=[
+   ...(slot==='ult'?ultimate:regular),
+   ...(slot==='ult'?regular:ultimate),
+   ...((typeof getWeaponExclusiveTechniquePool==='function'?getWeaponExclusiveTechniquePool(owner):[])||[])
+ ];
+ return catalogues.find(t=>twKey(textOf(t))===key)||{name:String(name||'')};
+}
+function twSignatureTags(tech,owner){
+ const name=textOf(tech),key=twKey(name),m=tech?.meta||tech||{};
+ const rule=typeof jutsuRule==='function'?jutsuRule(name):null;
+ const tags=new Set(),clan=twKey(owner?.clan).replace(/ clan$/,'');
+ const weapon=twKey(owner?.weapon),eyes=twKey(owner?.dojutsu||owner?.dojutsuStage);
+ const matches=(a,b)=>!!a&&!!b&&(a===b||a.includes(b)||b.includes(a));
+ // Key each KG by the SPECIFIC chakra/bloodline family, not the generic "kg"
+ // category. A Wood or Lava technique cannot be replaced with another KG.
+ const families=[owner?.kekkeiGenkai,owner?.bloodline,owner?.hiden,
+     owner?.bloodlineData?.name,owner?.clanData?.bloodline].filter(v=>
+       v&&twKey(v)!=='none'&&twKey(v)!=='skipped');
+ for(const family of [...new Set(families)]){
+   const fk=twKey(family).replace(/ (release|style)$/,'');
+   if(!fk)continue;
+   const isKg=/release|shikotsumyaku|kekkei/i.test(family)
+     ||(typeof DATA!=='undefined'&&Array.isArray(DATA.bloodlines)
+        &&DATA.bloodlines.some(b=>matches(twKey(b.name).replace(/ (release|style)$/,''),fk)));
+   if(isKg){
+     const need=twKey(m.requiredKekkeiGenkai).replace(/ (release|style)$/,'');
+     const nature=twKey(m.chakraNature).replace(/ (release|style)$/,'');
+     const title=key.replace(/ (release|style):/g,'');
+     if(matches(need,fk)||matches(nature,fk)||title.startsWith(fk+' ')||title.startsWith(fk+':')
+         ||(typeof techniqueMatchesCharacterKg==='function'
+            &&fk===twKey(typeof characterKekkeiGenkaiName==='function'?characterKekkeiGenkaiName(owner):'').replace(/ (release|style)$/,'')
+            &&techniqueMatchesCharacterKg(tech,owner)))tags.add('kg:'+fk);
+     continue;
+   }
+   // Hiden and inherited non-KG techniques often lack required* metadata.
+   // These aliases retain exact family identity without treating all ninjutsu
+   // of a matching base chakra nature as bloodline techniques.
+   const aliases=[
+     [/multi.size|expansion|akimichi/i,/multi.size|expansion|calorie|butterfly|human bullet/i],
+     [/parasitic insect|aburame/i,/insect|parasitic|beetle/i],
+     [/has a dog|inuzuka/i,/ninken|fang|four legs|beast human|dynamic marking|man.beast/i],
+     [/puppet.master|puppetry|puppet/i,/puppet|black secret|chikamatsu|iron maiden|three treasures/i],
+     [/shadow manipulation|nara/i,/shadow imitation|shadow strangle|shadow stitching|shadow pinning|shadow bind/i],
+     [/hydrification|hozuki|hōzuki/i,/hydrif|water gun|liquef|water body/i],
+     [/mind transfer|yamanaka/i,/mind body|flower bomb|mind transfer/i],
+     [/sand manipulation|kazekage/i,/sand|quicksand/i]
+   ];
+   const alias=aliases.find(([familyPattern])=>familyPattern.test(family));
+   const relevant=alias?alias[1].test(name):key.includes(fk);
+   if(relevant)tags.add('bloodline:'+fk);
+ }
+ if(clan&&clan!=='none'){
+   const required=twKey(rule?.clan||m.requiredClan).replace(/ clan$/,'');
+   if(matches(required,clan)||(rule?.uzumakiHeritage&&clan.includes('uzumaki'))
+      ||(rule?.sandAccess&&clan.includes('kazekage')))
+     tags.add('clan:'+clan);
+ }
+ if(eyes&&eyes!=='none'&&(rule?.kind==='dojutsu'||m.requiredDojutsu)){
+   const satisfied=!m.requiredDojutsu||typeof dojutsuSatisfied!=='function'||dojutsuSatisfied(m.requiredDojutsu,owner);
+   if(satisfied)tags.add('dojutsu:'+eyes);
+ }
+ if(weapon&&weapon!=='none'){
+   const required=rule?.weapon||m.requiredWeapon;
+   if((required&&typeof weaponSatisfied==='function'&&weaponSatisfied(required,owner))
+      ||(tech?.exclusiveSet&&typeof getWeaponExclusiveTechniquePool==='function')
+      ||(rule?.kind==='weapon'&&!rule.sandAccess)
+      ||(weapon.length>4&&key.includes(weapon)))tags.add('weapon:'+weapon);
+ }
+ return tags;
+}
+function twCurrentLoadout(owner){return ['j1','j2','ult'].map(slot=>({slot,name:humanJutsu(owner,slot)}));}
+function twWouldInvalidateOtherJutsu(owner,slot,replacement){
+ // A higher-grade technique must not silently orphan a Clone follow-up or an
+ // Ultimate requiring Hiding in Mist when changing the prerequisite slot.
+ const probe=clone(owner);
+ if(slot==='j1'){probe.specialtyJutsu={name:replacement};probe.specialty=replacement;}
+ else if(slot==='j2'){probe.signatureTechnique={name:replacement};probe.signature=replacement;}
+ else{probe.ultimateJutsu={name:replacement};}
+ if(slot==='j1'||slot==='j2'){
+   probe.jutsu=Array.isArray(probe.jutsu)?probe.jutsu.slice():[];
+   probe.jutsu[slot==='j1'?0:1]=replacement;
+ }
+ for(const current of twCurrentLoadout(owner)){
+   if(current.slot===slot||!current.name||current.name==='None')continue;
+   const tech=twCatalogueTechnique(current.name,owner,current.slot);
+   const isKnown=tech&&textOf(tech)===current.name&&(typeof jutsuRule==='function'&&jutsuRule(current.name)
+    ||(typeof LOCAL_JUTSU_CATALOG!=='undefined'&&LOCAL_JUTSU_CATALOG.includes(tech))
+    ||(typeof ULTIMATE_JUTSU_CATALOG!=='undefined'&&ULTIMATE_JUTSU_CATALOG.includes(tech)));
+   if(isKnown&&typeof jutsuEligibleNamed==='function'
+      &&jutsuEligibleNamed(tech,owner,current.slot)
+      &&!jutsuEligibleNamed(tech,probe,current.slot))return true;
+ }
+ return false;
+}
+function twWeightedOption(t,owner,slot,baseRank,specialization){
+ const name=textOf(t),grade=currentRank(name),category=typeof jutsuCategory==='function'?jutsuCategory(owner,t,slot):'general';
+ const basic=typeof jutsuSlotWeight==='function'?jutsuSlotWeight(owner,t,slot):2;
+ const diff=rankIndex(grade)-baseRank;
+ // The exact GENERATION CATEGORY WEIGHT is the starting point. Higher ranks
+ // get a modest bonus, while same-rank specialization remains meaningful.
+ const modifier=diff>0?(1.15+Math.min(4,diff-1)*.08):.8;
+ return {value:name,label:`${name} · ${grade}-rank · ${category.toUpperCase()}`,
+   weight:Math.max(.05,basic*modifier),category,grade,specialization};
+}
 function getJutsuOptions(slot){
  const w=clone(state.working);setExistingJutsuFields(w);
- const old=humanJutsu(w,slot),min=rankIndex(currentRank(old));
- const owned=new Set([...(Array.isArray(w.jutsu)?w.jutsu:[]),humanJutsu(w,'ult')].filter(Boolean));
- // Use the SAME hard eligibility routine and slot validation as Generation.
+ const old=humanJutsu(w,slot),oldGrade=old&&old!=='None'?currentRank(old):'F',baseRank=rankIndex(oldGrade);
+ const owned=new Set(twCurrentLoadout(w).map(s=>twKey(s.name)).filter(Boolean));
+ const current=twCatalogueTechnique(old,w,slot),oldTags=twSignatureTags(current,w);
+ const otherTags=new Set();
+ for(const s of twCurrentLoadout(w)){
+   if(s.slot===slot||!s.name||s.name==='None')continue;
+   for(const tag of twSignatureTags(twCatalogueTechnique(s.name,w,s.slot),w))otherTags.add(tag);
+ }
+ const protectedTags=[...oldTags].filter(tag=>!otherTags.has(tag));
+ // From the REAL Generator pool, keep only valid, unowned, non-downgrading
+ // techniques. Same-rank candidates must be authentic specialist techniques;
+ // if already S-rank, other S-rank options remain available.
  const pool=(typeof getStrictGeneratedJutsuPool==='function'?getStrictGeneratedJutsuPool(w,slot,[]):[]);
- const seen=new Set();return pool.filter(t=>{
-   const n=textOf(t),r=window.getNinjaJutsuRank?.(n),ri=rankIndex(r);
-   if(!n||!r||seen.has(n)||owned.has(n)||((min===6)?ri!==6:ri<=min))return false;
-   seen.add(n);return true;
- }).map(t=>({value:textOf(t),label:`${textOf(t)} · ${window.getNinjaJutsuRank(textOf(t))}-rank`}));
+ const seen=new Set(),out=[];
+ for(const t of pool){
+   const name=textOf(t),key=twKey(name),grade=window.getNinjaJutsuRank?.(name);
+   if(!name||!grade||seen.has(key)||owned.has(key))continue;
+   seen.add(key);
+   const level=rankIndex(grade),tags=twSignatureTags(t,w);
+   if(level<baseRank)continue;
+   if(protectedTags.length&&!protectedTags.every(tag=>tags.has(tag)))continue;
+   const specialization=tags.size>0;
+   if(level===baseRank&&baseRank<6&&!specialization&&old&&old!=='None')continue;
+   if(twWouldInvalidateOtherJutsu(w,slot,name))continue;
+   out.push(twWeightedOption(t,w,slot,baseRank,specialization));
+ }
+ return out;
+}
+function twWeaponKeepsJutsu(nextWeapon){
+ const w=state.working,after=clone(w);
+ after.weapon=nextWeapon;
+ const data=window.getTrainingWeaponRating?.(nextWeapon);
+ after.weaponData={name:nextWeapon,category:data?.category||'Sword',isPuppet:!!data?.puppet};
+ after.hasPuppetAccess=!!data?.puppet||/puppet/i.test(String(w.bloodline||'')+' '+String(w.hiden||'')+' '+String(w.primary||''));
+ for(const s of twCurrentLoadout(w)){
+   if(!s.name||s.name==='None')continue;
+   const tech=twCatalogueTechnique(s.name,w,s.slot),rule=typeof jutsuRule==='function'?jutsuRule(s.name):null,m=tech.meta||tech;
+   const weaponLinked=!!(rule?.weapon||m.requiredWeapon||tech.exclusiveSet);
+   // Some imported older techniques (e.g. Samehada Partnership Combat)
+   // have no current catalogue metadata, but still name their required tool.
+   const legacyToolName=twKey(w.weapon);
+   if(!weaponLinked&&legacyToolName.length>4&&twKey(s.name).includes(legacyToolName)
+      &&!twKey(nextWeapon).includes(legacyToolName))return false;
+   if(weaponLinked&&typeof jutsuEligibleNamed==='function'
+       &&jutsuEligibleNamed(tech,w,s.slot)&&!jutsuEligibleNamed(tech,after,s.slot))return false;
+ }
+ return true;
 }
 function eligibleWeapons(tier){
  // Restrict training loot to the CURRENT generation wheel, not retired/import-only tools.
  return (typeof newNinjaWeaponPool==='function'?newNinjaWeaponPool():[])
-   .filter(w=>w?.name&&w.name!=='None'&&w.name!==state.working.weapon&&window.getTrainingWeaponRating?.(w.name)?.rank===tier)
+   .filter(w=>w?.name&&w.name!=='None'&&w.name!==state.working.weapon&&window.getTrainingWeaponRating?.(w.name)?.rank===tier&&twWeaponKeepsJutsu(w.name))
    .map(w=>({value:w.name,label:w.name}));
 }
 function enterWheel(phase,title,options,message=''){
@@ -19467,37 +19627,94 @@ function enterWheel(phase,title,options,message=''){
  recordingMode('wheel');stageTitle(title);byId('twRecordingTitle').textContent=title;news(message);renderTrainingStats();
  byId('twSpin').disabled=!choices.length;byId('twWheelHub').disabled=!choices.length;
  byId('twSpin').textContent=choices.length?'SPIN':'NO ELIGIBLE OPTIONS';
- byId('twWheelCaption').textContent=choices.length?`${choices.length} equally weighted wedge${choices.length===1?'':'s'}.`:'No eligible choices are currently available.';
+ const isWeighted=choices.some(item=>Math.abs((Number(item.weight)||1)-1)>0.00001);
+ const total=choices.reduce((sum,item)=>sum+Math.max(.00001,Number(item.weight)||1),0);
+ byId('twWheelCaption').textContent=choices.length?(isWeighted?`${choices.length} eligible results. Wedges reflect the exact Generator-based weights below.`:`${choices.length} evenly weighted wedge${choices.length===1?'':'s'}.`):'No eligible choices are currently available.';
  byId('twChoicesTitle').textContent='Possible results · '+choices.length;
  const legend=byId('twWheelLegend');legend.replaceChildren();
- for(let i=0;i<choices.length;i++){const div=document.createElement('div');const b=document.createElement('b');b.textContent=(i+1)+'.';div.append(b,document.createTextNode(choices[i].label));legend.append(div);}
+ for(let i=0;i<choices.length;i++){
+   const div=document.createElement('div'),b=document.createElement('b');b.textContent=(i+1)+'.';
+   div.append(b,document.createTextNode(choices[i].label));
+   if(isWeighted){const chance=document.createElement('span');chance.className='tw-option-chance';
+     const percent=100*Math.max(.00001,Number(choices[i].weight)||1)/total;
+     chance.textContent=' · '+(percent<.01?'<0.01':percent.toFixed(2))+'%';div.append(chance);}
+   legend.append(div);
+ }
  renderWheel(choices);
  lockTrainingRecordingFrame();
  setStatus(title+' — spin the wheel.');revealMobileRecording('wheel');
 }
+function twWeight(item){return Math.max(.00001,Number(item?.weight)||1);}
+function twWheelGeometry(items){
+ const total=items.reduce((sum,item)=>sum+twWeight(item),0);
+ let cursor=0;
+ return items.map(item=>{
+   const size=360*twWeight(item)/total;
+   const segment={item,startAngle:cursor,endAngle:cursor+size,size};
+   cursor+=size;return segment;
+ });
+}
 function renderWheel(items){
  const svg=byId('twWheelSvg'),NS='http://www.w3.org/2000/svg';svg.replaceChildren();
  if(!items.length)return;
- const n=items.length,rad=190,mid=200,d=360/n,palette=['#d6a05e','#4e859f','#a65f64','#65886a','#8b6c9c','#b88946','#436781','#868851'];
+ const sectors=twWheelGeometry(items),n=items.length,rad=190,mid=200;
+ const palette=['#d6a05e','#4e859f','#a65f64','#65886a','#8b6c9c','#b88946','#436781','#868851'];
  const polar=(deg,r=rad)=>[mid+Math.cos(deg*Math.PI/180)*r,mid+Math.sin(deg*Math.PI/180)*r];
  for(let i=0;i<n;i++){
-   const a=-90+i*d,b=a+d,p1=polar(a),p2=polar(b),path=document.createElementNS(NS,'path');
-   path.setAttribute('d',`M ${mid} ${mid} L ${p1.join(' ')} A ${rad} ${rad} 0 ${d>180?1:0} 1 ${p2.join(' ')} Z`);
-   path.setAttribute('fill',palette[i%palette.length]);path.setAttribute('stroke','#0b1520');path.setAttribute('stroke-width',n>20?'1.3':'1.7');
-   const tooltip=document.createElementNS(NS,'title');tooltip.textContent=items[i].label;path.append(tooltip);svg.append(path);
-   const at=a+d/2,loc=polar(at,n>18?rad*.77:rad*.64),txt=document.createElementNS(NS,'text');
-   txt.setAttribute('x',String(loc[0]));txt.setAttribute('y',String(loc[1]));txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');txt.setAttribute('fill','#091321');txt.setAttribute('font-weight','900');
-   txt.setAttribute('font-size',n>16?'10':n>8?'10.5':'12.5');
-   const wedgeLabel=n>16?String(i+1):items[i].label.replace(/^Take Down \(|^Spar Against \(/,'').replace(/\)$/,'').slice(0,n>8?14:19);
+   const {startAngle,endAngle,size}=sectors[i],a=-90+startAngle,b=-90+endAngle;
+   const path=document.createElementNS(NS,n===1?'circle':'path');
+   if(n===1){path.setAttribute('cx','200');path.setAttribute('cy','200');path.setAttribute('r',String(rad));}
+   else{const p1=polar(a),p2=polar(b);
+     path.setAttribute('d',`M ${mid} ${mid} L ${p1.join(' ')} A ${rad} ${rad} 0 ${size>180?1:0} 1 ${p2.join(' ')} Z`);}
+   path.setAttribute('fill',palette[i%palette.length]);path.setAttribute('stroke','#0b1520');
+   path.setAttribute('stroke-width',n>20?'1.1':'1.7');
+   const tooltip=document.createElementNS(NS,'title');
+   tooltip.textContent=items[i].label+' · '+(100*twWeight(items[i])/items.reduce((sum,t)=>sum+twWeight(t),0)).toFixed(2)+'%';
+   path.append(tooltip);svg.append(path);
+   // Radial labels: words RUN ALONG each wedge, from inner hub toward the rim.
+   // Previously rotating by at+90 made the words cross the wedge tangentially.
+   // Keep narrow wedges numbered, with every full name in the adjacent legend.
+   const at=a+size/2,small=n>16,numeral=small?String(i+1):null;
+   const normalized=items[i].label.replace(/^Take Down \(|^Spar Against \(/,'').replace(/\)$/,'');
+   const wedgeLabel=numeral||normalized.slice(0,n>8?15:22);
+   const labelRadius=rad*(small ? .79 : .65);
+   const loc=polar(at,labelRadius),txt=document.createElementNS(NS,'text');
+   txt.setAttribute('x',String(loc[0]));txt.setAttribute('y',String(loc[1]));
+   txt.setAttribute('text-anchor','middle');txt.setAttribute('dominant-baseline','middle');
+   txt.setAttribute('fill','#091321');txt.setAttribute('font-weight','900');
+   txt.setAttribute('font-size',small?'11':n>8?'10.5':'12.5');
+   txt.setAttribute('pointer-events','none');
    txt.textContent=wedgeLabel;
-   if(n<=16){let rotation=at+90;if(rotation>90&&rotation<270)rotation+=180;txt.setAttribute('transform',`rotate(${rotation} ${loc[0]} ${loc[1]})`);}
-   svg.append(txt);
+   // A radial tangent is simply at degrees. Flip labels in the left semicircle
+   // so viewers can read them right-side-up instead of upside down.
+   const angle=((at%360)+360)%360;
+   const flip=angle>90&&angle<270;
+   const rotation=at+(flip?180:0);
+   txt.setAttribute('transform',`rotate(${rotation} ${loc[0]} ${loc[1]})`);
+   // Fit between the center kanji and the outer ring. In particular, long
+   // words in a five-wedge reward wheel must never run beneath the center
+   // or off the rim; SVG textLength only COMPRESSES when actually necessary.
+   if(size>=2.5||n===1){
+     svg.append(txt);
+     if(!small){
+       const maxLength=n>8?107:125;
+       if(txt.getComputedTextLength()>maxLength){
+         txt.setAttribute('textLength',String(maxLength));
+         txt.setAttribute('lengthAdjust','spacingAndGlyphs');
+       }
+     }
+   } // narrow sectors retain full names and odds in legend
  }
  const circle=document.createElementNS(NS,'circle');circle.setAttribute('cx','200');circle.setAttribute('cy','200');circle.setAttribute('r','193');circle.setAttribute('fill','none');circle.setAttribute('stroke','#f1d3a5');circle.setAttribute('stroke-width','5');svg.append(circle);
  byId('twWheelRotor').style.transition='none';spinValue=((spinValue%360)+360)%360;
  byId('twWheelRotor').style.transform=`rotate(${spinValue}deg)`;
 }
-function chooseResult(){return Math.min(choices.length-1,Math.floor(Math.random()*choices.length));}
+function chooseResult(){
+ const total=choices.reduce((sum,t)=>sum+twWeight(t),0),draw=Math.random()*total;
+ let cumulative=0;
+ for(let i=0;i<choices.length;i++){cumulative+=twWeight(choices[i]);if(draw<cumulative)return i;}
+ return Math.max(0,choices.length-1);
+}
 window.twSpinWheel=function(){
  if(!state||spinning||popupShown||!choices.length||!['category','opponent','reward','stat','jutsu','weapon'].includes(state.phase))return;
  // IMPORTANT: iOS requires AudioContext creation/resume in the actual tap.
@@ -19508,14 +19725,15 @@ window.twSpinWheel=function(){
  const serial=++twSpinSerial;
  spinning=true;byId('twSpin').disabled=true;byId('twWheelHub').disabled=true;byId('twSpin').textContent='SPINNING…';
  // Equal-size sector starts at top (0 degrees in the audio crossing model).
- const sector=360/choices.length,targetMod=((360-(idx+.5)*sector)%360+360)%360;
+ const geometry=twWheelGeometry(choices),landing=geometry[idx];
+ const targetMod=((360-(landing.startAngle+landing.size*.5))%360+360)%360;
  const startRot=spinValue,current=((startRot%360)+360)%360;
  const reduced=!!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  const turns=reduced?(2+rand(2)):(5+rand(3));
  const advance=((targetMod-current+360)%360)+360*turns;
  const finalRot=startRot+advance;
  const duration=window.__TW_FAST_TEST?30:(reduced?1450:3200);
- const sectors=choices.map((option,i)=>({name:option.label,startAngle:i*sector,endAngle:(i+1)*sector,weight:1}));
+ const sectors=geometry.map(g=>({name:g.item.label,startAngle:g.startAngle,endAngle:g.endAngle,weight:twWeight(g.item)}));
  // Establish a real, painted start state first. Mobile Safari may otherwise
  // merge the reset and rotate writes, making the wheel jump to its destination.
  rotor.style.transition='none';
@@ -19594,8 +19812,17 @@ function onSpin(phase,selected){
    notifyStats((state.rewardKind==='major'?'Major':'Minor')+' Stat Gain',list,roundDone);
  }else if(phase==='jutsu'){
    const slot=state.rewardSlot,prev=humanJutsu(state.working,slot),next=selected.value;
-   applyJutsu(slot,next);
-   showModal('New '+(slot==='ult'?'Ultimate Jutsu':slot==='j1'?'Jutsu 1':'Jutsu 2'),`<p><strong>${esc(prev||'None')}</strong> → <strong>${esc(next)}</strong></p><p>Rank: ${esc(currentRank(prev))} → ${esc(currentRank(next))}. Your other ability slots are preserved.</p>`,roundDone);
+   // Offer the player an actual choice. Nothing changes until acceptance;
+   // declining counts as this round's resolved reward, not a failed arc.
+   pendingJutsu={slot,prev,next,accept:true};
+   const kind=slot==='ult'?'Ultimate Jutsu':slot==='j1'?'Jutsu 1':'Jutsu 2';
+   showModal('Learn '+kind+'?',`<p><strong>${esc(prev||'None')}</strong> → <strong>${esc(next)}</strong></p><p>Rank: ${esc(currentRank(prev))} → ${esc(currentRank(next))}.</p><p>Learn this technique or keep your current ${esc(kind)}. All other equipped techniques remain unchanged. Neither choice saves to the Catalogue until you finish the arc and press Save / Update Catalogue.</p>`,()=>{
+     const pending=pendingJutsu;pendingJutsu=null;
+     if(pending?.accept)applyJutsu(pending.slot,pending.next);
+     else news(`Kept ${pending?.prev||'existing jutsu'} for ${kind}. Training preview remains unchanged.`);
+     roundDone();
+   },'Learn New Technique');
+   byId('twKeepJutsu').hidden=false;
  }else if(phase==='weapon'){
    const prev=state.working.weapon||'None',next=selected.value,rank=window.getTrainingWeaponRating?.(next);
    state.working.weapon=next;state.working.weaponData={name:next,category:rank?.category||'Sword',weight:rank?.weight||1,isPuppet:!!rank?.puppet};
@@ -19617,7 +19844,7 @@ function beginDuel(opponent,tag){
  state.current={round:state.round,path:state.path,opponent:idName(opponent),opponentTag:tag,win:false,winner:'',winnerHp:0,winnerMaxHp:0,margin:0,draw:false};
  state.rounds.push(state.current);
  stageTitle(`Round ${state.round} — ${state.path} battle`);
- news(tag==='Self Guided · Shadow Clone'?'Self Guided bonus awarded. Fight your training clone to complete this round.':`Your ninja faces ${idName(opponent)}. The same Arena tuning and combat rules apply.`);
+ news(tag==='Self Guided · Shadow Clone'?'Self Guided practice bonus awarded. Fight your training clone; a reward-wheel spin follows the fight.':`Your ninja faces ${idName(opponent)}. The same Arena tuning and combat rules apply.`);
  recordingMode('arena');byId('twWheelLayout').hidden=true;byId('twDone').hidden=true;
  byId('twArenaHost').hidden=false;renderTrainingStats();
  byId('twFighterA').textContent=idName(state.working);byId('twFighterB').textContent=idName(opponent);byId('twOpponentKind').textContent=tag+' · Team B';
@@ -19696,36 +19923,56 @@ window.__ninjaTrainingOnBattleVictory=function(details){
  clearTimeout(victoryTimer);const currentRef=state;
  victoryTimer=setTimeout(()=>{if(state===currentRef&&state.phase==='victory')resolveBattle();},window.__TW_FAST_TEST?70:1900);
 };
+/* All battle outcomes use one genuine, user-spun reward wheel. A guaranteed
+ * Sensei lesson remains a separate bonus resolved AFTER the reward outcome,
+ * and Self Guided keeps its original +1-to-all practice bonus. A wheel never
+ * advertises a Jutsu/weapon outcome if no valid roll for it exists. */
+function availableWeaponReward(){
+ const old=state.working.weapon||'None',grade=weaponRankOf(old),index=rankIndex(grade);
+ const desired=index===6?'S':(state.current?.margin>=50?gradeOrder[index+1]:grade);
+ return {grade:desired,options:eligibleWeapons(desired)};
+}
+function availableBattleRewards(){
+ const c=state.current;
+ const reward=[
+  {value:'j1',label:'New Jutsu 1'},
+  {value:'j2',label:'New Jutsu 2'},
+  {value:'ult',label:'New Ultimate Jutsu'},
+  {value:'major',label:'Major Stat Gain'}
+ ];
+ // Victories against a sensei can grant a weapon; every other encounter,
+ // including a sensei defeat or Self Guided bout, offers a minor stat gain.
+ if(state.path==='Training'&&c?.win)reward.push({value:'weapon',label:'New Weapon Opportunity'});
+ else reward.push({value:'minor',label:'Minor Stat Gain'});
+ return reward.filter(choice=>{
+   if(['j1','j2','ult'].includes(choice.value))return getJutsuOptions(choice.value).length>0;
+   if(choice.value==='weapon')return availableWeaponReward().options.length>0;
+   return true;
+ });
+}
 function resolveBattle(){
  if(!state||state.phase!=='victory')return;
  const c=state.current;detachArena();
  const result=c.draw?'Draw':c.win?'Victory':'Defeat';
  const resultText=`${result} against ${c.opponent}. ${c.draw?'No surviving fighter':`${c.winner} survived with ${Math.ceil(c.winnerHp)} / ${Math.ceil(c.winnerMaxHp)} HP (${c.margin.toFixed(1)}%)`}.`;
- if(state.path==='Self Guided'){
-   // The drill is this round's reward (all 16 stats gained). A shadow bout counts as an actual Arena fight.
-   news(resultText+' Your Self Guided stat reward was already awarded.');
-   roundDone();return;
- }
- if(state.path==='Training'&&!c.win){
-   const keys=topStats(state.opponent),gain=c.margin<=25?3:2;
-   const changes=gainStats(keys,gain,'Learning from sensei defeat');
-   news(resultText+' Your sensei reinforces their three strongest skills.');
-   notifyStats('Sensei lesson · 3 stat gains',changes,roundDone);return;
- }
- const choices=state.path==='Training'?
-   [{value:'j1',label:'New Jutsu 1'},{value:'j2',label:'New Jutsu 2'},{value:'ult',label:'New Ultimate Jutsu'},{value:'major',label:'Major Stat Gain'},{value:'weapon',label:'New Weapon Opportunity'}]:
-   [{value:'j1',label:'New Jutsu 1'},{value:'j2',label:'New Jutsu 2'},{value:'ult',label:'New Ultimate Jutsu'},{value:'major',label:'Major Stat Gain'},{value:'minor',label:'Minor Stat Gain'}];
- enterWheel('reward',`Round ${state.round} — Reward Wheel`,choices,resultText);
+ const options=availableBattleRewards();
+ // Always includes a Major Stat Gain, and a Minor Stat Gain for non-sensei wins.
+ // A wheel spin is mandatory even for a Self Guided practice or a Sensei loss.
+ enterWheel('reward',`Round ${state.round} — Reward Wheel`,options,
+   resultText+(state.path==='Training'&&!c.win&&!c.draw?' Your Sensei lesson bonus follows the reward spin.':
+     state.path==='Self Guided'?' The Self Guided drill bonus is already part of your preview.':''));
 }
 function startJutsuReward(slot){
  state.rewardSlot=slot;
  const old=humanJutsu(state.working,slot),list=getJutsuOptions(slot);
  if(!list.length){
-   // Never give an ineligible/lower-grade technique. Award a modest stat instead.
-   news(`No eligible ${old&&currentRank(old)==='S'?'S-rank':'higher-ranked'} ${slot==='ult'?'Ultimate':'Jutsu'} is available. A minor stat award substitutes.`);
-   startStatReward('minor');return;
+   // Never erase the character's last defining bloodline, clan, eye, or
+   // weapon technique to manufacture an upgrade. Use a minor stat instead.
+   const explanation=`No eligible, non-downgrading ${slot==='ult'?'Ultimate':'Jutsu'} replacement preserves your defining abilities. Your current technique stays equipped. A minor stat reward is offered instead.`;
+   news(explanation);
+   showModal('Signature Technique Protected',`<p>${esc(explanation)}</p>`,()=>startStatReward('minor'),'Continue to Stat Reward');return;
  }
- enterWheel('jutsu',`Reward — New ${slot==='ult'?'Ultimate Jutsu':slot==='j1'?'Jutsu 1':'Jutsu 2'}`,list,`Current: ${old||'None'} (${currentRank(old)}). Only ${currentRank(old)==='S'?'other eligible S-rank':'eligible strictly higher-ranked'} jutsu can appear. Every eligible option is equally likely.`);
+ enterWheel('jutsu',`Reward — New ${slot==='ult'?'Ultimate Jutsu':slot==='j1'?'Jutsu 1':'Jutsu 2'}`,list,`Current: ${old||'None'} (${currentRank(old)}). Your last defining KG, clan, dōjutsu, bloodline and weapon techniques are protected. Higher ranks are preferred; same-rank signature alternatives are allowed. Generator category weights control the wedge sizes. You can keep your existing technique after the spin.`);
 }
 function startStatReward(kind){
  state.rewardKind=kind;
@@ -19733,18 +19980,28 @@ function startStatReward(kind){
  enterWheel('stat',`Reward — ${kind==='major'?'Major':'Minor'} Stat Gain`,three.map(k=>({value:k,label:statNames[k]+' · '+state.opponent.stats?.[k]+'/100'})),`The three strongest D100 stats of ${idName(state.opponent)} have equal odds. Gain +${kind==='major'?(state.current?.win?7:5):(state.current?.win?3:2)} to the winning stat (max 100).`);
 }
 function startWeaponReward(){
- const old=state.working.weapon||'None',grade=weaponRankOf(old),index=rankIndex(grade);
+ const old=state.working.weapon||'None',grade=weaponRankOf(old);
  const margin=state.current?.margin||0;
- const desired=(index===6)?'S':(margin>=50?gradeOrder[index+1]:grade);
- let pool=eligibleWeapons(desired);
+ const {grade:desired,options:pool}=availableWeaponReward();
  if(!pool.length){
-   news(`No different rollable ${desired}-rank weapon exists for ${old}. This weapon reward becomes a minor stat gain instead.`);
+   news(`No different ${desired}-rank weapon preserves your equipped weapon-dependent jutsu. This reward becomes a minor stat gain instead.`);
    startStatReward('minor');return;
  }
  enterWheel('weapon',`Reward — ${desired}-Rank Weapon`,pool,`${old}: ${grade}-rank${!window.getTrainingWeaponRating?.(old)?' (unranked legacy item treated F-rank)':''}. ${margin>=50?'Strong victory (at least 50% HP retained)':'Close victory (under 50% HP retained)'} → a ${desired}-rank replacement. At S-rank, you roll a different S-rank weapon.`);
 }
 function roundDone(){
  if(!state)return;
+ // A defeat by a Sensei guarantees growth in their three best D100 stats,
+ // but it NEVER bypasses the mandatory post-battle Reward Wheel. Award this
+ // lesson bonus only once, after the player's selected reward is resolved.
+ const current=state.current;
+ if(state.path==='Training'&&current&&!current.win&&!current.draw&&!current.senseiLessonAwarded){
+   current.senseiLessonAwarded=true;
+   const gain=current.margin<=25?3:2;
+   const changes=gainStats(topStats(state.opponent),gain,'Learning from sensei defeat');
+   notifyStats('Sensei lesson · 3 stat gains',changes,roundDone);
+   return;
+ }
  renderTrainingStats();
  if(state.round<2){
    state.phase='between_rounds';stageTitle('Round 1 complete — Review overall D100 Stats');
@@ -19815,7 +20072,7 @@ window.twCommitResults=function(){
 window.twRetrySave=function(){window.twCommitResults();};
 window.twStartNext=function(){
  if(state&&state.phase!=='saved'&&!window.confirm('Discard this unsaved training preview and all its rewards? The existing Ninja Catalogue will stay unchanged.'))return;
- clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
+ clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;pendingJutsu=null;
  detachArena();state=null;clearTrainingRecordingFrame();window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;
  refreshTrainees();setStatus('Choose a Catalogue ninja to test another two-fight training arc.');
@@ -19839,7 +20096,7 @@ window.twStartArc=function(){
 window.twCancelArc=function(){
  if(!state||state.phase==='saved'){window.twStartNext();return;}
  if(!window.confirm('Discard this unsaved training arc and all preview rewards? The existing Ninja Catalogue will remain unchanged.'))return;
- clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;
+ clearTimeout(victoryTimer);twCancelPendingSpin();spinning=false;popupShown=false;byId('twModal').hidden=true;onModalClose=null;pendingJutsu=null;
  detachArena();state=null;clearTrainingRecordingFrame();window.removeEventListener('beforeunload',beforeTabLeaves);
  byId('twStage').hidden=true;byId('twCancel').hidden=true;byId('twTrainee').disabled=false;refreshTrainees();
  setStatus('Incomplete training arc abandoned. The Ninja Catalogue was not changed.');
@@ -19853,10 +20110,15 @@ byId('twDisclosure')?.addEventListener('toggle',()=>{
  // Keep any live battle visible: collapsing the parent is not an instruction to cancel it.
 });
 refreshTrainees();
-window.NINJA_TRAINING_WHEELS={version:2,getState:()=>state?{phase:state.phase,round:state.round,trainee:state.sourceName,saved:state.phase==='saved',rounds:clone(state.rounds),changes:clone(state.changes),previewStats:clone(state.working.stats)}:null,refreshCatalogue:refreshTrainees,renderStats:renderTrainingStats};
+window.NINJA_TRAINING_WHEELS={version:3,getState:()=>state?{phase:state.phase,round:state.round,trainee:state.sourceName,saved:state.phase==='saved',rounds:clone(state.rounds),changes:clone(state.changes),previewStats:clone(state.working.stats)}:null,getVisibleOptions:()=>choices.map(({person,...option})=>({...option})),inspectJutsuOptions:slot=>state&&['j1','j2','ult'].includes(slot)?getJutsuOptions(slot):[],refreshCatalogue:refreshTrainees,renderStats:renderTrainingStats};
 })();
 
 </script>
+<style id="twHybridRewardStyle">
+#trainingWheelSection .tw-option-chance{color:#eac082;font-weight:800;white-space:nowrap}
+#trainingWheelSection #twModal #twKeepJutsu{margin-top:9px;background:#142132;color:#e5eff7;border-color:#54728d}
+#trainingWheelSection #twModal #twKeepJutsu[hidden]{display:none!important}
+</style>
 <style id="ninjaStableStageSizing">
 /* Stable-size rendering: one shared disc size, stationary outer chrome, and
    a fixed Arena viewport independent of the canvas backing resolution.
