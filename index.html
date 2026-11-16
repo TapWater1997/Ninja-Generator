@@ -11962,9 +11962,30 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
   function b13World(){for(const q of b13Shots)orbFxProjectile(q);for(const z of b13Fields)orbFxZone(z);}
   function b13Reset(){b13Shots=[];b13Fields=[];b13State=[];for(const f of [...fighters,...clones])for(const k of ['b13Water','b13Wood','b13Rinne','b13Weight','b13Corrosion'])delete f[k];}
 
-  const B12_PROFILES = {"Flower Bomb":{"key":"b12-276","mode":"b12-flower-bomb","kind":"Storm game","batch":12,"windup":29,"recovery":32,"cooldown":775,"cost":23,"range":380,"radius":16,"damage":2.2,"color":"#f4a6c8"},"Flower Bomb: Scatter":{"key":"b12-277","mode":"b12-flower-scatter","kind":"Storm game","batch":12,"windup":33,"recovery":37,"cooldown":840,"cost":28,"range":380,"radius":20,"damage":2.38,"color":"#f4a6c8"},"Dancing Petals Flower Garden":{"key":"b12-278","mode":"b12-petal-dance","kind":"Storm game","batch":12,"windup":37,"recovery":42,"cooldown":905,"cost":33,"range":220,"radius":24,"damage":2.56,"color":"#f4cf9b"},"Ninja Art: Inundated with Flowers":{"key":"b12-279","mode":"b12-flower-profuse","kind":"Storm game","batch":12,"windup":41,"recovery":47,"cooldown":970,"cost":38,"range":380,"radius":28,"damage":2.74,"color":"#f4a6c8"},"Super Expansion Jutsu":{"key":"b12-280","mode":"b12-super-expand","kind":"Storm game","batch":12,"windup":25,"recovery":52,"cooldown":580,"cost":18,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Super Slap":{"key":"b12-281","mode":"b12-super-slap","kind":"Storm game","batch":12,"windup":29,"recovery":57,"cooldown":645,"cost":23,"range":220,"radius":20,"damage":2.38,"color":"#f4cf9b"},"Hidden Jutsu: Insect Bog":{"key":"b12-282","mode":"b12-insect-bog","kind":"Storm game","batch":12,"windup":33,"recovery":32,"cooldown":710,"cost":28,"range":220,"radius":24,"damage":2.56,"color":"#9fb8ff"},"Parasitic Insects: Pupa":{"key":"b12-283","mode":"b12-insect-pupa","kind":"Storm game","batch":12,"windup":37,"recovery":37,"cooldown":775,"cost":33,"range":220,"radius":28,"damage":2.74,"color":"#9fb8ff"},"Absolute Fang Over Fang":{"key":"b12-284","mode":"b12-absolute-fang","kind":"Storm game","batch":12,"windup":41,"recovery":42,"cooldown":840,"cost":38,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"The Great Sakura":{"key":"b12-285","mode":"b12-great-sakura","kind":"Storm game","batch":12,"windup":25,"recovery":47,"cooldown":905,"cost":18,"range":220,"radius":20,"damage":2.38,"color":"#f4a6c8"},"Full Blossom: Cherry Blossom Clash":{"key":"b12-286","mode":"b12-full-blossom","kind":"Storm game","batch":12,"windup":29,"recovery":52,"cooldown":970,"cost":23,"range":220,"radius":24,"damage":2.56,"color":"#f4a6c8"},"Paradise Pure Land":{"key":"b12-287","mode":"b12-paradise","kind":"Storm game","batch":12,"windup":33,"recovery":57,"cooldown":580,"cost":28,"range":220,"radius":28,"damage":2.74,"color":"#f4cf9b"},"Legendary Herculean Strength":{"key":"b12-288","mode":"b12-herculean","kind":"Storm game","batch":12,"windup":37,"recovery":32,"cooldown":645,"cost":33,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Heaven Kick of Pain":{"key":"b12-289","mode":"b12-heaven-kick","kind":"Storm game","batch":12,"windup":41,"recovery":37,"cooldown":710,"cost":38,"range":220,"radius":20,"damage":2.38,"color":"#f4cf9b"},"Giant Layered Sand Burial":{"key":"b12-290","mode":"b12-layered-burial","kind":"Ninjutsu/taijutsu","batch":12,"windup":25,"recovery":42,"cooldown":775,"cost":18,"range":220,"radius":24,"damage":2.56,"color":"#c4a46c"},"Sand Shuriken / Sand Projectiles":{"key":"b12-291","mode":"b12-sand-shuriken","kind":"Ninjutsu/taijutsu","batch":12,"windup":29,"recovery":47,"cooldown":840,"cost":23,"range":380,"radius":28,"damage":2.74,"color":"#c4a46c"},"Secret Black Move: Iron Maiden":{"key":"b12-292","mode":"b12-iron-maiden","kind":"Storm game","batch":12,"windup":33,"recovery":52,"cooldown":905,"cost":28,"range":220,"radius":16,"damage":2.2,"color":"#c4a46c"},"Secret Black Move: Flame Control Scorpion Show":{"key":"b12-293","mode":"b12-scorpion-show","kind":"Storm game","batch":12,"windup":37,"recovery":57,"cooldown":970,"cost":33,"range":220,"radius":20,"damage":2.38,"color":"#f4cf9b"},"Iron Sand: Unleash!":{"key":"b12-294","mode":"b12-iron-unleash","kind":"Storm game","batch":12,"windup":41,"recovery":32,"cooldown":580,"cost":38,"range":380,"radius":24,"damage":2.56,"color":"#c4a46c"},"Three Treasures Suction Crush":{"key":"b12-295","mode":"b12-three-treasures","kind":"Ninjutsu/taijutsu","batch":12,"windup":25,"recovery":37,"cooldown":645,"cost":18,"range":220,"radius":28,"damage":2.74,"color":"#f4cf9b"},"Summoning: Blade Dance":{"key":"b12-296","mode":"b12-blade-dance","kind":"Storm game","batch":12,"windup":29,"recovery":42,"cooldown":710,"cost":23,"range":380,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Tornado Drop":{"key":"b12-297","mode":"b12-tornado-drop","kind":"Storm game","batch":12,"windup":33,"recovery":47,"cooldown":775,"cost":28,"range":380,"radius":20,"damage":2.38,"color":"#8bd5ea"},"True Wind Scythe Jutsu":{"key":"b12-298","mode":"b12-true-scythe","kind":"Storm game","batch":12,"windup":37,"recovery":52,"cooldown":840,"cost":33,"range":380,"radius":24,"damage":2.56,"color":"#8bd5ea"},"Water Style: Super Shark Bomb":{"key":"b12-299","mode":"b12-super-shark","kind":"Storm game","batch":12,"windup":41,"recovery":57,"cooldown":905,"cost":38,"range":380,"radius":28,"damage":2.74,"color":"#8bd5ea"},"Water Style: Grand Water Excavation":{"key":"b12-300","mode":"b12-grand-drill","kind":"Storm game","batch":12,"windup":25,"recovery":32,"cooldown":970,"cost":18,"range":380,"radius":16,"damage":2.2,"color":"#8bd5ea"}};
+  const B12_PROFILES = {"Flower Bomb":{"key":"b12-276","mode":"b12-flower-bomb","kind":"Storm game","batch":12,"windup":29,"recovery":32,"cooldown":775,"cost":23,"range":380,"radius":16,"damage":2.2,"color":"#f4a6c8"},"Flower Bomb: Scatter":{"key":"b12-277","mode":"b12-flower-scatter","kind":"Storm game","batch":12,"windup":33,"recovery":37,"cooldown":840,"cost":28,"range":380,"radius":20,"damage":2.38,"color":"#f4a6c8"},"Dancing Petals Flower Garden":{"key":"b12-278","mode":"b12-petal-dance","kind":"Storm game","batch":12,"windup":37,"recovery":42,"cooldown":905,"cost":33,"range":220,"radius":24,"damage":2.56,"color":"#f4cf9b"},"Ninja Art: Inundated with Flowers":{"key":"b12-279","mode":"b12-flower-profuse","kind":"Storm game","batch":12,"windup":41,"recovery":47,"cooldown":970,"cost":38,"range":380,"radius":28,"damage":2.74,"color":"#f4a6c8"},"Super Expansion Jutsu":{"key":"b12-280","mode":"b12-super-expand","kind":"Storm game","batch":12,"windup":25,"recovery":52,"cooldown":580,"cost":18,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Super Slap":{"key":"b12-281","mode":"b12-super-slap","kind":"Storm game","batch":12,"windup":29,"recovery":57,"cooldown":645,"cost":23,"range":220,"radius":20,"damage":2.38,"color":"#f4cf9b"},"Hidden Jutsu: Insect Bog":{"key":"b12-282","mode":"b12-insect-bog","kind":"Storm game","batch":12,"windup":33,"recovery":32,"cooldown":710,"cost":28,"range":220,"radius":24,"damage":2.56,"color":"#9fb8ff"},"Parasitic Insects: Pupa":{"key":"b12-283","mode":"b12-insect-pupa","kind":"Storm game","batch":12,"windup":37,"recovery":37,"cooldown":775,"cost":33,"range":220,"radius":28,"damage":2.74,"color":"#9fb8ff"},"Absolute Fang Over Fang":{"key":"b12-284","mode":"b12-absolute-fang","kind":"Storm game","batch":12,"windup":41,"recovery":42,"cooldown":840,"cost":38,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"The Great Sakura":{"key":"b12-285","mode":"b12-great-sakura","kind":"Storm game","batch":12,"windup":25,"recovery":47,"cooldown":905,"cost":18,"range":220,"radius":20,"damage":2.38,"color":"#f4a6c8"},"Full Blossom: Cherry Blossom Clash":{"key":"b12-286","mode":"b12-full-blossom","kind":"Storm game","batch":12,"windup":29,"recovery":52,"cooldown":970,"cost":23,"range":220,"radius":24,"damage":2.56,"color":"#f4a6c8"},"Paradise Pure Land":{"key":"b12-287","mode":"b12-paradise","kind":"Storm game","batch":12,"windup":33,"recovery":57,"cooldown":580,"cost":28,"range":220,"radius":28,"damage":2.74,"color":"#f4cf9b"},"Legendary Herculean Strength":{"key":"b12-288","mode":"b12-herculean","kind":"Storm game","batch":12,"windup":37,"recovery":32,"cooldown":645,"cost":33,"range":220,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Heaven Kick of Pain":{"key":"b12-289","mode":"b12-heaven-kick","kind":"taijutsu","batch":12,"windup":41,"recovery":37,"cooldown":710,"cost":38,"range":235,"radius":102,"damage":2.7,"color":"#f4cf9b"},"Giant Layered Sand Burial":{"key":"b12-290","mode":"b12-layered-burial","kind":"Ninjutsu/taijutsu","batch":12,"windup":25,"recovery":42,"cooldown":775,"cost":18,"range":220,"radius":24,"damage":2.56,"color":"#c4a46c"},"Sand Shuriken / Sand Projectiles":{"key":"b12-291","mode":"b12-sand-shuriken","kind":"Ninjutsu/taijutsu","batch":12,"windup":29,"recovery":47,"cooldown":840,"cost":23,"range":380,"radius":28,"damage":2.74,"color":"#c4a46c"},"Secret Black Move: Iron Maiden":{"key":"b12-292","mode":"b12-iron-maiden","kind":"Storm game","batch":12,"windup":33,"recovery":52,"cooldown":905,"cost":28,"range":220,"radius":16,"damage":2.2,"color":"#c4a46c"},"Secret Black Move: Flame Control Scorpion Show":{"key":"b12-293","mode":"b12-scorpion-show","kind":"Storm game","batch":12,"windup":37,"recovery":57,"cooldown":970,"cost":33,"range":220,"radius":20,"damage":2.38,"color":"#f4cf9b"},"Iron Sand: Unleash!":{"key":"b12-294","mode":"b12-iron-unleash","kind":"Storm game","batch":12,"windup":41,"recovery":32,"cooldown":580,"cost":38,"range":380,"radius":24,"damage":2.56,"color":"#c4a46c"},"Three Treasures Suction Crush":{"key":"b12-295","mode":"b12-three-treasures","kind":"Ninjutsu/taijutsu","batch":12,"windup":25,"recovery":37,"cooldown":645,"cost":18,"range":220,"radius":28,"damage":2.74,"color":"#f4cf9b"},"Summoning: Blade Dance":{"key":"b12-296","mode":"b12-blade-dance","kind":"Storm game","batch":12,"windup":29,"recovery":42,"cooldown":710,"cost":23,"range":380,"radius":16,"damage":2.2,"color":"#f4cf9b"},"Tornado Drop":{"key":"b12-297","mode":"b12-tornado-drop","kind":"Storm game","batch":12,"windup":33,"recovery":47,"cooldown":775,"cost":28,"range":380,"radius":20,"damage":2.38,"color":"#8bd5ea"},"True Wind Scythe Jutsu":{"key":"b12-298","mode":"b12-true-scythe","kind":"Storm game","batch":12,"windup":37,"recovery":52,"cooldown":840,"cost":33,"range":380,"radius":24,"damage":2.56,"color":"#8bd5ea"},"Water Style: Super Shark Bomb":{"key":"b12-299","mode":"b12-super-shark","kind":"Storm game","batch":12,"windup":41,"recovery":57,"cooldown":905,"cost":38,"range":380,"radius":28,"damage":2.74,"color":"#8bd5ea"},"Water Style: Grand Water Excavation":{"key":"b12-300","mode":"b12-grand-drill","kind":"Storm game","batch":12,"windup":25,"recovery":32,"cooldown":970,"cost":18,"range":380,"radius":16,"damage":2.2,"color":"#8bd5ea"}};
   /* Batch 12: individually modelled Storm techniques; numbers are arena adaptations. */
-  let b12Shots=[],b12Zones=[],b12Bodies=[];
+  let b12Shots=[],b12Zones=[],b12Bodies=[],b12HeelDrops=[];
+  // Heaven Kick: the warning circle is at the actual landing point, not the caster's feet.
+  function b12StartHeavenKick(c,target){
+    const s=c.source;
+    let tx=Number.isFinite(c.aimX)?c.aimX:(target?.x??s.x),ty=Number.isFinite(c.aimY)?c.aimY:(target?.y??s.y);
+    const dx=tx-s.x,dy=ty-s.y,dist=Math.hypot(dx,dy),reach=Math.min(dist,c.p.range);
+    if(dist>0){tx=s.x+dx/dist*reach;ty=s.y+dy/dist*reach;}
+    // No landing through an enemy wall. The resulting crater still appears on our side.
+    const wall=researchBlockingBarrier(c.owner,s.x,s.y,tx,ty,Math.max(4,s.r*.45));
+    if(wall){const fraction=Math.max(0,wall.t-.065);tx=s.x+(tx-s.x)*fraction;ty=s.y+(ty-s.y)*fraction;}
+    const cx=tx-CX,cy=ty-CY,bound=Math.max(10,ARENA_R-(s.r||20)-9),r=Math.hypot(cx,cy);
+    if(r>bound){tx=CX+cx/r*bound;ty=CY+cy/r*bound;}
+    // Touch down just beside the target instead of visually overlapping both orbs.
+    const finalDist=Math.hypot(tx-s.x,ty-s.y),angle=Math.atan2(ty-s.y,tx-s.x);
+    const standOff=Math.min(Math.max(0,finalDist-6),Math.max(25,(s.r||20)*1.35));
+    const footX=tx-Math.cos(angle)*standOff,footY=ty-Math.sin(angle)*standOff;
+    b12HeelDrops.push({c,source:s,x:tx,y:ty,footX,footY,fromX:s.x,fromY:s.y,age:0,life:88,impactAt:22,
+      impacted:false,radius:102,blocked:!!wall});
+    b12Fx('form',s.x,s.y,40,c.p.color,22);
+    b12Fx('form',tx,ty,48,'#e3b77f',25);
+  }
+
   const b12Dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
   const b12Target=c=>c.target?.alive?c.target:researchEnemies(c.owner)[0];
   const b12Fx=(type,x,y,r,color,life=15)=>b3Mark(type,x,y,r,color,life);
@@ -11988,7 +12009,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
       case 'full-blossom':b12Zone(c,'blossom-launch',{r:100,limit:1,part:.35,requireContact:true,knock:5});b12Zone(c,'blossom-clash',{r:112,delay:24,interval:24,limit:1,part:.65,requireContact:true,knock:10});break;
       case 'paradise':b12Zone(c,'tsunade-shockwave',{r:112,limit:1,part:.45,knock:5});b12Zone(c,'tsunade-uppercut',{r:112,delay:22,interval:22,limit:1,part:.55,knock:12});break;
       case 'herculean':b12Zone(c,'herculean-combo',{r:105,limit:3,interval:12,part:1/3,requireContact:true,knock:7});break;
-      case 'heaven-kick':b12Zone(c,'heel-drop',{r:110,limit:1,part:1,requireContact:true,knock:13});break;
+      case 'heaven-kick':b12StartHeavenKick(c,t);break;
       case 'layered-burial':b12Projectile(c,'sand-mound',{r:25,speed:6.5,part:.12,trigger:'sand-pyramid',bind:true});break;
       case 'sand-shuriken':for(let i=0;i<5;i++)b12Projectile(c,'sand-shuriken',{angle:c.angle+(i-2)*.11,delay:i*3,r:9,speed:9.5,part:.2});break;
       case 'iron-maiden':b12Projectile(c,'kuroari-trap',{r:18,speed:7,part:.15,trigger:'puppet-blades',bind:true});break;
@@ -12006,7 +12027,43 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
   function b12Cast(c){if(c.phaseAge>170)researchFinish(c);return true;}
   function b12DamageIntercept(f,d,o={}){if(f.b12Giant?.shield>0&&!o.mental){let amount=Math.min(d*.32,f.b12Giant.shield);f.b12Giant.shield-=amount;return d-amount;}return d;}
   function b12Hit(q,t,part=q.part){if(!t?.alive||q.hit?.has(t))return 0;q.hit?.add(t);let damage=researchDamage(q.c,t,q.c.p.damage*part,{combo:true,stagger:6,knock:q.knock||4,fire:q.burn});if(damage>0){if(q.bind)t.bindTimer=Math.max(t.bindTimer||0,24);if(q.burn)researchIgnite(q.c,t);if(q.poison)t.poisonTimer=Math.max(t.poisonTimer||0,75);if(q.absorb){let take=Math.min(10,Math.max(0,t.chakra||0));t.chakra-=take;q.c.source.chakra=Math.min(q.c.source.maxChakra||100,(q.c.source.chakra||0)+take*.55);}if(q.trigger){let kind=q.trigger;if(kind==='purple-flowers')for(let i=0;i<5;i++)b12Projectile(q.c,'poison-petals',{x:t.x-35,y:t.y-22,angle:(i-2)*.38+Math.PI/2,speed:5,r:10,life:22,part:.12,poison:true});else if(kind==='insect-crush'||kind==='pupa-crush'){b12Zone(q.c,kind,{x:t.x,y:t.y,r:50,interval:12,limit:3,part:.23,bind:true});}else if(kind==='sand-pyramid'){b12Zone(q.c,'sand-pyramid',{x:t.x,y:t.y,r:58,interval:15,limit:3,part:.29,bind:true});}else if(kind==='puppet-blades'){b12Zone(q.c,'puppet-blades',{x:t.x,y:t.y,r:48,interval:9,limit:5,part:.17,bind:true});}else if(kind==='iron-thorns'){b12Zone(q.c,'iron-thorns',{x:t.x,y:t.y,r:65,interval:12,limit:3,part:.27,poison:true});}else if(kind==='kamatari-tornado'){b12Zone(q.c,'kamatari-tornado',{x:t.x,y:t.y,r:72,interval:12,limit:2,part:.25,knock:9});}else if(kind==='wind-drop'){b12Zone(q.c,'wind-drop',{x:t.x,y:t.y,r:54,interval:18,limit:2,part:.42,knock:13,bind:true});}}}return damage;}
-  function b12Update(dt){for(const f of [...fighters,...clones])if(f.b12Giant){f.b12Giant.life-=dt;if(f.b12Giant.life<=0||f.b12Giant.shield<=0)delete f.b12Giant;}
+  function b12Update(dt){
+    // Three phases: leap toward marked target, heel impact, lingering crater/debris.
+    for(const drop of b12HeelDrops){
+      drop.age+=dt;drop.life-=dt;
+      const c=drop.c,s=drop.source;
+      if(!c.owner.alive||!s.alive){s.researchLift=0;drop.life=0;continue;}
+      if(!drop.impacted){
+        const t=Math.min(1,drop.age/drop.impactAt),ease=t*t*(3-2*t);
+        s.x=drop.fromX+(drop.footX-drop.fromX)*ease;
+        s.y=drop.fromY+(drop.footY-drop.fromY)*ease;
+        s.vx=0;s.vy=0;
+        s.researchLift=-78*Math.sin(Math.PI*t);
+        if(drop.age<drop.impactAt){
+          if(Math.floor(drop.age/5)!==Math.floor((drop.age-dt)/5))b12Fx('form',s.x,s.y-20,25,c.p.color,12);
+          continue;
+        }
+        s.x=drop.footX;s.y=drop.footY;s.researchLift=0;
+        drop.impacted=true;
+        // A small direct-hit center and a wider, weaker shockwave for nearby targets.
+        for(const foe of researchEnemies(c.owner)){
+          const d=Math.hypot(foe.x-drop.x,foe.y-drop.y);
+          if(d>drop.radius+researchBodyRadius(foe))continue;
+          if(researchBlockingBarrier(c.owner,drop.x,drop.y,foe.x,foe.y,3))continue;
+          const direct=d<=Math.max(47,researchBodyRadius(foe)+25);
+          researchDamage(c,foe,c.p.damage*(direct?1:.58),{
+            combo:true,stagger:direct?23:12,knock:direct?14:8,
+            angle:Math.atan2(foe.y-drop.y,foe.x-drop.x)});
+        }
+        b12Fx('impact',drop.x,drop.y,drop.radius,c.p.color,42);
+        researchFx('impact',drop.x,drop.y,'#c39b70',drop.radius,33);
+        spawnParticles(drop.x,drop.y,'#bb9d7d',30,6,28);
+        orbAudioPlayEvent('foley_hit_heavy','impact',6,c.owner,.36);
+        log(`${c.owner.name}'s Heaven Kick of Pain craters the ground.`);
+      }
+    }
+    b12HeelDrops=b12HeelDrops.filter(z=>z.life>0);
+    for(const f of [...fighters,...clones])if(f.b12Giant){f.b12Giant.life-=dt;if(f.b12Giant.life<=0||f.b12Giant.shield<=0)delete f.b12Giant;}
     for(const z of b12Bodies){z.life-=dt;z.cool-=dt;if(!z.body.alive||!z.c.owner.alive||z.life<=0){z.body.alive=false;z.body.poof=12;continue;}if(z.type==='Hiruko Scorpion'&&z.cool<=0){z.cool=26;let t=b12Target(z.c);if(t?.alive)b12Projectile(z.c,'scorpion-tail',{x:z.body.x,y:z.body.y,angle:Math.atan2(t.y-z.body.y,t.x-z.body.x),r:10,speed:8,part:.08,poison:true});}}b12Bodies=b12Bodies.filter(z=>z.body.alive&&z.life>0);
     for(const q of b12Shots){q.age+=dt;q.life-=dt;if(q.life<=0||!q.c.owner.alive){q.dead=true;continue;}if(q.age<q.delay)continue;let ox=q.x,oy=q.y;q.x+=Math.cos(q.angle)*q.speed*dt*orbTuneNumber('projectileSpeed');q.y+=Math.sin(q.angle)*q.speed*dt*orbTuneNumber('projectileSpeed');
       if(researchBlockingBarrier(q.c.owner,ox,oy,q.x,q.y,q.r)){q.dead=true;b12Fx('impact',q.x,q.y,q.r+12,q.c.p.color);continue;}
@@ -12018,8 +12075,31 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
       if(z.hits>=z.limit)z.life=0;
     }b12Zones=b12Zones.filter(z=>z.life>0&&z.c.owner.alive);
   }
-  function b12World(){for(const q of b12Shots)orbFxProjectile(q);for(const z of b12Zones)orbFxZone(z);for(const f of fighters)if(f.b12Giant)b12Fx('form',f.x,f.y,70,'#f2c7a4',6);}
-  function b12Reset(){b12Shots=[];b12Zones=[];for(const z of b12Bodies){z.body.alive=false;z.body.poof=10;}b12Bodies=[];for(const f of [...fighters,...clones])delete f.b12Giant;}
+  function b12World(){
+    for(const drop of b12HeelDrops){
+      const age=drop.age,impact=drop.impacted,r=drop.radius;
+      ctx.save();ctx.translate(drop.x,drop.y);
+      ctx.globalAlpha=impact?Math.min(.55,drop.life/65):.35;
+      ctx.strokeStyle=impact?'#a77e60':'#f4c98f';ctx.lineWidth=impact?3:2;
+      ctx.setLineDash(impact?[]:[8,6]);ctx.beginPath();ctx.arc(0,0,impact?r*.6:r*.75,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      if(impact){
+        ctx.fillStyle='rgba(64,48,38,.30)';ctx.beginPath();ctx.arc(0,0,r*.58,0,Math.PI*2);ctx.fill();
+        for(let i=0;i<11;i++){
+          const a=i*Math.PI*2/11+0.15,short=r*(.23+(i%4)*.07);
+          ctx.beginPath();ctx.moveTo(Math.cos(a)*short,Math.sin(a)*short);
+          ctx.lineTo(Math.cos(a+.13)*r*(.7+(i%3)*.07),Math.sin(a+.13)*r*(.7+(i%3)*.07));ctx.stroke();
+        }
+        const wave=Math.min(1,Math.max(0,(age-drop.impactAt)/13));
+        if(wave<1){ctx.globalAlpha=.65*(1-wave);ctx.strokeStyle='#ead0a4';ctx.lineWidth=5;
+          ctx.beginPath();ctx.arc(0,0,r*(.35+wave*.9),0,Math.PI*2);ctx.stroke();}
+      }
+      ctx.restore();
+    }
+    for(const q of b12Shots)orbFxProjectile(q);
+    for(const z of b12Zones)orbFxZone(z);
+    for(const f of fighters)if(f.b12Giant)b12Fx('form',f.x,f.y,70,'#f2c7a4',6);
+  }
+  function b12Reset(){b12Shots=[];b12Zones=[];b12HeelDrops=[];for(const z of b12Bodies){z.body.alive=false;z.body.poof=10;}b12Bodies=[];for(const f of [...fighters,...clones])delete f.b12Giant;}
 
   const B11_PROFILES = {"Susanoo: Fire Thrust":{"key":"b11-251","mode":"b11-fire-thrust","kind":"Storm game Susanoo combo","batch":11,"windup":31,"recovery":60,"cooldown":1010,"cost":42,"range":170,"radius":22,"damage":2.32,"color":"#ffc16d"},"Susanoo: Flame Spiral":{"key":"b11-252","mode":"b11-flame-spiral","kind":"Storm game Susanoo slash","batch":11,"windup":36,"recovery":30,"cooldown":560,"cost":17,"range":340,"radius":27,"damage":2.54,"color":"#ffc16d"},"Susanoo: Tsukumo":{"key":"b11-253","mode":"b11-tsukumo","kind":"Storm game Susanoo projectile","batch":11,"windup":41,"recovery":36,"cooldown":635,"cost":22,"range":340,"radius":32,"damage":2.76,"color":"#d1e0e8"},"Indra's Arrow / Takemikazuchi-no-Kami":{"key":"b11-254","mode":"b11-indra-arrow","kind":"Six Paths chakra; Susanoo; combined Storm title","batch":11,"windup":46,"recovery":42,"cooldown":710,"cost":27,"range":340,"radius":37,"damage":2.98,"color":"#83d8ff"},"Planetary Devastation: Heavenly Drop":{"key":"b11-255","mode":"b11-heavenly-drop","kind":"Storm 4 game secret technique","batch":11,"windup":26,"recovery":48,"cooldown":785,"cost":32,"range":340,"radius":17,"damage":2.1,"color":"#d1e0e8"},"Curse Mark Chidori":{"key":"b11-256","mode":"b11-curse-chidori","kind":"Chidori; cursed seal; game move","batch":11,"windup":31,"recovery":54,"cooldown":860,"cost":37,"range":340,"radius":22,"damage":2.32,"color":"#d1e0e8"},"Cursed Power":{"key":"b11-257","mode":"b11-cursed-power","kind":"Cursed seal transformation; Storm secret title","batch":11,"windup":36,"recovery":60,"cooldown":935,"cost":42,"range":170,"radius":27,"damage":2.54,"color":"#b88cfa"},"Kotoamatsukami: Kobo":{"key":"b11-258","mode":"b11-kobo","kind":"Storm game genjutsu ultimate","batch":11,"windup":41,"recovery":30,"cooldown":1010,"cost":17,"range":340,"radius":32,"damage":2.76,"color":"#b88cfa"},"Uchiha Style: Halo Dance":{"key":"b11-259","mode":"b11-halo","kind":"Storm game Fire Release kenjutsu","batch":11,"windup":46,"recovery":36,"cooldown":560,"cost":22,"range":340,"radius":37,"damage":2.98,"color":"#ffc16d"},"Clone Jutsu: Super Explosion":{"key":"b11-260","mode":"b11-clone-explosion","kind":"Clone explosion; Storm game variation","batch":11,"windup":26,"recovery":42,"cooldown":635,"cost":27,"range":170,"radius":17,"damage":2.1,"color":"#d1e0e8"},"Flash Slice":{"key":"b11-261","mode":"b11-flash-slice","kind":"Storm game taijutsu/kenjutsu","batch":11,"windup":31,"recovery":48,"cooldown":710,"cost":32,"range":170,"radius":22,"damage":2.32,"color":"#d1e0e8"},"Combustive Sword Attack":{"key":"b11-262","mode":"b11-combustive-sword","kind":"Sword and flame; ambiguous game label","batch":11,"windup":36,"recovery":54,"cooldown":785,"cost":37,"range":340,"radius":27,"damage":2.54,"color":"#d1e0e8"},"Lightning Blade: Speed":{"key":"b11-263","mode":"b11-lb-speed","kind":"Storm 4 Lightning Blade variant","batch":11,"windup":41,"recovery":60,"cooldown":860,"cost":42,"range":340,"radius":32,"damage":2.76,"color":"#83d8ff"},"Lightning Blade: Double Lightning Quake":{"key":"b11-264","mode":"b11-double-quake","kind":"Storm game secret technique","batch":11,"windup":46,"recovery":30,"cooldown":935,"cost":17,"range":340,"radius":37,"damage":2.98,"color":"#d1e0e8"},"Susanoo: Kamui Lightning Blade":{"key":"b11-265","mode":"b11-susanoo-kamui","kind":"Six Paths power; Susanoo; Storm move","batch":11,"windup":26,"recovery":36,"cooldown":1010,"cost":22,"range":340,"radius":17,"damage":2.1,"color":"#83d8ff"},"White Light Blade":{"key":"b11-266","mode":"b11-white-light","kind":"White Light Chakra Sabre; Storm game move","batch":11,"windup":31,"recovery":42,"cooldown":560,"cost":27,"range":340,"radius":22,"damage":2.32,"color":"#83d8ff"},"Summoning: Demonic Statue of the Outer Path":{"key":"b11-267","mode":"b11-gedo-statue","kind":"Rinnegan Outer Path summon","batch":11,"windup":36,"recovery":48,"cooldown":635,"cost":32,"range":170,"radius":27,"damage":2.54,"color":"#d1e0e8"},"Eight Trigrams 64 Palms Guard":{"key":"b11-268","mode":"b11-64-guard","kind":"Storm game Eight Trigrams guard","batch":11,"windup":41,"recovery":54,"cooldown":710,"cost":37,"range":170,"radius":32,"damage":2.76,"color":"#d1e0e8"},"Leaf Hot Wind":{"key":"b11-269","mode":"b11-hot-wind","kind":"Storm 2 taijutsu technique","batch":11,"windup":46,"recovery":60,"cooldown":785,"cost":42,"range":170,"radius":37,"damage":2.98,"color":"#d1e0e8"},"Leaf Burning Sky":{"key":"b11-270","mode":"b11-burning-sky","kind":"Storm 1 taijutsu ultimate","batch":11,"windup":26,"recovery":30,"cooldown":860,"cost":17,"range":170,"radius":17,"damage":2.1,"color":"#d1e0e8"},"One's Own Rule":{"key":"b11-271","mode":"b11-own-rule","kind":"Storm 1 game secret move","batch":11,"windup":31,"recovery":36,"cooldown":935,"cost":22,"range":170,"radius":22,"damage":2.32,"color":"#d1e0e8"},"Shadow Stitching Jutsu: Rook":{"key":"b11-272","mode":"b11-rook","kind":"Storm 4 shadow kenjutsu combination","batch":11,"windup":36,"recovery":42,"cooldown":1010,"cost":27,"range":340,"radius":27,"damage":2.54,"color":"#d1e0e8"},"Shadow Pull Jutsu":{"key":"b11-273","mode":"b11-shadow-pull","kind":"Storm 2 secret move","batch":11,"windup":41,"recovery":48,"cooldown":560,"cost":32,"range":340,"radius":32,"damage":2.76,"color":"#b88cfa"},"Shadow Pinning Jutsu":{"key":"b11-274","mode":"b11-shadow-pinning","kind":"Shadow capture; game subdivision","batch":11,"windup":46,"recovery":54,"cooldown":635,"cost":37,"range":340,"radius":37,"damage":2.98,"color":"#b88cfa"},"Kunai Tactics: Siege":{"key":"b11-275","mode":"b11-kunai-siege","kind":"Storm 4 weapon combo","batch":11,"windup":26,"recovery":60,"cooldown":710,"cost":42,"range":340,"radius":17,"damage":2.1,"color":"#d1e0e8"}};
   /* Batch 11: source-aware game combinations and manga abilities, arena-scale numbers. */
@@ -12875,7 +12955,15 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     const dist=b4Near(s,t),a=Math.atan2(t.y-s.y,t.x-s.x),dir=c.angle;
     if(m==='tiger'){b4Object(c,'tiger',{x:s.x+Math.cos(dir)*25,y:s.y+Math.sin(dir)*25,dir,speed:8.5,r:23,life:65,portion:p.damage});}
     else if(m==='elephant'){for(let i=0;i<5;i++)b4Object(c,'elephant',{x:s.x,y:s.y,dir,speed:9.5+i*.65,r:15+i*2,delay:i*12,life:110,portion:p.damage/5});s.researchStrain=Math.max(s.researchStrain||0,115);}
-    else if(m==='nightguy'){b4Object(c,'nightguy',{life:75,delay:13,portion:p.damage,stage:'rush',startX:s.x,startY:s.y,dir,r:29});s.researchStrain=Math.max(s.researchStrain||0,400);}
+    else if(m==='nightguy'){
+      // Night Guy is the Eighth Gate's ultimate kick. Gate 8 persists after the attack.
+      reworkApplyForm(c.owner,'gates',0,{level:8});
+      c.base*=2.25+Math.min(100,consumableStat(c.owner,'taijutsu'))*.005;
+      b4Object(c,'nightguy',{life:92,delay:12,portion:p.damage,stage:'rush',startX:s.x,startY:s.y,
+        dir,r:29,speed:13,impacted:false});
+      s.researchStrain=Math.max(s.researchStrain||0,180);
+      b3Mark('dragon',s.x,s.y,62,'#e94a48',40,dir);
+    }
     else if(['entry','leafspin','cherry','partial','tank','fang','passing','wolf'].includes(m)){
       if(m==='wolf'||m==='fang'){const dog=b4Companion(c.owner);if(dog){b4Object(c,'dogfang',{x:dog.x,y:dog.y,dir:Math.atan2(t.y-dog.y,t.x-dog.x),life:48,portion:p.damage*.24,source:dog,speed:7,r:15});}}
       const strikes=m==='leafspin'?3:m==='passing'?2:m==='wolf'?3:1;
@@ -12957,17 +13045,39 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
         }continue;
       }
       if(q.stage==='rush'){
-        if(q.type==='nightguy'&&q.age>=q.delay&&!q.kicked){
+        if(q.type==='nightguy'){
+          if(q.age<q.delay)continue;
           const t=b4Target(c),endX=t?.x??c.aimX,endY=t?.y??c.aimY;
-          const a=Math.atan2(endY-s.y,endX-s.x),distance=Math.min(p.range,Math.hypot(endX-s.x,endY-s.y));
-          const nx=s.x+Math.cos(a)*distance,ny=s.y+Math.sin(a)*distance;
-          if(!researchBlockingBarrier(c.owner,s.x,s.y,nx,ny)&&t&&distPointSeg(t.x,t.y,s.x,s.y,nx,ny)<researchBodyRadius(t)+25){
-            researchDamage(c,t,p.damage,{combo:true,bypassArmor:true,stagger:30,knock:12});
-            s.x=nx;s.y=ny;if(s.parent)applyCloneBounds(s);else applyBounds(s);
-          }else b3Mark('miss',s.x,s.y,22,p.color);
-          b3Mark('dragon',s.x,s.y,65,p.color,43,a);q.kicked=true;
-          // Eighth Gate's fatal outcome, delayed until the decisive kick resolves.
-          s.hp=0;s.alive=false;s.poof=36;if(s===c.owner)orbCheckVictory();q.spent=true;continue;
+          const a=Math.atan2(endY-s.y,endX-s.x),dist=Math.hypot(endX-s.x,endY-s.y);
+          const step=Math.min(dist,Math.max(0,q.speed*dt*orbTuneNumber('projectileSpeed')));
+          const nx=s.x+Math.cos(a)*step,ny=s.y+Math.sin(a)*step;
+          const wall=researchBlockingBarrier(c.owner,s.x,s.y,nx,ny,Math.max(4,s.r*.4));
+          if(!wall){s.x=nx;s.y=ny;if(s.parent)applyCloneBounds(s);else applyBounds(s);}
+          q.x=s.x;q.y=s.y;q.dir=a;
+          if(Math.floor(q.age/4)!==Math.floor((q.age-dt)/4)){
+            b3Mark('dragon',s.x-Math.cos(a)*18,s.y-Math.sin(a)*18,55,'#ed4c40',16,a);
+            researchFx('impact',s.x,s.y,'#fa6655',28,10);
+          }
+          const contact=t?.alive&&!wall&&Math.hypot(t.x-s.x,t.y-s.y)<=researchBodyRadius(t)+34;
+          const expired=q.age>=69||wall||(!t?.alive&&q.age>=27);
+          if(contact||expired){
+            // Physical recoil never KOs the caster outright; ongoing Gate 8 drain is separate.
+            s.hp=Math.max(1,s.hp-(s.maxHp||100)*.25);
+            if(contact){
+              const dealt=researchDamage(c,t,p.damage,{combo:true,stagger:34,knock:16,angle:a});
+              if(dealt>0)orbAudioPlayEvent('foley_hit_heavy','impact',8,c.owner,.43);
+              b3Mark('dragon',t.x,t.y,86,'#f45a4a',38,a);
+              researchFx('impact',t.x,t.y,'#e95849',90,35);
+              spawnParticles(t.x,t.y,'#f16c55',26,5,29);
+            }else{
+              b3Mark(wall?'impact':'miss',s.x,s.y,50,p.color,28,a);
+            }
+            floatText(s.x,s.y-s.r-25,'GATE 8 RECOIL','#ff927f');
+            s.researchStrain=Math.max(s.researchStrain||0,165);
+            // Gate 8 remains until the battle ends and its existing HP drain stops at 1.
+            q.impacted=true;q.spent=true;continue;
+          }
+          continue;
         }
         const t=b4Target(c),d=q.speed*dt,ax=q.x,ay=q.y;q.x+=Math.cos(q.dir)*d;q.y+=Math.sin(q.dir)*d;
         if(researchBlockingBarrier(c.owner,ax,ay,q.x,q.y,q.r*.6)){q.spent=true;continue;}
@@ -13880,10 +13990,13 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     if(p.mode==="b13-c0"&&slot!=="ult")return false; // avoid consuming chakra or meter on invalid C0 cast
     const target=b2CastTarget(f,p,source);if(!target)return false;
     const multiplier=slot==='ult'?1.65:slot==='j2'?1.08:1;
+    const physicalSignature=name==='Heaven Kick of Pain'||name==='Night Guy';
+    const statKind=physicalSignature?'taijutsu':p.batch===2&&p.kind==='taijutsu'?'taijutsu':p.batch===2&&p.kind==='genjutsu'?'genjutsu':'ninjutsu';
+    const physicalBonus=physicalSignature?(1+Math.max(0,consumableStat(f,'strength'))*.003+(name==='Night Guy'?Math.max(0,consumableStat(f,'speed'))*.0018:0))*(name==='Heaven Kick of Pain'?2.5:1):1;
     const c={owner:f,source,target,name,p,slot,phase:'windup',age:0,phaseAge:0,used:new Map(),
       angle:Math.atan2(target.y-source.y,target.x-source.x),aimX:target.x,aimY:target.y,
       windup:p.windup+(p.mode==='skystrike'?Math.round((1-orbResearchWeather.heat)*100):0),
-      base:f.dmg*(.9+consumableStat(f,p.batch===2&&p.kind==='taijutsu'?'taijutsu':p.batch===2&&p.kind==='genjutsu'?'genjutsu':'ninjutsu')*.0035+consumableStat(f,'chakraControl')*.0015)*orbTuneNumber('jutsuDamage')*multiplier,
+      base:f.dmg*(.9+consumableStat(f,statKind)*.0035+consumableStat(f,'chakraControl')*.0015)*orbTuneNumber('jutsuDamage')*multiplier*physicalBonus,
       throwWind:researchMasteredWind(f),startX:source.x,startY:source.y,lastPulse:-1};
     const meter=slot==='j1'?'j1Meter':slot==='j2'?'j2Meter':'ultMeter';
     f[meter]=0;f.chakra=Math.max(0,(f.chakra??100)-p.cost);f.researchCooldowns=f.researchCooldowns||{};
