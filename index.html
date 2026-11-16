@@ -19060,8 +19060,12 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
 #trainingWheelSection .tw-modal-card{background:#10243a;color:#ecf5ff;border:1px solid #cea46d;border-radius:15px;padding:clamp(16px,4vw,23px);width:min(96vw,500px);max-height:min(84svh,690px);overflow:auto;box-shadow:0 15px 65px rgba(0,0,0,.7)}
 #trainingWheelSection .tw-modal-card h3{margin:0 0 8px;font-size:21px;color:#f7d9a7}
 #trainingWheelSection .tw-modal-card p{line-height:1.55;font-size:14px;color:#d6e6f5}
-#trainingWheelSection .tw-modal-stat-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:48svh;overflow:auto;margin-bottom:12px}
-#trainingWheelSection .tw-modal-stat-list span{padding:6px 8px;border:1px solid #315371;border-radius:7px;background:#172e42;font-size:12px}
+#trainingWheelSection .tw-modal-stat-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;max-height:min(41svh,310px);overflow-y:auto;overscroll-behavior:contain;margin:8px 0 12px;padding:2px}
+#trainingWheelSection .tw-modal-stat-row{display:flex;align-items:center;justify-content:space-between;gap:5px;padding:8px;border:1px solid #315371;border-radius:7px;background:#172e42;min-width:0;font-size:12px;line-height:1.25}
+#trainingWheelSection .tw-modal-stat-name{font-weight:700;overflow-wrap:anywhere}
+#trainingWheelSection .tw-modal-stat-values{white-space:nowrap;font-variant-numeric:tabular-nums;color:#d7e7f5}
+#trainingWheelSection .tw-modal-stat-values em{font-style:normal;font-weight:800;color:#afecc0;margin-left:2px}
+#trainingWheelSection .tw-stat-popup-intro{margin:0 0 9px;color:#dcebdc}
 #trainingWheelSection .tw-modal button{width:100%}
 @media(max-width:710px){
  #trainingWheelSection .tw-setup{grid-template-columns:1fr}
@@ -19073,7 +19077,12 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
  #trainingWheelSection .tw-stage{padding:7px}
  #trainingWheelSection #orbBattlePanel .orb-wrap{padding:5px}
  #trainingWheelSection #orbBattlePanel .orb-hud{width:100%}
- #trainingWheelSection .tw-modal-stat-list{grid-template-columns:1fr 1fr}
+ #trainingWheelSection .tw-modal-stat-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #trainingWheelSection .tw-modal-stat-row{padding:7px 6px;font-size:11px}
+}
+@media(max-width:350px){
+ #trainingWheelSection .tw-modal-stat-list{grid-template-columns:1fr;max-height:42svh}
+ #trainingWheelSection .tw-modal-stat-row{font-size:12px}
 }
 /* Reduced-motion timing is handled in twSpinWheel; never suppress the visible result animation. */
 </style>
@@ -19465,14 +19474,23 @@ window.twKeepCurrentWeapon=function(){
 function showSpinResult(phase,choice,onContinue){
  const stages={category:'Training Path',rank:'Session Difficulty',opponent:'Your Opponent',reward:'Reward Outcome',stat:'Stat Chosen',jutsu:'New Technique',weapon:'Weapon Chosen'};
  const kind=stages[phase]||'Wheel Result';
- const words=`<div class="tw-result-symbol" aria-hidden="true">忍</div><p class="tw-result-kind">${esc(kind)}</p><p class="tw-result-choice">${esc(choice.label)}</p><p class="tw-result-help">Result confirmed. Continue when you're ready for the next wheel or Arena.</p>`;
+ const words=`<div class="tw-result-symbol" aria-hidden="true">忍</div><p class="tw-result-kind">${esc(kind)}</p><p class="tw-result-choice">${esc(choice.label)}</p>`;
  showModal('Wheel Result',words,onContinue,'Continue');
  byId('twModal').classList.add('tw-result-modal-active');
 }
-function statListHtml(changes){return `<div class="tw-modal-stat-list">${changes.map(c=>`<span><b>${esc(c.label)}</b><br>${c.before} → ${c.after} <strong>${c.gain?'(+'+c.gain+')':'(MAX)'}</strong></span>`).join('')}</div>`;}
+// Training result popups show only actual improvements; unchanged/capped stats
+// remain available in the collapsible D100 Training Preview below the recording frame.
+function statListHtml(changes){
+ const increased=(Array.isArray(changes)?changes:[]).filter(c=>Number(c.gain)>0);
+ if(!increased.length)return '';
+ return `<div class="tw-modal-stat-list" role="list" aria-label="Increased D100 statistics">${increased.map(c=>`<div class="tw-modal-stat-row" role="listitem"><span class="tw-modal-stat-name">${esc(c.label)}</span><span class="tw-modal-stat-values">${c.before} → <strong>${c.after}</strong> <em>+${c.gain}</em></span></div>`).join('')}</div>`;
+}
 function notifyStats(title,changes,after){
- const done=changes.reduce((n,c)=>n+c.gain,0);
- showModal(title,`<p>${changes.length} D100 stat${changes.length===1?'':'s'} reviewed · <strong>+${done} total points</strong> applied toward this training arc. Capped stats remain at 100.</p>${statListHtml(changes)}`,after);
+ const increased=(Array.isArray(changes)?changes:[]).filter(c=>Number(c.gain)>0);
+ const total=increased.reduce((n,c)=>n+Number(c.gain),0);
+ const message=increased.length?`<p class="tw-stat-popup-intro"><strong>${increased.length} stat${increased.length===1?'':'s'} increased · +${total} total</strong></p>`:
+   '<p class="tw-stat-popup-intro">No stats increased; the affected attributes are already at 100.</p>';
+ showModal(title,`${message}${statListHtml(increased)}`,after);
 }
 function gainStats(keys,delta,reason){
  const changes=[];const w=state.working;w.stats=w.stats||{};
@@ -20135,10 +20153,17 @@ function roundDone(){
  }
  renderTrainingStats();
  if(state.round<2){
-   state.phase='between_rounds';stageTitle('Round 1 complete — Review overall D100 Stats');
-   const net=Object.keys(statNames).reduce((total,k)=>total+Math.max(0,capped(state.working?.stats?.[k]??50)-capped(state.original?.stats?.[k]??50)),0);
-   showModal('Round 1 complete · Review your stats',
-     `<p>These are all 16 D100 stats <strong>after Round 1</strong>, including any training gains. Your Catalogue entry is unchanged. Review your totals before beginning Round 2.</p><p><strong>Overall gains so far: +${net}</strong> D100 points.</p><div class="tw-stats-grid" role="list">${trainingStatsHTML()}</div>`,
+   state.phase='between_rounds';stageTitle('Round 1 complete — Stat increases');
+   const roundIncreases=Object.entries(statNames).map(([key,label])=>{
+     const before=capped(state.original?.stats?.[key]??50),after=capped(state.working?.stats?.[key]??50);
+     return {label,before,after,gain:Math.max(0,after-before)};
+   }).filter(stat=>stat.gain>0);
+   const net=roundIncreases.reduce((total,stat)=>total+stat.gain,0);
+   const summary=roundIncreases.length?
+     `<p class="tw-stat-popup-intro"><strong>${roundIncreases.length} stat${roundIncreases.length===1?'':'s'} increased · +${net} total</strong></p>`:
+     '<p class="tw-stat-popup-intro">No D100 stats increased in Round 1.</p>';
+   showModal('Round 1 complete · Stat increases',
+     `${summary}${statListHtml(roundIncreases)}`,
      ()=>{if(!state||state.phase!=='between_rounds')return;state.round=2;startRound();},
      'Continue to Round 2');
    return;
