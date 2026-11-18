@@ -12935,6 +12935,29 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
   function b5Fx(t,x,y,r,col,life=30,angle=0){b3Mark(t,x,y,r,col,life,angle);}
   function b5Obj(c,type,extra={}){const o={c,type,x:c.source.x,y:c.source.y,life:100,age:0,speed:6,r:15,angle:c.angle,portion:c.p.damage,delay:0,hit:new Set(),...extra};b5Objects.push(o);return o;}
   function b5Zone(c,type,x,y,r,life,extra={}){const z={c,type,x,y,r,life,age:0,period:0,...extra};b5Zones.push(z);return z;}
+  function orbMistImpairment(f){
+    if(!f||!(f.b5MistBlind>0))return 0;
+    const n=f.ninja||f.parent?.ninja||{},eye=String(n.dojutsu||n.dojutsuData?.name||'').toLowerCase();
+    // Perceptive shinobi can track chakra or motion through mist more reliably.
+    if(eye.includes('byakugan'))return .08;
+    const sense=Number(n.stats?.sensory)||0;
+    if(/sensor|sage/i.test(String(n.primary||'')+' '+String(n.senjutsu||''))||sense>=90)return .25;
+    if(sense>=76)return .48;
+    if(sense>=61)return .7;
+    return 1;
+  }
+  function orbMistPerceivedTarget(f,target,dt){
+    const mist=orbMistImpairment(f);
+    if(!mist||!target?.alive){f.orbMistMemory=null;return target;}
+    const stored=f.orbMistMemory;
+    if(!stored||stored.target!==target||stored.life<=0){
+      const angle=Math.random()*Math.PI*2,scatter=(42+Math.random()*86)*mist;
+      f.orbMistMemory={target,x:target.x+Math.cos(angle)*scatter,y:target.y+Math.sin(angle)*scatter,life:20+Math.random()*19};
+    }else stored.life-=dt;
+    const m=f.orbMistMemory;
+    return{x:clamp(m.x,CX-ARENA_R+20,CX+ARENA_R-20),y:clamp(m.y,CY-ARENA_R+20,CY+ARENA_R-20),r:target.r,alive:target.alive};
+  }
+
   function b5Ready(f,p){
     // A historical Edo Tensei ritual must not consume resources or conjure an arbitrary corpse.
     if(p.mode==='b5-edo')return !!(f.b5EdoSoul&&f.b5EdoDNA&&f.b5EdoSacrifice);
@@ -12985,7 +13008,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
       b5Fx('form',oldX,oldY,18,'#dbe6fc',30);b5Fx('form',s.x,s.y,24,'#dbe6fc',24);researchFinish(c);return true;
     }
     if(m==='mist'){
-      b5Zone(c,'mist',s.x,s.y,185,255,{owner:c.owner});b5Fx('water',s.x,s.y,180,'#d0e2eb',45);
+      b5Zone(c,'mist',s.x,s.y,255,360,{owner:c.owner});b5Fx('water',s.x,s.y,235,'#d0e2eb',45);log(`${c.owner.name} fills the battlefield with dense concealing mist.`);
       researchFinish(c);return true;
     }
     if(m==='hydro'){
@@ -13157,8 +13180,34 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     }
     ctx.restore();ctx.restore();
   }
+  function orbDrawMistFloor(z){
+    const fade=Math.min(1,z.life/40,(z.age+10)/28),t=orbFxClock();
+    ctx.save();ctx.translate(z.x,z.y);
+    const cloud=ctx.createRadialGradient(0,0,12,0,0,z.r);
+    cloud.addColorStop(0,'rgba(204,223,232,.20)');cloud.addColorStop(.54,'rgba(183,206,219,.15)');cloud.addColorStop(1,'rgba(171,200,215,0)');
+    ctx.globalAlpha=fade;ctx.fillStyle=cloud;ctx.beginPath();ctx.arc(0,0,z.r,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(0,0,z.r-7,0,Math.PI*2);ctx.clip();
+    for(let i=0;i<10;i++){
+      const phase=i*2.399+t*.006,dr=z.r*(.22+(i%5)*.15),x=Math.cos(phase)*dr,y=Math.sin(phase)*dr;
+      ctx.globalAlpha=.09*fade;ctx.fillStyle=i%2?'#c6dae4':'#e3edf2';
+      ctx.beginPath();ctx.ellipse(x,y,31+(i%3)*15,12+(i%3)*4,phase*.33,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+  function orbDrawMistOverFighters(){
+    for(const z of b5Zones){if(z.type!=='mist'||z.life<=0)continue;
+      const fade=Math.min(1,z.life/28,(z.age+10)/26),clock=orbFxClock();
+      ctx.save();ctx.translate(z.x,z.y);ctx.beginPath();ctx.arc(0,0,z.r,0,Math.PI*2);ctx.clip();
+      for(let i=0;i<7;i++){
+        const a=i*2.399+clock*.008,dist=z.r*(.2+.12*(i%5)),x=Math.cos(a)*dist,y=Math.sin(a)*dist;
+        ctx.globalAlpha=.13*fade;ctx.strokeStyle='#ecf8ff';ctx.lineWidth=19+i%3*5;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(x-36,y+Math.sin(a)*9);ctx.bezierCurveTo(x-12,y-23,x+20,y+25,x+47,y-8);ctx.stroke();
+      }
+      ctx.restore();
+    }
+  }
   function b5World(){
-    for(const z of b5Zones){if(z.type==='swamp')orbDrawMudSwamp(z);else orbFxZone(z);}
+    for(const z of b5Zones){if(z.type==='swamp')orbDrawMudSwamp(z);else if(z.type==='mist')orbDrawMistFloor(z);else orbFxZone(z);}
     for(const f of fighters){if(f.b5FTGMark)b5Fx('seal',f.b5FTGMark.x,f.b5FTGMark.y,18,'#d9c28a',7);if(f.b5PaperForm)b5Fx('form',f.x,f.y,32,'#fff8e5',6);if(f.b5Hydro)b5Fx('water',f.x,f.y,30,'#93edff',6);if(f.b5Threads)b5Fx('beam',f.x,f.y,25,'#222129',6);}
   }
   function b5Reset(){b5Objects=[];b5Zones=[];for(const f of fighters){for(const k of ['b5FTGMark','b5Hydro','b5PaperForm','b5Threads','b5Ritual','b5Banished','b5Reanimated','b5MistBlind','b5MultiClone','b5BeastSealed'])delete f[k];}}
@@ -13743,6 +13792,28 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     }
     for(const z of reworkZones){
       z.life-=dt;z.age=(z.age||0)+dt;
+      if(z.kind==='kunai-siege-shuriken'){
+        const ox=z.x,oy=z.y,dx=z.goalX-z.x,dy=z.goalY-z.y,d=Math.hypot(dx,dy)||1,step=Math.hypot(z.vx,z.vy)*dt;
+        const nx=d<=step?z.goalX:z.x+dx/d*step,ny=d<=step?z.goalY:z.y+dy/d*step;
+        const block=researchBlockingBarrier(z.owner,ox,oy,nx,ny,4);
+        if(block){z.x=ox+(nx-ox)*block.t;z.y=oy+(ny-oy)*block.t;b2HitBarrier(block.b,z.cast.base*.5);}
+        else{z.x=nx;z.y=ny;}
+        if(block||d<=step||z.life<=0){
+          const radius=63;
+          reworkZones.push({kind:'kunai-siege-blast',x:z.x,y:z.y,r:radius,life:35,max:35,age:0,color:'#ffad5e',owner:z.owner});
+          researchFx('blast',z.x,z.y,'#ffb366',radius,33);
+          spawnParticles(z.x,z.y,'#fbc98a',24,5.5,33);
+          orbImpactMarks.push({x:z.x,y:z.y,r:26,life:69,max:69,color:'#f4b56a',kind:'heavy'});
+          orbAudioPlayEvent('projectile_explosion','impact',4,z.owner,.3);
+          for(const enemy of researchEnemies(z.owner)){
+            const distance=Math.hypot(enemy.x-z.x,enemy.y-z.y);
+            if(distance>radius+researchBodyRadius(enemy)||researchBlockingBarrier(z.owner,z.x,z.y,enemy.x,enemy.y,3))continue;
+            const falloff=Math.max(.43,1-distance/(radius+researchBodyRadius(enemy))*.5);
+            researchDamage(z.cast,enemy,z.cast.p.damage*.40*falloff,{combo:true,stagger:12,knock:5,fire:true});
+          }
+          z.life=0;
+        }
+      }
       if(z.kind==='fang-spin'||z.kind==='mark-projectile'){
         z.x+=z.vx*dt;z.y+=z.vy*dt;
         if(z.x<CX-ARENA_R+9||z.x>CX+ARENA_R-9||z.y<CY-ARENA_R+9||z.y>CY+ARENA_R-9){z.life=0;continue;}
@@ -13771,6 +13842,11 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     c.reworkMoment= m==='reaper'?0: m==='doki'?0: /paper-chasm|sand-pyramid|sand-tsunami|truth-orbs|goldchains/.test(m)?26:16;
     c.reworkDuration=m==='reaper'?128:/paper-chasm|sand-pyramid|sand-tsunami|truth-orbs|flute/.test(m)?84:38;
     c.reworkDone=false;
+    if(m==='kunai-siege'){
+      c.reworkDuration=112;
+      c.siege={strikeOne:false,strikeTwo:false,connected:false,backstep:false,launched:false,kicked:false};
+      return true;
+    }
     if(m==='doki'){reworkSpawnDoki(f);reworkFinishEffect(c);return true;}
     if(m==='fourlegs'||m==='butterfly'||m.startsWith('expand')||m==='spiked'||m==='forest'||m==='baryon'){
       if(m==='forest'){
@@ -13805,8 +13881,67 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     }
     return true;
   }
+  function reworkSiegeCast(c,dt){
+    const s=c.source,t=c.target,state=c.siege;
+    if(!state){reworkFinishEffect(c);return true;}
+    const age=c.phaseAge;
+    if(t?.alive&&age<23){
+      const angle=Math.atan2(t.y-s.y,t.x-s.x),distance=Math.hypot(t.x-s.x,t.y-s.y);
+      const wanted=s.r+t.r+26;
+      if(distance>wanted){
+        const travel=Math.min(distance-wanted,8.5*dt*orbTuneNumber('maxMovementSpeed'));
+        const nx=s.x+Math.cos(angle)*travel,ny=s.y+Math.sin(angle)*travel;
+        if(!researchBlockingBarrier(c.owner,s.x,s.y,nx,ny,s.r*.55)){s.x=nx;s.y=ny;applyBounds(s);}
+      }
+      c.angle=angle;
+      if(Math.floor(age/5)!==Math.floor((age-dt)/5))researchFx('speed',s.x,s.y,'#d9e6ef',s.r+9,14);
+    }
+    for(const [key,when,part] of [['strikeOne',23,.19],['strikeTwo',32,.16]]){
+      if(age<when||state[key])continue;
+      state[key]=true;
+      if(t?.alive&&Math.hypot(t.x-s.x,t.y-s.y)<=s.r+researchBodyRadius(t)+40&&
+          !researchBlockingBarrier(c.owner,s.x,s.y,t.x,t.y,6)){
+        const dealt=researchDamage(c,t,c.p.damage*part,{combo:true,stagger:9,knock:.7,angle:c.angle});
+        if(dealt>0){state.connected=true;orbAudioMeleeHit(c.owner);researchFx('impact',t.x,t.y,'#dae7ed',23,20);}
+      }
+    }
+    if(t?.alive&&age>=33&&age<44){
+      const a=Math.atan2(t.y-s.y,t.x-s.x)+Math.PI;
+      const nx=s.x+Math.cos(a)*3.0*dt,ny=s.y+Math.sin(a)*3.0*dt;
+      if(!researchBlockingBarrier(c.owner,s.x,s.y,nx,ny,6)){s.x=nx;s.y=ny;applyBounds(s);}
+    }
+    if(age>=44&&!state.launched){
+      state.launched=true;
+      const gx=clamp(t?.alive?t.x:c.aimX,CX-ARENA_R+9,CX+ARENA_R-9);
+      const gy=clamp(t?.alive?t.y:c.aimY,CY-ARENA_R+9,CY+ARENA_R-9);
+      const a=Math.atan2(gy-s.y,gx-s.x),speed=7.4*orbTuneNumber('projectileSpeed');
+      const startX=s.x+Math.cos(a)*(s.r+8),startY=s.y+Math.sin(a)*(s.r+8);
+      reworkZones.push({kind:'kunai-siege-shuriken',x:startX,y:startY,r:8,life:55,max:55,age:0,
+        vx:Math.cos(a)*speed,vy:Math.sin(a)*speed,goalX:gx,goalY:gy,owner:c.owner,cast:c,color:'#f4c18d'});
+      orbAudioQueueProjectileLaunch(c.owner,0);
+      researchFx('spear',startX,startY,'#dce6f1',16,12);
+    }
+    if(t?.alive&&age>=70&&age<84&&state.connected){
+      const a=Math.atan2(t.y-s.y,t.x-s.x),distance=Math.hypot(t.x-s.x,t.y-s.y);
+      if(distance>s.r+t.r+30){const move=Math.min(distance-s.r-t.r-29,6.8*dt);
+        const nx=s.x+Math.cos(a)*move,ny=s.y+Math.sin(a)*move;
+        if(!researchBlockingBarrier(c.owner,s.x,s.y,nx,ny,5)){s.x=nx;s.y=ny;applyBounds(s);}}
+    }
+    if(age>=84&&!state.kicked){
+      state.kicked=true;
+      if(state.connected&&t?.alive&&Math.hypot(t.x-s.x,t.y-s.y)<s.r+researchBodyRadius(t)+42&&
+          !researchBlockingBarrier(c.owner,s.x,s.y,t.x,t.y,6)){
+        const angle=Math.atan2(t.y-s.y,t.x-s.x);
+        const dealt=researchDamage(c,t,c.p.damage*.25,{combo:true,stagger:17,knock:9,angle});
+        if(dealt>0){orbAudioMeleeHit(c.owner);researchFx('impact',t.x,t.y,'#f3e4b6',35,26);floatText(t.x,t.y-t.r-30,'FINISHING KICK','#ffe7ab');}
+      }
+    }
+    if(age>=c.reworkDuration)reworkFinishEffect(c);
+    return true;
+  }
   function reworkCast(c,dt){
     const m=c.p.mode.slice(7),f=c.owner,t=c.target,s=c.source;
+    if(m==='kunai-siege')return reworkSiegeCast(c,dt);
     if(m==='reaper'){
       const spirit=c.reworkSpirit;if(!spirit){reworkFinishEffect(c);return true;}
       if(t?.alive){const d=Math.hypot(t.x-spirit.x,t.y-spirit.y)||1;
@@ -13884,7 +14019,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
         if(touching){if(m==='ice-mirror')t.bindTimer=Math.max(t.bindTimer||0,37);
           reworkDamage(c,t,c.p.damage,{knock:m==='taijutsu-dragon'?8:4,stagger:14});}
       }else if(m==='kunai-siege'){
-        reworkPulse(c,108,'#d5e8ef',80);if(touching)reworkDamage(c,t,c.p.damage,{stagger:12});
+        // This legacy pulse is unreachable: reworkSiegeCast handles all stages.
       }else if(m==='baryon-ball'){
         reworkPulse(c,62,'#f36c4c',66);if(touching)reworkDamage(c,t,c.p.damage,{knock:8,stagger:20});
       }
@@ -13899,6 +14034,24 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
         ctx.lineWidth=4;ctx.strokeStyle='#91ddff';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(0,0,z.r*(.4+i*.27),i*2.1,i*2.1+Math.PI*1.6);ctx.stroke();}
         ctx.restore();}
       else if(z.kind==='mark-projectile'){ctx.beginPath();ctx.arc(z.x,z.y,5,0,Math.PI*2);ctx.fill();}
+      else if(z.kind==='kunai-siege-shuriken'){
+        const a=Math.atan2(z.vy,z.vx);
+        ctx.save();ctx.translate(z.x,z.y);ctx.rotate(a+z.age*.29);ctx.globalAlpha=.98;ctx.shadowBlur=10;ctx.shadowColor='#e4c6a1';
+        ctx.fillStyle='#d6e3ea';ctx.strokeStyle='#fff2cf';ctx.lineWidth=1.6;
+        for(let i=0;i<4;i++){ctx.save();ctx.rotate(i*Math.PI/2);ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(4,-12);ctx.lineTo(9,-4);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();}
+        ctx.fillStyle='#313846';ctx.beginPath();ctx.arc(0,0,3,0,Math.PI*2);ctx.fill();ctx.restore();
+      }
+      else if(z.kind==='kunai-siege-blast'){
+        const progress=1-z.life/z.max,fire=ctx.createRadialGradient(z.x,z.y,4,z.x,z.y,z.r);
+        fire.addColorStop(0,'rgba(255,247,205,.82)');fire.addColorStop(.24,'rgba(255,171,67,.68)');
+        fire.addColorStop(.65,'rgba(224,81,33,.34)');fire.addColorStop(1,'rgba(109,45,35,0)');
+        ctx.globalAlpha=alpha*.83;ctx.fillStyle=fire;ctx.beginPath();ctx.arc(z.x,z.y,z.r*(.35+progress*.85),0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='#ffb76e';ctx.lineWidth=4;ctx.beginPath();ctx.arc(z.x,z.y,z.r*(.18+progress*1.1),0,Math.PI*2);ctx.stroke();
+        ctx.strokeStyle='#e8ae7c';ctx.globalAlpha=alpha*.6;ctx.lineWidth=3;
+        for(let i=0;i<9;i++){const a=i*Math.PI*2/9,zr=z.r*(.38+progress*.8);
+          ctx.beginPath();ctx.moveTo(z.x+Math.cos(a)*zr*.5,z.y+Math.sin(a)*zr*.5);
+          ctx.lineTo(z.x+Math.cos(a+.13)*zr,z.y+Math.sin(a+.13)*zr);ctx.stroke();}
+      }
       else if(z.kind.includes('sand-pyramid')){ctx.beginPath();ctx.moveTo(z.x,z.y-z.r*1.2);ctx.lineTo(z.x-z.r,z.y+z.r*.62);ctx.lineTo(z.x+z.r,z.y+z.r*.62);ctx.closePath();ctx.fill();ctx.globalAlpha=.65*alpha;ctx.stroke();}
       else if(z.kind==='sand-tsunami'){ctx.beginPath();for(let i=-5;i<=5;i++){const xx=z.x+i*z.r/5,yy=z.y+Math.sin(i*.7+phase*7)*15; if(i===-5)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);}ctx.lineWidth=21;ctx.stroke();}
       else if(z.kind==='ice-mirror'){
@@ -14277,7 +14430,15 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     if(c.slot==='ult'&&!c.ultActivationCounted){c.owner.ultActivations=(Number(c.owner.ultActivations)||0)+1;c.ultActivationCounted=true;}
     // Charge and release are separate events with different cue selection.
     orbAudioJutsuRelease(c);
-    c.angle=Math.atan2(c.aimY-s.y,c.aimX-s.x);if(s.b5MistBlind>0&&!s.b6Jougan&&!s.ninja?.sensorType&&!s.ninja?.byakugan){c.angle+=Math.sin(orbResearchClock*.41+s.x*.02)*.23;}s.vx=0;s.vy=0;
+    c.angle=Math.atan2(c.aimY-s.y,c.aimX-s.x);
+    const mistAim=orbMistImpairment(s);
+    if(mistAim&&c.name!=='Silent Killing'){
+      const deviation=(Math.sin(orbResearchClock*.41+s.x*.02)*.25+(Math.random()-.5)*.8)*mistAim;
+      c.angle+=deviation;
+      const aimDistance=Math.min(320,Math.hypot(c.aimX-s.x,c.aimY-s.y));
+      c.aimX=s.x+Math.cos(c.angle)*aimDistance;c.aimY=s.y+Math.sin(c.angle)*aimDistance;
+    }
+    s.vx=0;s.vy=0;
     if(p.dust){dustRelease(c);return;}
     if(p.batch===24){reworkRelease(c);return;}
     if(isSummoningActivation(c.owner,c.name)&&!c.visualSummonSpawned){spawnSummonedOrb(c.owner,c.name,c.slot);c.visualSummonSpawned=true;}
@@ -15930,7 +16091,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     if(!target||!target.alive)return false;
     const dx=target.x-a.x,dy=target.y-a.y,d=len(dx,dy);
     if(d<70)return false;
-    const angle=Math.atan2(dy,dx),ang=angle+(Math.random()-.5)*.08;
+    const angle=Math.atan2(dy,dx),ang=angle+(Math.random()-.5)*(.08+.95*orbMistImpairment(a));
     const name=a.weapon||'Ranged Weapon';
     const damage=a.dmg*(.72+Math.random()*.28)*(0.9+consumableStat(a,'weaponSkill')*.004)*1.08*.75*orbTuneNumber('weaponProjectileDamage')/0.75; // Projectile damage reduced to 75% of the previous value.
     orbAudioQueueProjectileLaunch(a,0);
@@ -16035,7 +16196,8 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     else dmg*=1.08; // Modest equipment advantage after correcting fist reach.
     if(b.shield>0){orbAudioDefenseEvent(b,'hit','shield',.24);spawnParticles(b.x,b.y,'#9eeeff',12,4,20);floatText(b.x,b.y-b.r-18,'BLOCKED','#a9efff');orbEvent('clash');a.recovery=Math.max(a.recovery||0,4);b.vx*=.88;b.vy*=.88;return false;}
     const evasion=consumableStat(b,'speed')*.004 + consumableStat(b,'stealth')*.0018 + consumableStat(b,'battleIQ')*.0012;
-    if(!(a.reworkMark?.target===b&&a.reworkMark.life>0&&a.reworkMark.charges>0)&&Math.random()<Math.min(.66,evasion*(reworkHasFlute(b)?1.5:1)*.12*orbTuneNumber('evasion'))){orbAudioPlayEvent('dodge','movement',1,b,.11);floatText(b.x,b.y-b.r-18,'DODGE!','#b9e8ff');spawnParticles(b.x,b.y,'#b9e8ff',7,2.8,17);const da=Math.atan2(b.y-a.y,b.x-a.x);b.vx+=Math.cos(da+Math.PI/2)*2.8;b.vy+=Math.sin(da+Math.PI/2)*2.8;return false;}
+    const mistMissChance=orbMistImpairment(a)*.28;
+    if(!(a.reworkMark?.target===b&&a.reworkMark.life>0&&a.reworkMark.charges>0)&&Math.random()<Math.min(.83,evasion*(reworkHasFlute(b)?1.5:1)*.12*orbTuneNumber('evasion')+mistMissChance)){orbAudioPlayEvent('dodge','movement',1,b,.11);floatText(b.x,b.y-b.r-18,mistMissChance>0?'LOST IN MIST':'DODGE!','#b9e8ff');spawnParticles(b.x,b.y,'#b9e8ff',7,2.8,17);const da=Math.atan2(b.y-a.y,b.x-a.x);b.vx+=Math.cos(da+Math.PI/2)*2.8;b.vy+=Math.sin(da+Math.PI/2)*2.8;return false;}
     const guardBefore=orbAudioProtectionSnapshot(b);
     dmg=researchMitigate(b,dmg,a);orbAudioGuardianImpact(b,guardBefore);if(dmg<=0)return false;
     if(a.reworkMark?.target===b&&a.reworkMark.life>0)a.reworkMark.charges--;
@@ -16265,7 +16427,9 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     /* Melee weapon markers rotate; ranged fighters use the angle only to aim
        projectiles and must never display a spinning weapon around the orb. */
     if(f.combatMode!=='ranged') f.weaponAngle+=f.weaponSpin*dt*(f.ultActive>0?1.6:1);
-    const dx=target.x-f.x,dy=target.y-f.y,dist=len(dx,dy),[nx,ny]=norm(dx,dy);
+    const perceived=orbMistPerceivedTarget(f,target,dt);
+    if(perceived&&orbMistImpairment(f)>0)f.b2FacingAngle=Math.atan2(perceived.y-f.y,perceived.x-f.x);
+    const dx=perceived.x-f.x,dy=perceived.y-f.y,dist=len(dx,dy),[nx,ny]=norm(dx,dy);
     const ideal=f.combatMode==='ranged'?Math.max(120,f.r+target.r+f.weaponReach*1.25):f.r+target.r+f.weaponReach*.55;
     /* Reposition in short bursts toward changing flank points around the arena.
        This deliberately creates visible cross-arena movement without changing damage rules. */
@@ -17422,6 +17586,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     for(const c of clones)drawClone(c);
     for(const f of fighters)for(const p of getPuppets(f))drawPuppet(p);
     for(const f of fighters)drawFighter(f);
+    orbDrawMistOverFighters(); // Brief translucent bands pass across the battlefield, never hiding the eyes completely.
     // Dim the surrounding battlefield while preserving the active form in a clear halo.
     orbDrawTransformationSpotlight(transformationFocus,x0,y0,sz);
     drawResearchOverlay();
@@ -19642,6 +19807,16 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
         </div>
         <div id="twDone" class="tw-summary" hidden></div>
       </div>
+      <details class="tw-admin-panel" id="twAdminPanel">
+        <summary>⚙ Training Admin · Predetermined Wheel Results</summary>
+        <div class="tw-admin-body">
+          <p><strong>Testing controls only.</strong> Each dropdown belongs to one specific wheel in one specific round. Pick a result to make its <strong>existing wedge</strong> the landing result while the wheel visibly spins with its normal sounds. Choose <strong>Random / normal odds</strong> to restore regular random selection. Wedge sizes, options, combat, rewards and manual Catalogue saving are unchanged.</p>
+          <p><strong>100% option coverage:</strong> menus contain every currently eligible option, including every eligible jutsu or weapon. Later menus update automatically as you choose a path, rank, opponent or rewards and when the actual wheel appears; unavailable choices cannot be forced. You can configure later wheels once they become known, before spinning each one.</p>
+          <div class="tw-admin-grid"><fieldset class="tw-admin-round"><legend>ROUND 1</legend><label class="tw-admin-label" for="twAdminR1_category"><span>Path (Training / Mission / Sparring)</span><select id="twAdminR1_category" data-tw-admin-round="1" data-tw-admin-key="category" aria-label="Round 1 Path (Training / Mission / Sparring)"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_rank"><span>Training / Mission Rank</span><select id="twAdminR1_rank" data-tw-admin-round="1" data-tw-admin-key="rank" aria-label="Round 1 Training / Mission Rank"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_opponent"><span>Opponent</span><select id="twAdminR1_opponent" data-tw-admin-round="1" data-tw-admin-key="opponent" aria-label="Round 1 Opponent"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_reward"><span>Post-fight Reward Type</span><select id="twAdminR1_reward" data-tw-admin-round="1" data-tw-admin-key="reward" aria-label="Round 1 Post-fight Reward Type"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_stat"><span>Stat Improvement</span><select id="twAdminR1_stat" data-tw-admin-round="1" data-tw-admin-key="stat" aria-label="Round 1 Stat Improvement"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_jutsu_j1"><span>New Jutsu 1</span><select id="twAdminR1_jutsu_j1" data-tw-admin-round="1" data-tw-admin-key="jutsu_j1" aria-label="Round 1 New Jutsu 1"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_jutsu_j2"><span>New Jutsu 2</span><select id="twAdminR1_jutsu_j2" data-tw-admin-round="1" data-tw-admin-key="jutsu_j2" aria-label="Round 1 New Jutsu 2"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_jutsu_ult"><span>New Ultimate Jutsu</span><select id="twAdminR1_jutsu_ult" data-tw-admin-round="1" data-tw-admin-key="jutsu_ult" aria-label="Round 1 New Ultimate Jutsu"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR1_weapon"><span>New Weapon</span><select id="twAdminR1_weapon" data-tw-admin-round="1" data-tw-admin-key="weapon" aria-label="Round 1 New Weapon"><option value="">Random / normal odds</option></select></label></fieldset><fieldset class="tw-admin-round"><legend>ROUND 2</legend><label class="tw-admin-label" for="twAdminR2_category"><span>Path (Training / Mission / Sparring)</span><select id="twAdminR2_category" data-tw-admin-round="2" data-tw-admin-key="category" aria-label="Round 2 Path (Training / Mission / Sparring)"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_rank"><span>Training / Mission Rank</span><select id="twAdminR2_rank" data-tw-admin-round="2" data-tw-admin-key="rank" aria-label="Round 2 Training / Mission Rank"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_opponent"><span>Opponent</span><select id="twAdminR2_opponent" data-tw-admin-round="2" data-tw-admin-key="opponent" aria-label="Round 2 Opponent"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_reward"><span>Post-fight Reward Type</span><select id="twAdminR2_reward" data-tw-admin-round="2" data-tw-admin-key="reward" aria-label="Round 2 Post-fight Reward Type"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_stat"><span>Stat Improvement</span><select id="twAdminR2_stat" data-tw-admin-round="2" data-tw-admin-key="stat" aria-label="Round 2 Stat Improvement"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_jutsu_j1"><span>New Jutsu 1</span><select id="twAdminR2_jutsu_j1" data-tw-admin-round="2" data-tw-admin-key="jutsu_j1" aria-label="Round 2 New Jutsu 1"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_jutsu_j2"><span>New Jutsu 2</span><select id="twAdminR2_jutsu_j2" data-tw-admin-round="2" data-tw-admin-key="jutsu_j2" aria-label="Round 2 New Jutsu 2"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_jutsu_ult"><span>New Ultimate Jutsu</span><select id="twAdminR2_jutsu_ult" data-tw-admin-round="2" data-tw-admin-key="jutsu_ult" aria-label="Round 2 New Ultimate Jutsu"><option value="">Random / normal odds</option></select></label><label class="tw-admin-label" for="twAdminR2_weapon"><span>New Weapon</span><select id="twAdminR2_weapon" data-tw-admin-round="2" data-tw-admin-key="weapon" aria-label="Round 2 New Weapon"><option value="">Random / normal odds</option></select></label></fieldset></div>
+          <div class="tw-admin-current" id="twAdminCurrent" role="status" aria-live="polite">Start an arc to populate the eligible result menus.</div>
+          <button class="tw-muted" id="twAdminClearAll" type="button" onclick="twAdminClearAll()">Clear all forced results (both rounds)</button>
+        </div>
+      </details>
       <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="tw-muted" type="button" id="twCancel" onclick="twCancelArc()" hidden>Abandon incomplete arc</button></div>
     </div>
   </details>
@@ -19649,6 +19824,22 @@ html.tourney-recording-active #tournamentBracketPage.tourney-presenting{
     <div class="tw-modal-card"><h3 id="twModalTitle">Training results</h3><div id="twModalBody"></div><button type="button" class="tw-primary" id="twModalClose" onclick="twCloseModal()">Continue</button><button type="button" class="tw-muted" id="twKeepJutsu" onclick="twKeepCurrentJutsu()" hidden>Decline — Keep Current Jutsu</button><button type="button" class="tw-muted" id="twKeepWeapon" onclick="twKeepCurrentWeapon()" hidden>Keep Current Weapon</button></div>
   </div>
 </section>
+
+<style id="twAdminPanelStyles">
+#trainingWheelSection .tw-admin-panel{margin:13px 0 18px;border:1px solid #b48b55;border-radius:14px;background:linear-gradient(140deg,#151e2c,#0c121b);overflow:hidden}
+#trainingWheelSection .tw-admin-panel>summary{padding:14px 16px;cursor:pointer;font-weight:800;color:#f6d89a;letter-spacing:.02em}
+#trainingWheelSection .tw-admin-body{padding:0 14px 16px;min-width:0}
+#trainingWheelSection .tw-admin-body>p{margin:6px 0 12px;color:#d5dce7;font-size:13px;line-height:1.55}
+#trainingWheelSection .tw-admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+#trainingWheelSection .tw-admin-round{min-width:0;border:1px solid #435269;border-radius:12px;padding:12px;display:grid;gap:10px;background:rgba(4,9,16,.5)}
+#trainingWheelSection .tw-admin-round legend{font-weight:900;color:#f1cd91;font-size:13px;padding:0 8px}
+#trainingWheelSection .tw-admin-label{display:flex;flex-direction:column;gap:4px;min-width:0;color:#e5e8f3;font-size:12px;font-weight:700}
+#trainingWheelSection .tw-admin-label select{display:block;width:100%;min-width:0;max-width:100%;padding:10px 9px;border:1px solid #69768b;border-radius:8px;background:#121e2d;color:#fff;font-size:13px;box-sizing:border-box}
+#trainingWheelSection .tw-admin-label select:disabled{opacity:.6;color:#bbc6d9}
+#trainingWheelSection .tw-admin-label select.tw-admin-active{border:2px solid #e8c177;box-shadow:0 0 0 2px #d6a45d26}
+#trainingWheelSection .tw-admin-current{padding:10px 12px;border:1px solid #3c5367;border-radius:10px;color:#dceafe;background:#0f1a27;font-size:12px;line-height:1.5;overflow-wrap:anywhere;margin-bottom:12px}
+@media(max-width:720px){#trainingWheelSection .tw-admin-grid{grid-template-columns:minmax(0,1fr)}#trainingWheelSection .tw-admin-body{padding:0 10px 13px}#trainingWheelSection .tw-admin-round{padding:10px}}
+</style>
 
 <script id="trainingWheelsLogic">
 /* Training Wheels v2 — two real fights; review first, explicit atomic Catalogue save only on request.
@@ -19737,6 +19928,99 @@ const wheelText=(v)=>String(v??'');
 const rand=n=>Math.min(n-1,Math.floor(Math.random()*n));
 let state=null,spinning=false,spinValue=0,choices=[],onModalClose=null,popupShown=false,homeMarker=null,homeNode=null,victoryTimer=null;
 let twSpinSerial=0,twSpinTimer=null,twSpinAudioToken=null,pendingJutsu=null,pendingWeapon=null;
+/* Per-round manual outcome presets. These never change the wheel's complete
+ * options or its weights: a preset only selects which existing wedge is hit.
+ * No hidden forced-roll state is written into the Catalogue.
+ */
+const twAdminKeys=['category','rank','opponent','reward','stat','jutsu_j1','jutsu_j2','jutsu_ult','weapon'];
+let twAdminPresets={1:Object.create(null),2:Object.create(null)};
+let twAdminRendering=false;
+function twAdminActiveKey(){return state?.phase==='jutsu'?'jutsu_'+state.rewardSlot:state?.phase||'';}
+function twAdminPhaseItems(round,key){
+ if(key==='category')return ['Training','Mission','Sparring'].map(x=>({value:x,label:x}));
+ if(!state)return [];
+ // The real current wheel is always authoritative, especially for ranks,
+ // conditional loot, character eligibility and second-round opponent repeats.
+ if(state.round===round&&key===twAdminActiveKey()&&['category','rank','opponent','reward','stat','jutsu','weapon'].includes(state.phase))return choices;
+ const preset=twAdminPresets[round]||{};
+ const pathRaw=(state.round===round&&state.path&&state.path!=='Self Guided')?state.path:preset.category||'';
+ const path=pathRaw==='Self Guided'?'Training':pathRaw;
+ const rank=(state.round===round&&state.sessionRank)?state.sessionRank:preset.rank||'';
+ if(key==='rank')return path==='Training'||path==='Mission'?getRankOptions(path):[];
+ if(key==='opponent')return path==='Sparring'?prepareOpponentOptions('Sparring'):((path==='Training'||path==='Mission')&&rank?prepareOpponentOptions(path,rank):[]);
+ if(key==='reward'){
+   if(state.round===round&&state.current&&['victory','reward','stat','jutsu','weapon','review','arena_active'].includes(state.phase)&&state.current.winner)return availableBattleRewards();
+   // Before combat, accept advance presets for any potentially available
+   // category; the wheel's actual result list is always rechecked at spin.
+   const pending=[{value:'major',label:'Major Stat Gain'},{value:'minor',label:'Minor Stat Gain'}];
+   for(const [slot,label] of [['j1','New Jutsu 1'],['j2','New Jutsu 2'],['ult','New Ultimate Jutsu']]){
+     if(getJutsuOptions(slot).length)pending.push({value:slot,label});
+   }
+   const weaponRank=rankIndex(weaponRankOf(state.working.weapon||'None'));
+   const tiers=[gradeOrder[weaponRank],gradeOrder[Math.min(6,weaponRank+1)]];
+   if(tiers.some(x=>eligibleWeapons(x).length))pending.push({value:'weapon',label:'New Weapon Opportunity · requires eligible sensei victory'});
+   return pending;
+ }
+ if(key==='stat'){
+   let opponent=state.round===round?state.opponent:null;
+   if(!opponent){const op=twAdminPhaseItems(round,'opponent').find(x=>String(x.value)===String(preset.opponent));opponent=op?.person||null;}
+   if(!opponent)return [];
+   return topStats(opponent).map(k=>({value:k,label:statNames[k]+' · '+(opponent.stats?.[k]??'?')+'/100'}));
+ }
+ if(key.startsWith('jutsu_'))return getJutsuOptions(key.slice(6));
+ if(key==='weapon'){
+   if(state.round===round&&state.current?.winner)return availableWeaponReward().options;
+   const tier=rankIndex(weaponRankOf(state.working.weapon||'None'));
+   const grades=[gradeOrder[tier],gradeOrder[Math.min(6,tier+1)]];
+   const map=new Map();for(const grade of grades)for(const w of eligibleWeapons(grade))map.set(String(w.value),w);
+   return [...map.values()];
+ }
+ return [];
+}
+function twAdminRefresh(){
+ if(twAdminRendering)return;
+ twAdminRendering=true;
+ try{
+   const active=twAdminActiveKey(),info=byId('twAdminCurrent');
+   for(const r of [1,2]){
+     const data=twAdminPresets[r];
+     for(const key of twAdminKeys){
+       const select=byId('twAdminR'+r+'_'+key);if(!select)continue;
+       const items=twAdminPhaseItems(r,key);
+       const last=data[key]||'';
+       select.replaceChildren(new Option('Random / normal odds',''));
+       for(const item of items)select.add(new Option(String(item.label),String(item.value)));
+       // A preselected result may be unavailable until dependent wheels are
+       // reached; preserve its stored choice, but never force it if absent.
+       if(items.some(item=>String(item.value)===last))select.value=last;
+       else select.value='';
+       const isActive=!!state&&r===state.round&&key===active;
+       select.classList.toggle('tw-admin-active',isActive);
+       select.disabled=!items.length||!!(spinning&&isActive);
+       select.title=items.length?`${items.length} available results; ${isActive?'this is the active wheel':'updated when applicable'}`:'Awaiting earlier wheel selections or the matching reward type';
+     }
+   }
+   if(info){
+     const names={category:'Path',rank:'Session Rank',opponent:'Opponent',reward:'Reward Type',stat:'Stat',jutsu_j1:'Jutsu 1',jutsu_j2:'Jutsu 2',jutsu_ult:'Ultimate',weapon:'Weapon'};
+     if(!state)info.textContent='Choose a Catalogue ninja and start the arc. Path controls are ready; subsequent lists populate from the actual eligible pools.';
+     else if(!active||!['category','rank','opponent','reward','stat','jutsu_j1','jutsu_j2','jutsu_ult','weapon'].includes(active))info.textContent=`Round ${state.round}: ${state.phase.replace(/_/g,' ')}. Presets remain available for the next wheel.`;
+     else{
+       const sel=byId('twAdminR'+state.round+'_'+active),forced=twAdminPresets[state.round][active]||'';
+       const valid=!!sel&&[...sel.options].some(o=>o.value===forced&&forced!=='');
+       info.textContent=`ROUND ${state.round} · ${names[active]} wheel · ${sel?.options.length-1||0} available results (${sel?.options.length-1||0} shown in dropdown). ${valid?'FORCED: '+(sel.options[sel.selectedIndex]?.text||forced):'NORMAL RANDOM SPIN (unless you choose a preset)'}. The wheel will still animate and play sounds.`;
+     }
+   }
+ }finally{twAdminRendering=false;}
+}
+function twAdminPickCurrentIndex(){
+ const p=twAdminPresets[state?.round]?.[twAdminActiveKey()]||'';
+ return p?choices.findIndex(x=>String(x.value)===String(p)):-1;
+}
+window.twAdminClearAll=function(){
+ twAdminPresets={1:Object.create(null),2:Object.create(null)};
+ twAdminRefresh();
+};
+
 function twCancelPendingSpin(){
  twSpinSerial++;
  if(twSpinTimer!==null){clearTimeout(twSpinTimer);twSpinTimer=null;}
@@ -20109,6 +20393,7 @@ function enterWheel(phase,title,options,message=''){
    legend.append(div);
  }
  renderWheel(choices);
+ twAdminRefresh();
  lockTrainingRecordingFrame();
  setStatus(title+' — spin the wheel.');revealMobileRecording('wheel');
 }
@@ -20178,6 +20463,9 @@ function renderWheel(items){
  byId('twWheelRotor').style.transform=`rotate(${spinValue}deg)`;
 }
 function chooseResult(){
+ // Force only if the chosen option still exists in THIS wheel's full pool.
+ // Keeping the full SVG geometry guarantees visible, honest wedges and sounds.
+ const forced=twAdminPickCurrentIndex();if(forced>=0)return forced;
  const total=choices.reduce((sum,t)=>sum+twWeight(t),0),draw=Math.random()*total;
  let cumulative=0;
  for(let i=0;i<choices.length;i++){cumulative+=twWeight(choices[i]);if(draw<cumulative)return i;}
@@ -20647,12 +20935,28 @@ byId('twWheelFrame')?.addEventListener('click',event=>{
  if(event.target.closest('button'))return;
  window.twSpinWheel();
 });
+byId('twAdminPanel')?.addEventListener('change',event=>{
+ const select=event.target.closest('select[data-tw-admin-round][data-tw-admin-key]');
+ if(!select)return;
+ const round=Number(select.dataset.twAdminRound),key=select.dataset.twAdminKey;
+ if(![1,2].includes(round)||!twAdminKeys.includes(key))return;
+ const active=!!state&&round===state.round&&key===twAdminActiveKey();
+ if(spinning&&active){twAdminRefresh();return;}
+ twAdminPresets[round][key]=select.value;
+ // Dependent wheels receive fresh, fully eligible options on the next refresh.
+ if(key==='category'){
+   for(const child of ['rank','opponent','stat'])delete twAdminPresets[round][child];
+ }else if(key==='rank'){
+   for(const child of ['opponent','stat'])delete twAdminPresets[round][child];
+ }else if(key==='opponent')delete twAdminPresets[round].stat;
+ twAdminRefresh();
+});
 byId('twDisclosure')?.addEventListener('toggle',()=>{
  if(byId('twDisclosure')?.open){refreshTrainees();if(state)byId('twStart').disabled=true;}
  // Keep any live battle visible: collapsing the parent is not an instruction to cancel it.
 });
-refreshTrainees();
-window.NINJA_TRAINING_WHEELS={version:5,getState:()=>state?{phase:state.phase,round:state.round,path:state.path,sessionRank:state.sessionRank||null,encounteredIds:[...state.encounteredIds],trainee:state.sourceName,saved:state.phase==='saved',rounds:clone(state.rounds),changes:clone(state.changes),previewStats:clone(state.working.stats)}:null,getVisibleOptions:()=>choices.map(({person,...option})=>({...option})),getRankOptions:type=>getRankOptions(type),getRankRarityWeights:type=>({...twRankRarityWeights[type]||{}}),getOpponentOptions:(type,grade)=>prepareOpponentOptions(type,grade).map(({person,...option})=>({...option})),getSenseiSessionGrade:name=>twMentorGradeByName[String(name||'')]||null,getRewardTier:rank=>({...twRewardByRank[rank]||twRewardByRank.Unranked}),getSelfCloneFactor:rank=>twSelfCloneFactors[rank]||null,inspectJutsuOptions:slot=>state&&['j1','j2','ult'].includes(slot)?getJutsuOptions(slot):[],refreshCatalogue:refreshTrainees,renderStats:renderTrainingStats};
+refreshTrainees();twAdminRefresh();
+window.NINJA_TRAINING_WHEELS={version:6,admin:{getPresets:()=>clone(twAdminPresets),getMenuOptions:(round,key)=>twAdminPhaseItems(Number(round),String(key)).map(({person,...o})=>({...o})),getActiveKey:twAdminActiveKey},getState:()=>state?{phase:state.phase,round:state.round,path:state.path,sessionRank:state.sessionRank||null,encounteredIds:[...state.encounteredIds],trainee:state.sourceName,saved:state.phase==='saved',rounds:clone(state.rounds),changes:clone(state.changes),previewStats:clone(state.working.stats)}:null,getVisibleOptions:()=>choices.map(({person,...option})=>({...option})),getRankOptions:type=>getRankOptions(type),getRankRarityWeights:type=>({...twRankRarityWeights[type]||{}}),getOpponentOptions:(type,grade)=>prepareOpponentOptions(type,grade).map(({person,...option})=>({...option})),getSenseiSessionGrade:name=>twMentorGradeByName[String(name||'')]||null,getRewardTier:rank=>({...twRewardByRank[rank]||twRewardByRank.Unranked}),getSelfCloneFactor:rank=>twSelfCloneFactors[rank]||null,inspectJutsuOptions:slot=>state&&['j1','j2','ult'].includes(slot)?getJutsuOptions(slot):[],refreshCatalogue:refreshTrainees,renderStats:renderTrainingStats};
 })();
 
 </script>
