@@ -14854,7 +14854,11 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     if(!running)return;orbResearchClock+=dt;b2Update(dt);b3Update(dt);b4Update(dt);b5Update(dt);b6Update(dt);b7Update(dt);b8Update(dt);b9Update(dt);b10Update(dt);b11Update(dt);b12Update(dt);b13Update(dt);b14Update(dt);b15Update(dt);b16Update(dt);b17Update(dt);b18Update(dt);b19Update(dt);b20Update(dt);b21Update(dt);b22Update(dt);b23Update(dt);reworkPassiveTick(dt);
     orbResearchWeather.heat=Math.max(0,orbResearchWeather.heat-dt*.00015);
     for(const f of fighters){
-      f.chakra=Math.min(100,(f.chakra??100)+dt*.055*(f.researchChakraDisruption>0?.5:1));
+      // Jinchūriki cloaks provide a modest ongoing chakra reserve so their
+      // third and later Ultimates can actually be cast during an ordinary fight.
+      // Normal cooldowns, attack prerequisites, and chakra costs still apply.
+      const chakraRegen=f.tailedBeastCloak&&isJinchurikiFighter(f)?.16:.055;
+      f.chakra=Math.min(100,(f.chakra??100)+dt*chakraRegen*(f.researchChakraDisruption>0?.5:1));
       f.researchRecovery=Math.max(0,(f.researchRecovery||0)-dt);f.researchPhase=Math.max(0,(f.researchPhase||0)-dt);
       f.researchStrain=Math.max(0,(f.researchStrain||0)-dt);
       f.researchChakraDisruption=Math.max(0,(f.researchChakraDisruption||0)-dt);
@@ -15920,8 +15924,11 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
   // Do not gate it on the original Ultimate's research prerequisites, chakra
   // cost, cooldown, or a target being present: the cloak has its own rules.
   function orbJinchurikiCloakReady(f){
+    // Once the first Ultimate actually releases, the next completed Ultimate
+    // activation transforms. Do not require the counter to be exactly one:
+    // legacy/reloaded fights may already have a higher count.
     return !!(f?.alive&&isJinchurikiFighter(f)&&!f.tailedBeastCloak
-      &&(Number(f.ultActivations)||0)===1&&f.reworkForm?.kind!=='baryon');
+      &&(Number(f.ultActivations)||0)>=1&&f.reworkForm?.kind!=='baryon');
   }
   function tailedBeastCloakProfile(f){
     const beast=String(f?.ninja?.beast||f?.ninja?.tailedBeast||'').toLowerCase();
@@ -15943,6 +15950,10 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     if(!isJinchurikiFighter(f)) return false;
     const profile=tailedBeastCloakProfile(f),oldMax=f.maxHp;
     f.tailedBeastCloak=true;f.cloakTails=profile.tails;f.cloakColor=profile.color;
+    // The second Ultimate is spent on transformation, but the host must have
+    // enough chakra to use its normal third and later Ultimates. The cloak
+    // replenishes chakra without charging the next Ultimate meter for free.
+    f.chakra=Math.max(70,Math.min(100,Number(f.chakra)||0));
     orbAudioStopChargeFor(f);
     orbAudioPlayEvent('foley_form_tailed','cast',8,f,.36);
     orbBeginTransformationFocus(f,'Tailed Beast Cloak',profile.color);
@@ -16001,7 +16012,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
       if(f.ult==='Baryon Mode Rasengan')return startResearchedTechnique(f,slot,f.ult,f);
     }
     if(slot==='ult'&&orbJinchurikiCloakReady(f)){
-      f.ultMeter=0;f.ultActivations=2;f.recovery=24;f.ultPrep=0;f.ultWindup=0;f.ultWindupReady=false;
+      f.ultMeter=0;f.ultActivations=Math.max(2,(Number(f.ultActivations)||0)+1);f.recovery=24;f.ultPrep=0;f.ultWindup=0;f.ultWindupReady=false;
       activateTailedBeastCloak(f);return true;
     }
     // A non-Jinchūriki with explicit Susanoo Access awakens the avatar on
@@ -16127,6 +16138,20 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
         f.ultPrep=1;f.castDashPending=false;orbBeginConcentration(f,'ult');
         f.silentKillingFollowup=false;return;
       }
+    }
+    // A fully charged second Ultimate must not be starved by the more frequent
+    // Jutsu 1/2 selection checks. Cloak initiation ignores the original jutsu's
+    // chakra/cooldown restrictions, but still uses the normal prep + meter.
+    if(f.ultMeter>=100&&f.ultActive<=0&&orbJinchurikiCloakReady(f)){
+      f.ultPrep=1;f.castDashPending=false;orbBeginConcentration(f,'ult');return;
+    }
+    // Once the cloak is active, give later Ultimates their turn before Jutsu
+    // 1/2 spam. These remain ordinary casts: cooldown, chakra, targeting,
+    // silence/mist prerequisites, and the charged meter are all respected.
+    if(f.ultMeter>=100&&f.ultActive<=0&&f.tailedBeastCloak&&isJinchurikiFighter(f)
+       &&researchReady(f,f.ult)&&!(f.ult==='Silent Killing'&&mistSlot)){
+      f.ultPrep=researchProfile(f.ult)?1:48;
+      f.castDashPending=true;orbBeginConcentration(f,'ult');return;
     }
     if(f.j1Meter>=100 && f.j1Active<=0 && researchReady(f,f.jutsu1) && !(f.ult==='Silent Killing'&&mistSlot==='j1') && Math.random()<chance){f.j1Prep=researchProfile(f.jutsu1)?1:32;f.castDashPending=true;orbBeginConcentration(f,'j1');return}
     if(f.j2Meter>=100 && f.j2Active<=0 && researchReady(f,f.jutsu2) && !(f.ult==='Silent Killing'&&mistSlot==='j2') && Math.random()<chance*.9){f.j2Prep=researchProfile(f.jutsu2)?1:36;f.castDashPending=true;orbBeginConcentration(f,'j2');return}
