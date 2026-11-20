@@ -9144,13 +9144,26 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
   function orbUnderdogStrength(){return orbMatchFormat()==='2v3'?Math.max(0,Math.min(100,orbTuneNumber('underdogBalance')))/100:0;}
   function orbUnderdogHpMultiplier(side){return side==='A'?1+0.35*orbUnderdogStrength():1;}
   function orbUnderdogChargeMultiplier(f){return f?.side==='A'?1+0.20*orbUnderdogStrength():1;}
-  function orbTuneRender(){
+  // Avoid writing to the thumb currently being dragged. Some touch browsers
+  // cancel or snap an active range drag if its value is reassigned on each
+  // input event, even when the number hasn't changed.
+  function orbTuneRender(activeSliderKey=null){
     const ids={'2v3 Team A':'orbTuneUnderdog','Movement & Combat Pace':'orbTuneMovement','Dog / Ninken Balance':'orbTuneDog','Clone Balance':'orbTuneClone','Summon Balance':'orbTuneSummon','Combat Gauges':'orbTuneGauges','Puppet Balance':'orbTunePuppet','Projectile & Jutsu Behaviour':'orbTuneProjectiles','Visual Effects':'orbTuneVisual'};
     for(const [category,key,label,min,max,step,help] of ORB_TUNING_FIELDS){
       const box=document.getElementById(ids[category]);if(!box)continue;
       let control=box.querySelector(`[data-orb-tune="${key}"]`);
-      if(!control){control=document.createElement('div');control.className='orb-tune-control';control.dataset.orbTune=key;control.innerHTML=`<label><span>${label}</span><b data-value></b></label><small>${help}</small><input type="range" min="${min}" max="${max}" step="${step}" value="${orbTuneNumber(key)}" aria-label="${label}">`;box.appendChild(control);control.querySelector('input').addEventListener('input',e=>{orbTuning[key]=Number(e.target.value);orbTuneRender();if(key==='combatSpeed')orbSetSpeed(orbTuneNumber(key));});}
-      const slider=control.querySelector('input');slider.value=orbTuneNumber(key);
+      if(!control){control=document.createElement('div');control.className='orb-tune-control';control.dataset.orbTune=key;control.innerHTML=`<label><span>${label}</span><b data-value></b></label><small>${help}</small><input type="range" min="${min}" max="${max}" step="${step}" value="${orbTuneNumber(key)}" aria-label="${label}">`;box.appendChild(control);control.querySelector('input').addEventListener('input',e=>{
+        orbTuning[key]=Number(e.currentTarget.value);
+        if(key==='combatSpeed')orbSetSpeed(orbTuning[key]);
+        // Keep updating the displayed number and dependent info while the
+        // slider moves, without reassigning the native thumb's value.
+        orbTuneRender(key);
+      });
+      // Snap non-dragged controls to authoritative state on release, reset,
+      // or format changes, without replacing the input element/listener.
+      control.querySelector('input').addEventListener('change',()=>orbTuneRender());}
+      const slider=control.querySelector('input');
+      if(key!==activeSliderKey)slider.value=orbTuneNumber(key);
       if(key==='underdogBalance'){
         const level=orbTuneNumber(key),active=orbMatchFormat()==='2v3';
         const hp=Number((0.35*level).toFixed(2)),charge=Number((0.20*level).toFixed(2));
