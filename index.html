@@ -782,6 +782,211 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 }
 
 </style>
+
+<style id="orbMobileSquadHUDStyles">
+/* Compact, side-by-side squad HUD for small screens. This intentionally
+   affects only five- and six-fighter battles; desktop and 1v1 are untouched. */
+@media (max-width: 680px), (orientation:landscape) and (max-height:500px) and (max-width:900px) {
+  #orbBattlePanel #orbMultiHud[data-count="5"],
+  #orbBattlePanel #orbMultiHud[data-count="6"] {
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    grid-auto-rows:minmax(0,auto);
+    align-items:stretch;
+    gap:4px !important;
+    margin:0 auto 5px !important;
+    width:100% !important;
+    min-width:0;
+  }
+  #orbBattlePanel #orbMultiHud[data-count="5"] .orb-hud-card,
+  #orbBattlePanel #orbMultiHud[data-count="6"] .orb-hud-card {
+    box-sizing:border-box;
+    min-width:0;
+    padding:3px 4px !important;
+    border-radius:8px;
+    overflow:hidden;
+    border-color:#304352;
+  }
+  #orbBattlePanel #orbMultiHud[data-count="5"] .orb-hud-card[data-team="A"],
+  #orbBattlePanel #orbMultiHud[data-count="6"] .orb-hud-card[data-team="A"] {border-left:2px solid #eb7373}
+  #orbBattlePanel #orbMultiHud[data-count="5"] .orb-hud-card[data-team="B"],
+  #orbBattlePanel #orbMultiHud[data-count="6"] .orb-hud-card[data-team="B"] {border-left:2px solid #6dbbff}
+  #orbBattlePanel #orbMultiHud[data-count="5"] .orb-hud-caption,
+  #orbBattlePanel #orbMultiHud[data-count="6"] .orb-hud-caption {display:none}
+  #orbBattlePanel #orbMultiHud[data-count="5"] .orb-hud-card .name,
+  #orbBattlePanel #orbMultiHud[data-count="6"] .orb-hud-card .name {
+    font-size:10px !important;
+    font-weight:850;
+    margin:0 0 3px !important;
+    line-height:1.12;
+    min-width:0;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-live-window {
+    margin:0 !important;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window {
+    display:grid;
+    grid-template-columns:30px minmax(0,1fr) !important;
+    grid-template-rows:30px auto;
+    gap:3px 4px !important;
+    min-height:0 !important;
+    width:100%;
+    padding:3px !important;
+    border-width:1px;
+    border-radius:7px;
+    align-items:center;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-portrait-frame {
+    grid-column:1;grid-row:1;
+    width:29px !important;height:29px !important;
+    min-height:0;
+    aspect-ratio:1 / 1;
+    border-radius:5px;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-words {
+    grid-column:2;grid-row:1;
+    align-self:center;gap:1px;
+    min-width:0;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-state {
+    font-size:10px !important;
+    line-height:1.1;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-form {
+    font-size:7px !important;
+    line-height:1.1;
+  }
+  /* Second line spans the full card width: HP bar + number, three jutsu
+     meters below. All remain visible and keep their live values. */
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-stats {
+    grid-column:1 / -1;grid-row:2;
+    width:100%;min-width:0;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-rows:7px auto;
+    gap:3px 4px !important;
+    align-items:center;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-health-track {
+    grid-column:1;grid-row:1;
+    min-height:6px !important;height:6px !important;
+    width:100%;margin:0;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-hp {
+    grid-column:2;grid-row:1;
+    font-size:8px !important;
+    font-weight:750;
+    white-space:nowrap;
+    justify-self:end;
+    line-height:1;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-meters {
+    grid-column:1 / -1;grid-row:2;
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:4px;
+    min-width:0;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-meter {
+    gap:2px;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-meter-label {
+    font-size:7px !important;
+    line-height:1;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-track {
+    height:5px !important;
+  }
+  /* DOM cards are grouped by team. Reflow them visually as A1/B1,
+     A2/B2, A3/B3 so players can compare both sides at a glance. */
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="A"]  {grid-column:1;grid-row:1}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="B"]  {grid-column:2;grid-row:1}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="A2"] {grid-column:1;grid-row:2}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="B2"] {grid-column:2;grid-row:2}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="A3"] {grid-column:1;grid-row:3}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) [data-hud-slot="B3"] {grid-column:2;grid-row:3}
+
+  /* Reduce the battlefield only as necessary to fit beneath the two-column
+     three-row HUD in portrait orientation, without changing simulation size. */
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) + .orb-canvas-wrap {
+    box-sizing:border-box;
+    width:min(100%,clamp(160px,calc(100svh - 355px),600px)) !important;
+    height:auto !important;
+    min-width:0 !important;
+    min-height:0 !important;
+    max-width:100% !important;
+    max-height:none !important;
+    aspect-ratio:1 / 1;
+    align-self:center;
+    margin:0 auto !important;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) + .orb-canvas-wrap canvas {
+    width:100% !important;height:100% !important;
+    aspect-ratio:1 / 1 !important;
+    object-fit:contain;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud[data-count="6"]),
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud[data-count="5"]) {
+    gap:0;
+    margin-top:0;
+    padding-left:5px;padding-right:5px;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud[data-count="6"]) > .orb-stage-actions,
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud[data-count="5"]) > .orb-stage-actions {
+    margin-bottom:4px !important;
+  }
+}
+/* Landscape phones: place the entire squad beside the battlefield rather
+   than above it. No fight mechanics or canvas drawing coordinates change. */
+@media (orientation:landscape) and (max-height:500px) and (max-width:900px) {
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) {
+    display:grid !important;
+    grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);
+    grid-template-rows:auto auto auto auto auto;
+    column-gap:6px;row-gap:4px;
+    align-items:start;
+    padding:0 5px;
+    width:100%;max-width:none;box-sizing:border-box;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > #orbMultiHud {
+    grid-column:1;grid-row:1;
+    width:100% !important;max-width:100% !important;
+    min-width:0 !important;margin:0 !important;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > .orb-canvas-wrap {
+    grid-column:2;grid-row:1;
+    justify-self:center;align-self:start;
+    width:min(100%,max(160px,calc(100svh - 100px))) !important;
+    height:auto !important;
+    min-width:0 !important;min-height:0 !important;
+    max-width:100% !important;max-height:none !important;
+    aspect-ratio:1 / 1 !important;
+    margin:0 !important;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > #orbStageActions {
+    grid-column:1/-1;grid-row:2;
+    width:100% !important;max-width:100% !important;margin:0 !important;
+  }
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) #orbFightBtn {min-height:38px!important;font-size:14px;}
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > #orbSecondaryActions {grid-column:1/-1;grid-row:3;width:100% !important;max-width:100% !important;}
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > .orb-spectator-tools {grid-column:1/-1;grid-row:4;width:100% !important;max-width:100% !important;}
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) > #orbLog {grid-column:1/-1;grid-row:5;width:100% !important;}
+}
+@media (max-width:380px) and (max-height:650px) {
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window {
+    grid-template-columns:26px minmax(0,1fr) !important;
+    grid-template-rows:26px auto;
+    gap:2px 3px !important;
+    padding:2px !important;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-portrait-frame {
+    width:25px !important;height:25px !important;
+  }
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-stats {gap:2px 3px !important;}
+  #orbBattlePanel #orbMultiHud:is([data-count="5"],[data-count="6"]) .ew-window.ew-approved-window .ew-inline-track {height:4px !important;}
+  #orbBattlePanel .orb-stage-wrap:has(#orbMultiHud:is([data-count="5"],[data-count="6"])) #orbFightBtn {min-height:42px !important;}
+}
+</style>
 </head>
 <body>
 <div class="wrap">
