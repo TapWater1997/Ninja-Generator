@@ -657,10 +657,10 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:8px;borde
 <style id="emotionWindowCoreStyles">
 
 /* Integrated Emotion Windows: compact battle HUD, no audition controls. */
-#orbBattlePanel .orb-hud-card .bar.hp,
-#orbBattlePanel .orb-hud-card .orb-charge-row,
-#orbBattlePanel .orb-hud-card .meta,
-#orbBattlePanel .orb-hud-card .consumable-meta {display:none!important}
+#orbBattlePanel .orb-hud-card.ew-ready .bar.hp,
+#orbBattlePanel .orb-hud-card.ew-ready .orb-charge-row,
+#orbBattlePanel .orb-hud-card.ew-ready .meta,
+#orbBattlePanel .orb-hud-card.ew-ready .consumable-meta {display:none!important}
 #orbBattlePanel .ew-live-window {width:100%;min-width:0;max-width:100%;margin:5px 0 1px;}
 #orbBattlePanel .ew-window.ew-approved-window {
   --ew-accent:#87cdec;--ew-form-accent:#87cdec;
@@ -15814,7 +15814,7 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
     const card=document.getElementById('orbHudCard'+slot);
     if(name&&card){
       let holder=card.querySelector('.ew-live-window');
-      if(!holder){holder=document.createElement('div');holder.className='ew-live-window';holder.setAttribute('aria-label','Fighter emotion and health meters');name.insertAdjacentElement('afterend',holder);}
+      if(!holder){card.classList.remove('ew-ready');holder=document.createElement('div');holder.className='ew-live-window';holder.setAttribute('aria-label','Fighter emotion and health meters');name.insertAdjacentElement('afterend',holder);}
       const changed=!h.refs||h.renderMood!==mood||h.renderForm!==form||h.renderCharacter!==character||h.renderFormLabel!==formLabel||!holder.firstElementChild;
       const stats={hp,maxHp,j1:ewPct(f.j1Meter),j2:ewPct(f.j2Meter),ult:ewPct(f.ultMeter)};
       if(changed){
@@ -15829,13 +15829,17 @@ if(season2ExistingOverflow)season2SquadMessage(season2ExistingOverflow+' importe
         h.renderMood=mood;h.renderForm=form;h.renderCharacter=character;h.renderFormLabel=formLabel;
       }
       ewUpdateMeters(h,stats);
+      card.classList.add('ew-ready');
     }
     h.hp=hp;h.chakra=chakra;h.abilityFlash=Number(f.abilityFlash)||0;
     h.weaponHitCooldown=Number(f.weaponHitCooldown)||0;h.j1Active=Number(f.j1Active)||0;
     h.j2Active=Number(f.j2Active)||0;h.ultActive=Number(f.ultActive)||0;
     h.ultWindup=Number(f.ultWindup)||0;h.weaponClashedThisFrame=!!f.weaponClashedThisFrame;
   }
-  function ewResetHistory(){EW_CORE.history.clear();}
+  function ewResetHistory(){
+    EW_CORE.history.clear();
+    document.querySelectorAll('#orbBattlePanel .orb-hud-card.ew-ready').forEach(card=>card.classList.remove('ew-ready'));
+  }
   /* ===== End core Emotion Window ===== */
 
   function updateHud(){
@@ -21887,4 +21891,83 @@ window.NINJA_TRAINING_WHEELS={version:6,admin:{getPresets:()=>clone(twAdminPrese
   }
 }
 </style>
+
+<style id="emotionWindowMobileVisibilityFix">
+/* Mobile layout guard: the emotion window is the primary fighter HUD. */
+@media (max-width:710px) {
+  #orbBattlePanel .ew-live-window {display:block;visibility:visible;opacity:1;width:100%;min-width:0;max-width:100%;}
+  #orbBattlePanel .orb-hud-card.ew-ready .ew-window.ew-approved-window {visibility:visible;opacity:1;}
+  #orbBattlePanel .orb-hud-card.ew-ready {min-width:0;}
+  /* In the Training Wheel's one-viewport combat recording, the old Arena
+     single-column rule made both fighter windows too tall for the fixed header. */
+  #trainingWheelSection .tw-stage.tw-mode-arena {
+    --tw-disc-center:clamp(calc(var(--tw-disc-size) * .5 + 190px),
+      calc(var(--tw-screen-height) * .5),
+      calc(var(--tw-screen-height) - var(--tw-disc-size) * .5 - 12px));
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud {
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    width:100%!important;min-width:0!important;max-width:100%!important;gap:5px;
+    overflow:visible;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud .orb-hud-card {
+    box-sizing:border-box;min-width:0!important;overflow:visible;
+    padding:4px 5px!important;border-radius:8px;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .orb-hud-caption {
+    font-size:8px;line-height:1.1;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .orb-hud-card .name {
+    font-size:10px!important;line-height:1.1!important;margin:2px 0 3px!important;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-live-window {margin:3px 0 0;}
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window {
+    display:grid!important;
+    grid-template-columns:34px minmax(0,1fr)!important;
+    grid-template-rows:34px auto;
+    gap:3px 4px!important;min-height:0!important;
+    box-sizing:border-box;padding:4px!important;
+    border-width:1px;border-radius:8px;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window .ew-portrait-frame {
+    grid-column:1;grid-row:1;
+    box-sizing:border-box;width:34px!important;height:34px!important;
+    max-width:34px;max-height:34px;aspect-ratio:1/1;
+    margin:0!important;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window .ew-words {
+    grid-column:2;grid-row:1;
+    display:flex;min-width:0;justify-content:center;gap:2px;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window .ew-state {
+    font-size:10px!important;line-height:1.05;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window .ew-form {
+    font-size:7px!important;line-height:1.05;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-window.ew-approved-window .ew-inline-stats {
+    grid-column:1 / -1;grid-row:2;
+    align-self:stretch;display:flex;min-width:0;width:100%;gap:3px;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-inline-health-track {
+    height:6px!important;min-height:6px!important;
+  }
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-inline-meters {gap:3px;}
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-inline-meter-label {font-size:7px!important;}
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-inline-track {height:4px!important;}
+  #trainingWheelSection #twCombatViewport > .tw-combat-head .ew-inline-hp {font-size:8px!important;}
+  /* Multi-fighter recording views remain scrollable rather than clipping the
+     earlier fighters outside the top of the capture frame. */
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud[data-count="3"],
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud[data-count="4"],
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud[data-count="5"],
+  #trainingWheelSection #twCombatViewport > .tw-combat-head > .orb-hud[data-count="6"] {
+    max-height:clamp(100px,calc(var(--tw-disc-center) - var(--tw-disc-size) * .5 - 72px),220px);
+    overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+}
+</style>
+
 </body></html>
